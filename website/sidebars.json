@@ -1,0 +1,36 @@
+{
+  "docs": {
+    "Getting Started": [
+      "node",
+      "browser-cdn",
+      "browser-npm",
+      "cli"
+    ],
+    "Basic Commands": [
+      "init",
+      "clone",
+      "listBranches",
+      "listFiles",
+      "add",
+      "remove",
+      "status",
+      "commit",
+      "log",
+      "config",
+      "fetch",
+      "checkout",
+      "push"
+    ],
+    "PGP Signing": [
+      "sign",
+      "verify"
+    ],
+    "Utility Commands": [
+      "findRoot",
+      "auth",
+      "oauth2",
+      "indexPack",
+      "version"
+    ]
+  }
+}
