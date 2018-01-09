@@ -4,7 +4,8 @@
       "node",
       "browser-cdn",
       "browser-npm",
-      "cli"
+      "cli",
+      "dir-vs-gitdir"
     ],
     "Basic Commands": [
       "init",

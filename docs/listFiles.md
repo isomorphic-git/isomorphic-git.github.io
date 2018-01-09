@@ -3,8 +3,15 @@ title: listFiles
 sidebar_label: listFiles
 ---
 
-Check the [documentation](https://docusaurus.io) for how to use Docusaurus.
+List all the files in the git index
 
-## Lorem
+| param                   | type, default            | description                                                                                                                                                         |
+| ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](index.html#dir-vs-gitdir) directory path, and optionally the [git directory](index.html#dir-vs-gitdir) path |
+| return                  | Promise<Array<string>>   | Resolves successfully with an array of branch names                                                                                                                 |
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus elementum massa eget nulla aliquet sagittis. Proin odio tortor, vulputate ut odio in, ultrices ultricies augue. Cras ornare ultrices lorem malesuada iaculis. Etiam sit amet libero tempor, pulvinar mauris sed, sollicitudin sapien.
+```js
+let repo = {fs, dir: '<@.@>'}
+let files = await git.listFiles(repo)
+console.log(files)
+```

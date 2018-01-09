@@ -16,6 +16,8 @@
     "clone": "clone",
     "commit": "commit",
     "config": "config",
+    "dir-vs-gitdir": "`dir` vs `gitdir`",
+    "dir vs gitdir": "dir vs gitdir",
     "fetch": "fetch",
     "findRoot": "findRoot",
     "indexPack": "indexPack",

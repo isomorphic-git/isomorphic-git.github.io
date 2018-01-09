@@ -4,6 +4,10 @@
   background-image: linear-gradient(to right, white, transparent);
 }
 
+table tr th code, table tr td code {
+  display: inline; /* was inline-block, had terrible vertical alignment */
+}
+
 @media only screen and (min-device-width: 360px) and (max-device-width: 736px) {
 }
 

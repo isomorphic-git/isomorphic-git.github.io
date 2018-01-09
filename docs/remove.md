@@ -3,8 +3,18 @@ title: remove
 sidebar_label: remove
 ---
 
-Check the [documentation](https://docusaurus.io) for how to use Docusaurus.
+Remove a file from the git index (aka staging area)
 
-## Lorem
+Note that this does NOT delete the file in the working directory.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus elementum massa eget nulla aliquet sagittis. Proin odio tortor, vulputate ut odio in, ultrices ultricies augue. Cras ornare ultrices lorem malesuada iaculis. Etiam sit amet libero tempor, pulvinar mauris sed, sollicitudin sapien.
+| param                   | type, default            | description                                                                                                                                                         |
+| ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](index.html#dir-vs-gitdir) directory path, and optionally the [git directory](index.html#dir-vs-gitdir) path |
+| **filepath**            | string                   | The path to the file to remove from the index                                                                                                                       |
+| return                  | Promise<void>            | Resolves successfully once the git index has been updated                                                                                                           |
+
+```js
+let repo = {fs, dir: '<@.@>'}
+await git.remove({...repo, filepath: '<@README.md@>'})
+console.log('done')
+```
