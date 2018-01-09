@@ -12,7 +12,7 @@ script:
   - npm run build
 branches:
   except:
-    - master
+  - master
 deploy:
 - provider: pages
   skip_cleanup: true
