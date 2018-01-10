@@ -3,6 +3,12 @@
 .navListItemActive {
   background-image: linear-gradient(to right, white, transparent);
 }
+.navListItem:hover {
+  background-image: linear-gradient(to right, white, transparent);
+}
+.navListItem a {
+  width: 100%;
+}
 
 table tr th code, table tr td code {
   display: inline; /* was inline-block, had terrible vertical alignment */
