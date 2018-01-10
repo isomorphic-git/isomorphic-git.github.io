@@ -61,7 +61,7 @@ function onCloseButtonClick (event) {
 function createButton () {
   let b = document.createElement('button')
   b.innerText = 'RUN'
-  b.className = 'eval-button'
+  b.className = 'eval-button button'
   b.type = 'button'
   b.onclick = onEvalButtonClick
   return b
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function listener () {
   // Add the RUN buttons
   let blocks = document.querySelectorAll('pre > code')
   for (let block of blocks) {
-    block.parentNode.appendChild(createButton())
+    block.parentNode.insertBefore(createButton(), block)
   }
   // Make parts of the code editable
   let spans = document.querySelectorAll('code')
