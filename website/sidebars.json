@@ -1,11 +1,7 @@
 {
   "docs": {
-    "Getting Started": [
-      "node",
-      "browser-cdn",
-      "browser-npm",
-      "cli",
-      "dir-vs-gitdir"
+    "All Commands": [
+      "alphabetic"
     ],
     "Basic Commands": [
       "init",
@@ -28,10 +24,19 @@
     ],
     "Utility Commands": [
       "findRoot",
-      "auth",
-      "oauth2",
+      "utils_auth",
+      "utils_oauth2",
       "indexPack",
       "version"
+    ]
+  },
+  "guide": {
+    "Getting Started": [
+      "node",
+      "browser-cdn",
+      "browser-npm",
+      "cli",
+      "dir-vs-gitdir"
     ]
   }
 }

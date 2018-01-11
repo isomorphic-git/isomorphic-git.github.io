@@ -3,8 +3,16 @@ title: indexPack
 sidebar_label: indexPack
 ---
 
-Check the [documentation](https://docusaurus.io) for how to use Docusaurus.
+Create the .idx file for a given .pack file
 
-## Lorem
+| param                   | type [= default]         | description                                                                                                                                         |
+| ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **filepath**            | string                   | The path to the .pack file to index.                                                                                                                |
+| return                  | Promise\<void\>          | Resolves when filesystem operations are complete                                                                                                    |
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus elementum massa eget nulla aliquet sagittis. Proin odio tortor, vulputate ut odio in, ultrices ultricies augue. Cras ornare ultrices lorem malesuada iaculis. Etiam sit amet libero tempor, pulvinar mauris sed, sollicitudin sapien.
+```js
+let repo = {fs, dir: '<@.@>'}
+await git.indexPack({...repo, filepath: '<@pack-9cbd243a1caa4cb4bef976062434a958d82721a9.pack@>'})
+console.log('done')
+```

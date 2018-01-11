@@ -5,6 +5,14 @@ sidebar_label: log
 
 Get commit descriptions from the git history
 
+| param                   | type [= default]                      | description                                                                                                                                         |
+| ----------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string              | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| depth                   | number = undefined                    | Limit the number of commits returned. No limit by default.                                                                                          |
+| since                   | Date = undefined                      | Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.                                                 |
+| ref                     | string = 'HEAD'                       | The commit to begin walking backwards through the history from.                                                                                     |
+| return                  | Promise\<Array\<CommitDescription\>\> | Resolves to an array of CommitDescription objects                                                                                                   |
+
 Returns an array of objects with a schema like this:
 
 ```js
@@ -27,14 +35,6 @@ Returns an array of objects with a schema like this:
  * @property {string} [gpgsig] - PGP signature (if present)
  */
 ```
-
-| param                   | type, default                     | description                                                                                                                                                         |
-| ----------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string          | The filesystem holding the git repo, the [working tree](index.html#dir-vs-gitdir) directory path, and optionally the [git directory](index.html#dir-vs-gitdir) path |
-| depth                   | number = undefined                | Limit the number of commits returned. No limit by default.                                                                                                          |
-| since                   | Date = undefined                  | Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.                                                                 |
-| ref                     | string = 'HEAD'                   | The commit to begin walking backwards through the history from.                                                                                                     |
-| return                  | Promise<Array<CommitDescription>> | Resolves to an array of CommitDescription objects                                                                                                                   |
 
 ```js
 let repo = {fs, dir: '<@.@>'}

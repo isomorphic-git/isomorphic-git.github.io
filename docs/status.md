@@ -22,11 +22,11 @@ The possible resolve values are:
 | `"*absent"`     | file not present in working dir or HEAD commit, but present in the index |
 
 
-| param                   | type, default            | description                                                                                                                                                         |
-| ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](index.html#dir-vs-gitdir) directory path, and optionally the [git directory](index.html#dir-vs-gitdir) path |
-| **filepath**            | string                   | The path to the file to query                                                                                                                                       |
-| return                  | Promise<string>          | Resolves successfully with the file's git status                                                                                                                    |
+| param                   | type [= default]         | description                                                                                                                                         |
+| ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **filepath**            | string                   | The path to the file to query                                                                                                                       |
+| return                  | Promise\<string\>        | Resolves successfully with the file's git status                                                                                                    |
 
 ```
 let repo = {fs, dir: '<@.@>'}

@@ -22,11 +22,11 @@ const siteConfig = {
   baseUrl: '/' /* base url for your project */,
   projectName: 'isomorphic-git',
   headerLinks: [
-    { doc: 'node', label: 'Guide' },
     {
-      href: 'https://isomorphic-git.github.io/isomorphic-git/',
+      doc: 'alphabetic',
       label: 'API Docs'
     },
+    { doc: 'node', label: 'Manual' },
     { page: 'help', label: 'Help' },
     // { blog: true, label: 'Blog' },
     {

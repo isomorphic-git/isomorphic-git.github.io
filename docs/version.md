@@ -2,9 +2,19 @@
 title: version
 sidebar_label: version
 ---
+ 
+Return the version number of isomorphic-git
 
-Check the [documentation](https://docusaurus.io) for how to use Docusaurus.
+I don't know why you might need this. I added it just so I could check that I was getting
+the correct version of the library and not a cached version.
 
-## Lorem
+TODO: Semantic-release broke this, now it always says '0.0.0-development'. Need to add a
+prepublishOnly script to find & replace that with the actual version number.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus elementum massa eget nulla aliquet sagittis. Proin odio tortor, vulputate ut odio in, ultrices ultricies augue. Cras ornare ultrices lorem malesuada iaculis. Etiam sit amet libero tempor, pulvinar mauris sed, sollicitudin sapien.
+| param  | type [= default] | description                                                    |
+| ------ | ---------------- | -------------------------------------------------------------- |
+| return | string           | the version string taken from package.json at publication time |
+
+```js
+console.log(git.version())
+```

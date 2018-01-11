@@ -3,8 +3,21 @@ title: findRoot
 sidebar_label: findRoot
 ---
 
-Check the [documentation](https://docusaurus.io) for how to use Docusaurus.
+Find the root git directory
 
-## Lorem
+| param                   | type [= default]         | description                                                                                                                                         |
+| ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **filepath**            | string                   | The file directory to start searching in.                                                                                                           |
+| return                  | Promise\<void\>          | Resolves successfully when filesystem operations are complete                                                                                       |
+| throws                  | Error                    | Error('Unable to find git root')                                                                                                                    |
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus elementum massa eget nulla aliquet sagittis. Proin odio tortor, vulputate ut odio in, ultrices ultricies augue. Cras ornare ultrices lorem malesuada iaculis. Etiam sit amet libero tempor, pulvinar mauris sed, sollicitudin sapien.
+Starting at `filepath`, walks upward until it finds a directory that contains a subdirectory called '.git'.
+
+```js
+let gitroot = await git.findRoot({
+  fs,
+  filepath: '<@/path/to/some/gitrepo/path/to/some/file.txt@>'
+})
+console.log(gitroot) // '/path/to/some/gitrepo'
+```
