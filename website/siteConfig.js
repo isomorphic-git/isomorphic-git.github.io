@@ -62,7 +62,9 @@ const siteConfig = {
     'https://unpkg.com/isomorphic-git',
     '/js/fs.js',
     '/js/object-inspector.min.js',
-    '/js/tutorial.js'
+    '/js/tutorial.js',
+    '//static.getclicky.com/js',
+    '/js/analytics.js'
   ],
   // stylesheets: ['./css/tutorial.css'],
   // You may provide arbitrary config keys to be used as needed by your template.

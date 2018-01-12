@@ -75,6 +75,10 @@ class Footer extends React.Component {
             >
               Star
             </a>
+            <a title="Web Analytics" href="http://clicky.com/101095086">
+              <img alt="Web Analytics" src="//static.getclicky.com/media/links/badge.gif" border="0" />
+            </a>
+            <noscript><p><img alt="Clicky" width="1" height="1" src="//in.getclicky.com/101095086ns.gif" /></p></noscript>
           </div>
         </section>
       </footer>
