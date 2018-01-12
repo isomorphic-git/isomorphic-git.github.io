@@ -32,11 +32,9 @@
   },
   "guide": {
     "Getting Started": [
-      "node",
-      "browser-cdn",
-      "browser-npm",
-      "cli",
-      "dir-vs-gitdir"
+      "getting_started",
+      "dir-vs-gitdir",
+      "browserfs"
     ]
   }
 }

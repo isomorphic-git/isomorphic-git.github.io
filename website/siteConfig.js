@@ -26,7 +26,7 @@ const siteConfig = {
       doc: 'alphabetic',
       label: 'API Docs'
     },
-    { doc: 'node', label: 'Manual' },
+    { doc: 'getting_started', label: 'Manual' },
     { page: 'help', label: 'Help' },
     // { blog: true, label: 'Blog' },
     {
