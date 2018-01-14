@@ -17,6 +17,7 @@ Fetch commits from a remote.
 | since                   | Date     = undefined               | Only fetch commits created after the given date. Mutually exclusive with `depth`.                                                                   |
 | exclude                 | Array\<string\> = [ ]              | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.                                       |
 | relative                | boolean  = false                   | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.                                       |
+| tags                    | boolean  = false                   | Also fetch tags                                                                                                                                     |
 | onprogress              | Function = undefined               | Callback to receive [ProgressEvent](https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent)s for the operation.                             |
 | return                  | Promise\<void\>                    | Resolves successfully when fetch completes                                                                                                          |
 
