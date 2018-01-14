@@ -28,6 +28,7 @@
     "in Node": "in Node",
     "push": "push",
     "remove": "remove",
+    "resolveRef": "resolveRef",
     "sign": "sign",
     "status": "status",
     "utils_auth": "auth",

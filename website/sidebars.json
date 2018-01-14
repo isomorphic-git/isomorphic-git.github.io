@@ -24,6 +24,7 @@
     ],
     "Utility Commands": [
       "findRoot",
+      "resolveRef",
       "utils_auth",
       "utils_oauth2",
       "indexPack",

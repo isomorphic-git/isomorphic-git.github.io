@@ -19,6 +19,7 @@ sidebar_label: Alphabetical Index
 ##### [log](log.md)
 ##### [push](push.md)
 ##### [remove](remove.md)
+##### [resolveRef](resolveRef.md)
 ##### [sign](sign.md)
 ##### [status](status.md)
 ##### [utils.auth](utils_auth.md)
