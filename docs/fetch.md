@@ -23,10 +23,12 @@ Fetch commits from a remote.
 
 ```js
 let repo = {fs, dir: '<@.@>'}
-await fetch({
+await git.fetch({
   ...repo,
   url: '<@https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git@>',
-  depth: 1
+  ref: '<@master@>',
+  depth: <@1@>,
+  tags: <@false@>
 })
 console.log('done')
 ```
