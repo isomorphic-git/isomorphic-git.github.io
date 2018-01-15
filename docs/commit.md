@@ -8,7 +8,6 @@ Create a new commit
 | param                   | type [=default]          | description                                                                                                                                                         |
 | ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path                 |
-| **filepath**            | string                   | The path to the file to remove from the index                                                                                                                       |
 | **message**             | string                   | The commit message to use.                                                                                                                                          |
 | author                  | Object                   | The details about the commit author.                                                                                                                                |
 | author.name             | string = undefined       | Default is `user.name` config.                                                                                                                                      |

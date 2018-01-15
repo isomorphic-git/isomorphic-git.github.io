@@ -8,7 +8,7 @@ Fetch commits from a remote.
 | param                   | type [= default]                   | description                                                                                                                                         |
 | ----------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fs**, **dir**, gitdir | FSModule,&nbsp;string,&nbsp;string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **url**                 | string                             | The URL of the remote repository.                                                                                                                   |
+| url                     | string                             | The URL of the remote repository.                                                                                                                   |
 | ref                     | string   = 'HEAD'                  | Which branch to fetch. By default this is the currently checked out branch.                                                                         |
 | remote                  | string   = 'origin'                | What to name the remote that is created. The default is 'origin'.                                                                                   |
 | authUsername            | string   = undefined               | The username to use with Basic Auth                                                                                                                 |
