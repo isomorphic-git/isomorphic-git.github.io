@@ -86,7 +86,7 @@ class HomeSplash extends React.Component {
             <Button href={docUrl('init.html', language)}>
               Interactive Docs
             </Button>
-            <Button href={pageUrl('releases.html', language)}>Download</Button>
+            <Button href='https://github.com/isomorphic-git/isomorphic-git/releases'>Download</Button>
           </PromoSection>
         </div>
       </SplashContainer>
