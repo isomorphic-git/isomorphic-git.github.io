@@ -16,6 +16,7 @@ sidebar_label: Alphabetical Index
 ##### [init](init.md)
 ##### [listBranches](listBranches.md)
 ##### [listFiles](listFiles.md)
+##### [listTags](listTags.md)
 ##### [log](log.md)
 ##### [push](push.md)
 ##### [remove](remove.md)
