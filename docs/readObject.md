@@ -45,6 +45,9 @@ export interface GitObjectDescription {
 ```
 
 ```js
+// Example:
+// Find 'package.json' in the master branch and print it out.
+//
 let repo = {fs, dir: '<@.@>'}
 let sha = await git.resolveRef({...repo, ref: '<@master@>'})
 console.log(sha)
@@ -58,4 +61,5 @@ for (let file of tree.entries) {
     console.log(blob.toString('utf8'))
   }
 }
+console.log('done')
 ```
