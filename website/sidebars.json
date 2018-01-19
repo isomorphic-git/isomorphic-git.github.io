@@ -23,12 +23,15 @@
       "sign",
       "verify"
     ],
-    "Utility Commands": [
+    "Plumbing Commands": [
       "findRoot",
       "resolveRef",
+      "readObject",
+      "indexPack"
+    ],
+    "Utility Commands": [
       "utils_auth",
       "utils_oauth2",
-      "indexPack",
       "version"
     ]
   },

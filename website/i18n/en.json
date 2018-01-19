@@ -23,10 +23,12 @@
     "init": "init",
     "listBranches": "listBranches",
     "listFiles": "listFiles",
+    "listTags": "listTags",
     "log": "log",
     "node": "Using with Node.js",
     "in Node": "in Node",
     "push": "push",
+    "readObject": "readObject",
     "remove": "remove",
     "resolveRef": "resolveRef",
     "sign": "sign",
@@ -44,6 +46,7 @@
     "All Commands": "All Commands",
     "Basic Commands": "Basic Commands",
     "PGP Signing": "PGP Signing",
+    "Plumbing Commands": "Plumbing Commands",
     "Utility Commands": "Utility Commands"
   },
   "pages-strings": {
