@@ -19,3 +19,14 @@ Lucky for you, I already looked up and codified it for you.
 - oauth2('gitlab', token) - Gitlab uses `'oauth2'` as the username, and `token` as the password.
 
 I will gladly accept pull requests for more companies' conventions.
+
+```js
+let credentials = git.utils.oauth2('github', 'token')
+console.log(credentials)
+
+credentials = git.utils.oauth2('bitbucket', 'token')
+console.log(credentials)
+
+credentials = git.utils.oauth2('gitlab', 'token')
+console.log(credentials)
+```

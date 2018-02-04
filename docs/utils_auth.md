@@ -24,14 +24,22 @@ Password in Bitbucket lingo) and use that to authenticate.
 | return   | {username: string, password: string} |
 
 ```js
-let {username, password} = auth('username', 'password')
+let credentials = git.utils.auth('username', 'password')
+console.log(credentials)
 
 // a one-argument version is also supported
-let {username, password} = auth('username:password')
+credentials = git.utils.auth('username:password')
+console.log(credentials)
 
-// Personal Access Token Authentication
-// (note Bitbucket calls theirs App Passwords instead for some reason)
-let {username, password} = auth('username', 'personal access token')
-let {username, password} = auth('username', 'app password')
-let {username, password} = auth('personal access token') // Github (only) lets you leave out the username
+// Github/Gitlab Personal Access Token Authentication
+credentials = git.utils.auth('username', 'personal access token')
+console.log(credentials)
+
+// Bitbucket calls theirs App Passwords instead for some reason
+credentials = git.utils.auth('username', 'app password')
+console.log(credentials)
+
+// Github (only) lets you leave out the username
+credentials = git.utils.auth('personal access token')
+console.log(credentials)
 ```
