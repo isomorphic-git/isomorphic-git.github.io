@@ -8,15 +8,22 @@ Verify a signed commit
 | param                   | type [= default]                 | description                                                                                                                                         |
 | ----------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fs**, **dir**, gitdir | FSModule, string, string         | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **openpgp**             | OpenPGP interface                | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                                                              |
 | **ref**                 | string                           | A reference to the commit to verify                                                                                                                 |
 | **publicKeys**          | string                           | A PGP public key in ASCII armor format.                                                                                                             |
 | return                  | Promise\<false/Array\<string\>\> | The key ids used to sign the commit, in hex format.                                                                                                 |
 
-It is up to you to figure out what the commit's public key *should* be.
+<aside>
+OpenPGP.js is unfortunately licensed under the LGPL-3.0 and thus cannot be included in a minified bundle with
+isomorphic-git which is an MIT/BSD style library, because that would violate the "dynamically linked" stipulation.
+To use this feature you include openpgp with a separate script tag and pass it in as an argument.
+</aside>
+
+It is up to you to figure out what the commit's public key should be.
 I would use the "author" or "committer" name and email, and look up
 that person's public key from a trusted source such as the Github API.
 
-The function returns false if any of the signatures on a signed git commit are invalid.
+The function returns `false` if any of the signatures on a signed git commit are invalid.
 Otherwise, it returns an array of the key ids that were used to sign it.
 
 The `publicKeys` argument is a single string in ASCII armor format. However, it is plural "keys" because
@@ -27,6 +34,7 @@ should support verifying a single commit signed with multiple keys. Hence why th
 let repo = {fs, dir: '.'}
 let keyids = await git.verify({
   ...repo,
+  openpgp,
   ref: '<@HEAD@>',
   publicKeys: `<<@
 -----BEGIN PGP PUBLIC KEY BLOCK-----
