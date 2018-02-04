@@ -6,17 +6,15 @@ notifications:
   email: false
 node_js:
   - "node"
+branches:
+  only:
+    - source
 install:
   - cd website && npm install
 script:
   - npm run build
-branches:
-  - source
-deploy:
-- provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  local_dir: build/isomorphic-git.github.io
-  target_branch: master
-  on:
-    branch: source
+after_script:
+  - git config --global user.email "deploy@travis-ci.org"
+  - git config --global user.name "Deployment Bot"
+  - echo "machine github.com login $GIT_USER password $GITHUB_TOKEN" > ~/.netrc
+  - npm run publish-gh-pages

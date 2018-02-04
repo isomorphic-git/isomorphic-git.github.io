@@ -20,7 +20,6 @@ const siteConfig = {
   tagline: 'A pure JavaScript implementation of git for node and browsers!',
   url: 'https://isomorphic-git.github.io' /* your website url */,
   baseUrl: '/' /* base url for your project */,
-  projectName: 'isomorphic-git',
   headerLinks: [
     {
       doc: 'alphabetic',
