@@ -6,14 +6,7 @@
  */
 
 /* List of projects/orgs using your project for the users page */
-const users = [
-  {
-    caption: 'User1',
-    image: 'img/isomorphic-git-logo.svg',
-    infoLink: 'https://www.facebook.com',
-    pinned: true
-  }
-]
+const users = require('./users')
 
 const siteConfig = {
   title: 'isomorphic-git' /* title for your website */,

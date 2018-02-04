@@ -34,3 +34,23 @@ aside {
   padding-left: 0.5em;
   font-style: italic;
 }
+
+.imageAlignTop .blockImage {
+  max-width: 100%;
+}
+
+.gridBlock .twoByGridBlock img, .gridBlock .threeByGridBlock img, .gridBlock .fourByGridBlock img {
+  max-height: 80px;
+  /* height: 80px; */
+}
+
+.isomorphic-git-feature-list {
+  margin: 40px;
+  display: grid;
+  grid-gap: 40px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  text-align: left;
+}
+.isomorphic-git-feature-list li {
+  width: fit-content;
+}

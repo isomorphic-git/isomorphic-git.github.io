@@ -6,6 +6,18 @@
  */
 
 const React = require('react')
+const GoHistory = require('react-icons/lib/go/history')
+const GoKey = require('react-icons/lib/go/key')
+const GoLock = require('react-icons/lib/go/lock')
+const GoSettings = require('react-icons/lib/go/settings')
+const GoFileBinary = require('react-icons/lib/go/file-binary')
+const GoDiffModified = require('react-icons/lib/go/diff-modified')
+const GoGitBranch = require('react-icons/lib/go/git-branch')
+const GoGitCommit = require('react-icons/lib/go/git-commit')
+const GoRepo = require('react-icons/lib/go/repo')
+const GoRepoClone = require('react-icons/lib/go/repo-clone')
+const GoRepoPush = require('react-icons/lib/go/repo-push')
+const GoRepoPull = require('react-icons/lib/go/repo-pull')
 
 const CompLibrary = require('../../core/CompLibrary.js')
 const MarkdownBlock = CompLibrary.MarkdownBlock /* Used to read markdown */
@@ -108,16 +120,16 @@ const Features = props => (
   <Block layout='fourColumn'>
     {[
       {
-        content: 'This is the content of my feature',
-        image: imgUrl('isomorphic-git-logo.svg'),
+        content: 'Clone repos, create commits, push branches and more in client-side JS.',
+        image: 'https://saucelabs.com/browser-matrix/_wmhilton.svg',
         imageAlign: 'top',
-        title: 'Feature One'
+        title: 'Works In All Modern Browsers'
       },
       {
-        content: 'The content of my second feature',
-        image: imgUrl('isomorphic-git-logo.svg'),
+        content: 'It uses the same on-disk format as `git` so it works with existing repos.',
+        image: imgUrl('nodejs-new-pantone-black.png'),
         imageAlign: 'top',
-        title: 'Feature Two'
+        title: 'Works on Desktops And Servers'
       }
     ]}
   </Block>
@@ -128,8 +140,21 @@ const FeatureCallout = props => (
     className='productShowcaseSection paddingBottom'
     style={{ textAlign: 'center' }}
   >
-    <h2>Feature Callout</h2>
-    <MarkdownBlock>These are features of this project</MarkdownBlock>
+    <h2>Features</h2>
+    <ul className="isomorphic-git-feature-list">
+      <li><GoRepoClone size='3em'/> clone repos</li>
+      <li><GoRepo size='3em'/> init new repos</li>
+      <li><GoGitBranch size='3em'/> list branches and tags</li>
+      <li><GoHistory size='3em'/> list commit history</li>
+      <li><GoRepoPull size='3em'/>checkout branches</li>
+      <li><GoRepoPush size='3em'/> push branches to remotes<a title="via a proxy server">*</a></li>
+      <li><GoGitCommit size='3em'/> create new commits</li>
+      <li><GoSettings size='3em'/> read & write to .git/config</li>
+      <li><GoFileBinary size='3em'/> read & write raw git objects</li>
+      <li><GoLock size='3em'/> sign commits</li>
+      <li><GoKey size='3em'/> verify signed commits</li>
+      <li><GoDiffModified size='3em'/> working file status</li>
+    </ul>
   </div>
 )
 
@@ -191,7 +216,7 @@ const Showcase = props => {
   return (
     <div className='productShowcaseSection paddingBottom'>
       <h2>{"Who's Using This?"}</h2>
-      <p>This project is used by all these people</p>
+      <p>This project is used by:</p>
       <div className='logos'>{showcase}</div>
       <div className='more-users'>
         <a className='button' href={pageUrl('users.html', props.language)}>
