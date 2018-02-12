@@ -8,7 +8,7 @@ List branches
 | param                   | type [= default]           | description                                                                                                                                         |
 | ----------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fs**, **dir**, gitdir | FSModule, string, string   | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| remote                  | string   = undefined       | If specified, list the branches of this remote.                                                                                                     |
+| remote                  | string   = undefined       | Instead of the branches in `refs/heads`, list the branches in `refs/remotes/${remote}`.                                                             |
 | return                  | Promise\<Array\<string\>\> | Resolves successfully with an array of branch names                                                                                                 |
 
 By default it lists local branches. If a 'remote' is specified, it lists the remote's branches.

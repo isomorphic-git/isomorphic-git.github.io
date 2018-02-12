@@ -12,6 +12,7 @@ sidebar_label: Alphabetical Index
 ##### [config](config.md)
 ##### [fetch](fetch.md)
 ##### [findRoot](findRoot.md)
+##### [getRemoteInfo](getRemoteInfo.md)
 ##### [indexPack](indexPack.md)
 ##### [init](init.md)
 ##### [listBranches](listBranches.md)

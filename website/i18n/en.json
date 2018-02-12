@@ -17,6 +17,7 @@
     "dir vs gitdir": "dir vs gitdir",
     "fetch": "fetch",
     "findRoot": "findRoot",
+    "getRemoteInfo": "getRemoteInfo",
     "getting_started": "Getting Started",
     "Getting Started": "Getting Started",
     "indexPack": "indexPack",
