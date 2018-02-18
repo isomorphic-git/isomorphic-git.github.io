@@ -11,7 +11,7 @@ Initialize a new repository
 | return                  | Promise\<void\>          | Resolves successfully when filesystem operations are complete                                                                                       |
 
 ```
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 await git.init(repo)
 console.log('done')
 ```

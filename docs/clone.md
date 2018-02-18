@@ -31,12 +31,12 @@ To monitor progress, create an EventEmitter, add listeners, and pass into the fu
 Example code:
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 await git.clone({
   ...repo,
-  url: '<@https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git@>',
-  singleBranch: true,
-  depth: 1
+  url: '$input((https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git))',
+  singleBranch: $input((true)),
+  depth: $input((1))
 })
 console.log('done')
 ```

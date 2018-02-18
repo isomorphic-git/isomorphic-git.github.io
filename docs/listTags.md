@@ -11,7 +11,7 @@ List tags
 | return                  | Promise\<Array\<string\>\> | Resolves successfully with an array of tag names                                                                                                    |
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let tags = await git.listTags(repo)
 console.log(tags)
 ```

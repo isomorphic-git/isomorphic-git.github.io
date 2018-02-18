@@ -123,15 +123,15 @@ document.addEventListener('DOMContentLoaded', function listener () {
   let spans = document.querySelectorAll('code')
   for (let span of spans) {
     let currentHTML = span.innerHTML
-    if (currentHTML.includes('@')) {
-      // Indicate multi-line placeholders with <<@Here be text@>>
+    if (currentHTML.includes('$input((') || currentHTML.includes('$textarea((')) {
+      // Indicate multi-line placeholders with $textarea((Here be text))
       let newHTML = currentHTML.replace(
-        /&lt;&lt;@([\s\S]+?)@&gt;&gt;/g,
+        /\$textarea\(\(([\s\S]+?)\)\)/g,
         '<span contenteditable>$1</span>'
       )
-      // Indicate single-line (no line breaks) placeholders with <@Here be text@>
+      // Indicate single-line (no line breaks) placeholders with $input((Here be text))
       newHTML = newHTML.replace(
-        /&lt;@(.+?)@&gt;/g,
+        /\$input\(\((.+?)\)\)/g,
         '<span contenteditable onkeydown="disableEnterKey(event)">$1</span>'
       )
       // This tries to minimize needless DOM trashing

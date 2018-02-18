@@ -38,7 +38,7 @@ export interface CommitDescription {
 ```
 
 ```js
-let repo = {fs, dir: '<@.@>'}
-let commits = await git.log({...repo, depth: 5, ref: '<@master@>'})
+let repo = {fs, dir: '$input((.))'}
+let commits = await git.log({...repo, depth: $input((5)), ref: '$input((master))'})
 console.log(commits)
 ```

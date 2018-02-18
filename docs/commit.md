@@ -18,14 +18,14 @@ Create a new commit
 | return                  | Promise\<void\>          | Resolves successfully with the object ID (SHA) of the newly created commit.                                                                                         |
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let sha = await git.commit({
   ...repo,
   author: {
-    name: '<@Mr. Test@>',
-    email: '<@mrtest@example.com@>'
+    name: '$input((Mr. Test))',
+    email: '$input((mrtest@example.com))'
   },
-  message: '<@Added the a.txt file@>'
+  message: '$input((Added the a.txt file))'
 })
 console.log(sha)
 ```

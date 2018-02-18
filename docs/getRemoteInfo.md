@@ -16,7 +16,9 @@ It just communicates to a remote git server, using the first step of the `git-up
 TODO: Document the response object schema.
 
 ```js
-let info = await git.getRemoteInfo({ url: '<@https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git.git@>' })
+let info = await git.getRemoteInfo({
+  url: '$input((https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git.git))'
+})
 console.log(info)
 
 ```

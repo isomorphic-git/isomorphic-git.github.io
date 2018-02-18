@@ -24,13 +24,13 @@ The push command returns an object that describes the result of the attempted pu
 | errors | Array\<string\>  | If the overall operation threw and error, the first item will be "unpack {Overall error message}". The remaining items are individual refs that failed to be updated in the format "{ref name} {error message}". |
 
  ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let pushResponse = await git.push({
   ...repo,
-  remote: '<@origin@>',
-  ref: '<@master@>',
-  authUsername: <@process.env.GITHUB_TOKEN@>,
-  authPassword: <@process.env.GITHUB_TOKEN@>
+  remote: '$input((origin))',
+  ref: '$input((master))',
+  authUsername: $input((process.env.GITHUB_TOKEN)),
+  authPassword: $input((process.env.GITHUB_TOKEN))
 })
 console.log(pushResponse)
 ```

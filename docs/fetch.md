@@ -41,14 +41,14 @@ To monitor progress, create an EventEmitter, add listeners, and pass into the fu
 Example code:
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 await git.fetch({
   ...repo,
-  url: '<@https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git@>',
-  ref: '<@master@>',
-  depth: <@1@>,
-  singleBranch: <@true@>,
-  tags: <@false@>
+  url: '$input((https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git))',
+  ref: '$input((master))',
+  depth: $input((1)),
+  singleBranch: $input((true)),
+  tags: $input((false))
 })
 console.log('done')
 ```

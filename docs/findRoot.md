@@ -17,7 +17,7 @@ Starting at `filepath`, walks upward until it finds a directory that contains a 
 ```js
 let gitroot = await git.findRoot({
   fs,
-  filepath: '<@/path/to/some/gitrepo/path/to/some/file.txt@>'
+  filepath: '$input((/path/to/some/gitrepo/path/to/some/file.txt))'
 })
 console.log(gitroot) // '/path/to/some/gitrepo'
 ```

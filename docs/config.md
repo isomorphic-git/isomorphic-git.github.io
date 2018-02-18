@@ -20,19 +20,19 @@ If `value` is provided, it writes to the config file. Otherwise it reads from it
 - The current parser does not support the more exotic features of the git-config file format such as `[include]` and `[includeIf]`.
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 
 // Write config value
 await git.config({
   ...repo,
-  path: '<@user.name@>',
-  value: '<@Mr. Test@>'
+  path: '$input((user.name))',
+  value: '$input((Mr. Test))'
 })
 
 // Read config value
 let value = await git.config({
   ...repo,
-  path: '<@user.name@>'
+  path: '$input((user.name))'
 })
 console.log(value)
 ```

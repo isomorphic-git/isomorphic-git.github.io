@@ -18,9 +18,9 @@ If you want an up-to-date list, first do a `fetch` to that remote.
 (Which branch you fetch doesn't matter - the list of branches available on the remote is updated during the fetch handshake.)
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let branches = await git.listBranches(repo)
 console.log(branches)
-let remoteBranches = await git.listBranches({...repo, remote: '<@origin@>'})
+let remoteBranches = await git.listBranches({...repo, remote: '$input((origin))'})
 console.log(remoteBranches)
 ```

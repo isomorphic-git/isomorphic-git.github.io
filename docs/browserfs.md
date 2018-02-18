@@ -40,8 +40,8 @@ BrowserFS.configure(
 ## Write content to a file
 
 ```js
-let text = `<<@Hello World!@>>`;
-fs.writeFile('<@filename.txt@>', text, 'utf8',  err => {
+let text = `$textarea((Hello World!))`;
+fs.writeFile('$input((filename.txt))', text, 'utf8',  err => {
   if (err) {
     console.log(err);
   } else {
@@ -53,7 +53,7 @@ fs.writeFile('<@filename.txt@>', text, 'utf8',  err => {
 ## List files in a directory
 
 ```js
-let dir = '<@/@>'; // Hint: try reading the root directory '/'
+let dir = '$input((/))'; // Hint: try reading the root directory '/'
 fs.readdir(dir, (err, files) => {
   if (err) {
     console.log(err);
@@ -66,7 +66,7 @@ fs.readdir(dir, (err, files) => {
 ## Read a file
 
 ```js
-let filename = '<@filename.txt@>'; // (hint: use the file you wrote earlier)
+let filename = '$input((filename.txt))'; // (hint: use the file you wrote earlier)
 fs.readFile(filename, 'utf8', (err, data) => {
   if (err) {
     console.log(err);

@@ -48,8 +48,8 @@ export interface GitObjectDescription {
 // Example:
 // Find 'package.json' in the master branch and print it out.
 //
-let repo = {fs, dir: '<@.@>'}
-let sha = await git.resolveRef({...repo, ref: '<@master@>'})
+let repo = {fs, dir: '$input((.))'}
+let sha = await git.resolveRef({...repo, ref: '$input((master))'})
 console.log(sha)
 let { object: commit } = await git.readObject({...repo, oid: sha})
 console.log(commit)

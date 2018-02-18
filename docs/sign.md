@@ -26,14 +26,14 @@ you can technically have multiple private keys in a single ASCII armor string. T
 multiple keys, so while I haven't tested it, it should support signing a single commit with multiple keys.
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let sha = await git.sign({
   ...repo,
   openpgp,
-  privateKeys: `<<@
+  privateKeys: `$textarea((
 -----BEGIN PGP PRIVATE KEY BLOCK-----
 ...
-@>>`
+))`
 })
 console.log(sha)
 ```

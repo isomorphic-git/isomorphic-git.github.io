@@ -11,7 +11,7 @@ List all the files in the git index
 | return                  | Promise\<Array\<string\>\> | Resolves successfully with an array of branch names                                                                                                 |
 
 ```js
-let repo = {fs, dir: '<@.@>'}
+let repo = {fs, dir: '$input((.))'}
 let files = await git.listFiles(repo)
 console.log(files)
 ```

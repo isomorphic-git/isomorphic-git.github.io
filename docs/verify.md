@@ -35,11 +35,11 @@ let repo = {fs, dir: '.'}
 let keyids = await git.verify({
   ...repo,
   openpgp,
-  ref: '<@HEAD@>',
-  publicKeys: `<<@
+  ref: '$input((HEAD))',
+  publicKeys: `$textarea((
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 ...
-@>>`
+))`
 })
 console.log(keyids)
 ```

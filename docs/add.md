@@ -12,12 +12,12 @@ Add a file to the git index (aka staging area)
 | return                  | Promise\<void\>          | Resolves successfully once the git index has been updated                                                                                           |
 
  ```js
- let repo = {fs, dir: '<@.@>'}
+ let repo = {fs, dir: '$input((.))'}
  await new Promise((resolve, reject) => fs.writeFile(
-   '<@README.md@>',
-   `<<@# TEST@>>`,
+   '$input((README.md))',
+   `$textarea((# TEST))`,
    (err) => err ? reject(err) : resolve()
  ))
- await git.add({...repo, filepath: '<@README.md@>'})
+ await git.add({...repo, filepath: '$input((README.md))'})
  console.log('done')
  ```

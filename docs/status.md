@@ -29,7 +29,7 @@ The possible resolve values are:
 | return                  | Promise\<string\>        | Resolves successfully with the file's git status                                                                                                    |
 
 ```
-let repo = {fs, dir: '<@.@>'}
-let status = await git.status({...repo, filepath: '<@README.md@>'})
+let repo = {fs, dir: '$input((.))'}
+let status = await git.status({...repo, filepath: '$input((README.md))'})
 console.log(status)
 ```

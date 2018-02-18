@@ -13,9 +13,9 @@ Get the value of a symbolic ref or resolve a ref to its object id.
 | return                  | Promise\<string\>        | Resolves successfully with a SHA or the value of a symbolic ref                                                                                     |
 
 ```js
-let repo = {fs, dir: '<@.@>'}
-let currentCommit = await git.resolveRef({...repo, ref: '<@HEAD@>'})
+let repo = {fs, dir: '$input((.))'}
+let currentCommit = await git.resolveRef({...repo, ref: '$input((HEAD))'})
 console.log(currentCommit)
-let currentBranch = await git.resolveRef({...repo, ref: '<@HEAD@>', depth: 1})
+let currentBranch = await git.resolveRef({...repo, ref: '$input((HEAD))', depth: $input((1))})
 console.log(currentBranch)
 ```

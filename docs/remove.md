@@ -14,7 +14,7 @@ Note that this does NOT delete the file in the working directory.
 | return                  | Promise\<void\>          | Resolves successfully once the git index has been updated                                                                                           |
 
 ```js
-let repo = {fs, dir: '<@.@>'}
-await git.remove({...repo, filepath: '<@README.md@>'})
+let repo = {fs, dir: '$input((.))'}
+await git.remove({...repo, filepath: '$input((README.md))'})
 console.log('done')
 ```
