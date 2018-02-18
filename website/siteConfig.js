@@ -24,6 +24,10 @@ const siteConfig = {
     {
       href: 'https://github.com/isomorphic-git/isomorphic-git',
       label: 'Github'
+    },
+    {
+      href: 'https://npmjs.com/package/isomorphic-git',
+      label: 'npm'
     }
   ],
   users,
