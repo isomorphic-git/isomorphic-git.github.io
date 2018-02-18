@@ -23,7 +23,7 @@ Password in Bitbucket lingo) and use that to authenticate.
 | password | string                               |
 | return   | {username: string, password: string} |
 
-```js
+```js live
 let credentials = git.utils.auth('username', 'password')
 console.log(credentials)
 

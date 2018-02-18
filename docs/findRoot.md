@@ -14,7 +14,7 @@ Find the root git directory
 
 Starting at `filepath`, walks upward until it finds a directory that contains a subdirectory called '.git'.
 
-```js
+```js live
 let gitroot = await git.findRoot({
   fs,
   filepath: '$input((/path/to/some/gitrepo/path/to/some/file.txt))'

@@ -12,7 +12,7 @@ Get the value of a symbolic ref or resolve a ref to its object id.
 | depth                   | number                   | How many symbolic references to follow before returning                                                                                             |
 | return                  | Promise\<string\>        | Resolves successfully with a SHA or the value of a symbolic ref                                                                                     |
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 let currentCommit = await git.resolveRef({...repo, ref: '$input((HEAD))'})
 console.log(currentCommit)

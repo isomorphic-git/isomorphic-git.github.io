@@ -30,7 +30,7 @@ The `publicKeys` argument is a single string in ASCII armor format. However, it 
 you can technically have multiple public keys in a single ASCII armor string. While I haven't tested it, it
 should support verifying a single commit signed with multiple keys. Hence why the returned result is an array of key ids.
 
-```js
+```js live
 let repo = {fs, dir: '.'}
 let keyids = await git.verify({
   ...repo,

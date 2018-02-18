@@ -13,7 +13,7 @@ Note that this does NOT delete the file in the working directory.
 | **filepath**            | string                   | The path to the file to remove from the index                                                                                                       |
 | return                  | Promise\<void\>          | Resolves successfully once the git index has been updated                                                                                           |
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 await git.remove({...repo, filepath: '$input((README.md))'})
 console.log('done')

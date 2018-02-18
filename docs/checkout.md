@@ -16,7 +16,7 @@ If the branch already exists it will check out that branch. Otherwise, it will c
 
 Example code:
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 await git.checkout({...repo, ref: '$input((master))'})
 console.log('done')

@@ -23,7 +23,7 @@ The push command returns an object that describes the result of the attempted pu
 | ok     | Array\<string\>  | The first item is "unpack" if the overall operation was successful. The remaining items are the names of refs that were updated successfully.                                                                    |
 | errors | Array\<string\>  | If the overall operation threw and error, the first item will be "unpack {Overall error message}". The remaining items are individual refs that failed to be updated in the format "{ref name} {error message}". |
 
- ```js
+ ```js live
 let repo = {fs, dir: '$input((.))'}
 let pushResponse = await git.push({
   ...repo,

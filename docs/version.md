@@ -15,6 +15,6 @@ prepublishOnly script to find & replace that with the actual version number.
 | ------ | ---------------- | -------------------------------------------------------------- |
 | return | string           | the version string taken from package.json at publication time |
 
-```js
+```js live
 console.log(git.version())
 ```

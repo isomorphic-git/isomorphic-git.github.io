@@ -38,9 +38,11 @@
   },
   "guide": {
     "Getting Started": [
-      "getting_started",
-      "dir-vs-gitdir",
-      "browserfs"
+      "quickstart",
+      "browser",
+      "fs",
+      "cli",
+      "dir-vs-gitdir"
     ]
   }
 }

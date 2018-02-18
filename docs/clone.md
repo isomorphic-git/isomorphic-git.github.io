@@ -30,7 +30,7 @@ To monitor progress, create an EventEmitter, add listeners, and pass into the fu
 
 Example code:
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 await git.clone({
   ...repo,

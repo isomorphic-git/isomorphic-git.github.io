@@ -11,7 +11,7 @@ Create the .idx file for a given .pack file
 | **filepath**            | string                   | The path to the .pack file to index.                                                                                                                |
 | return                  | Promise\<void\>          | Resolves when filesystem operations are complete                                                                                                    |
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 await git.indexPack({...repo, filepath: '$input((pack-9cbd243a1caa4cb4bef976062434a958d82721a9.pack))'})
 console.log('done')

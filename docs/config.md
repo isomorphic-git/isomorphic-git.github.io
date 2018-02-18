@@ -19,7 +19,7 @@ If `value` is provided, it writes to the config file. Otherwise it reads from it
 - Currently only the local `$GIT_DIR/config` file can be read or written. However support for the global `~/.gitconfig` and system `$(prefix)/etc/gitconfig` will be added in the future.
 - The current parser does not support the more exotic features of the git-config file format such as `[include]` and `[includeIf]`.
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 
 // Write config value

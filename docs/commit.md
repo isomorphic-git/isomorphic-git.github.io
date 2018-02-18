@@ -17,7 +17,7 @@ Create a new commit
 | committer               | Object = author          | The details about the commit committer, in the same format as the author parameter. If not specified, the author details are used.                                  |
 | return                  | Promise\<void\>          | Resolves successfully with the object ID (SHA) of the newly created commit.                                                                                         |
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 let sha = await git.commit({
   ...repo,

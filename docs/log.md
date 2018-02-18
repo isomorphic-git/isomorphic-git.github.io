@@ -37,7 +37,7 @@ export interface CommitDescription {
 }
 ```
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 let commits = await git.log({...repo, depth: $input((5)), ref: '$input((master))'})
 console.log(commits)

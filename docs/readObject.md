@@ -44,7 +44,7 @@ export interface GitObjectDescription {
 }
 ```
 
-```js
+```js live
 // Example:
 // Find 'package.json' in the master branch and print it out.
 //

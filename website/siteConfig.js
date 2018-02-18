@@ -18,7 +18,7 @@ const siteConfig = {
       doc: 'alphabetic',
       label: 'API Docs'
     },
-    { doc: 'getting_started', label: 'Manual' },
+    { doc: 'quickstart', label: 'Guide' },
     { page: 'help', label: 'Help' },
     // { blog: true, label: 'Blog' },
     {
@@ -57,6 +57,7 @@ const siteConfig = {
     '/js/browserfs.js',
     'https://unpkg.com/isomorphic-git',
     'https://unpkg.com/openpgp@2.6.2/dist/openpgp.js',
+    'https://wzrd.in/standalone/pify@latest',
     '/js/fs.js',
     '/js/object-inspector.min.js',
     '/js/tutorial.js',

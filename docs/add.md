@@ -11,7 +11,7 @@ Add a file to the git index (aka staging area)
 | **filepath**            | string                   | The path to the file to add to the index                                                                                                            |
 | return                  | Promise\<void\>          | Resolves successfully once the git index has been updated                                                                                           |
 
- ```js
+ ```js live
  let repo = {fs, dir: '$input((.))'}
  await new Promise((resolve, reject) => fs.writeFile(
    '$input((README.md))',

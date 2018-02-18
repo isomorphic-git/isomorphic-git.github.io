@@ -25,7 +25,7 @@ The `privateKeys` argument is a single string in ASCII armor format. However, it
 you can technically have multiple private keys in a single ASCII armor string. The openpgp.sign() function accepts
 multiple keys, so while I haven't tested it, it should support signing a single commit with multiple keys.
 
-```js
+```js live
 let repo = {fs, dir: '$input((.))'}
 let sha = await git.sign({
   ...repo,

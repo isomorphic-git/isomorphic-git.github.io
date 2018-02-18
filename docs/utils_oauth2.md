@@ -20,7 +20,7 @@ Lucky for you, I already looked up and codified it for you.
 
 I will gladly accept pull requests for more companies' conventions.
 
-```js
+```js live
 let credentials = git.utils.oauth2('github', 'token')
 console.log(credentials)
 
