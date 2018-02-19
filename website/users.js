@@ -2,7 +2,7 @@
 const users = [
   {
     caption: 'nde',
-    image: 'img/usedby/nde.png',
+    image: '/img/usedby/nde.png',
     infoLink: 'https://github.com/wmhilton/nde',
     pinned: true
   }
