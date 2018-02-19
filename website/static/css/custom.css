@@ -54,3 +54,29 @@ aside {
 .isomorphic-git-feature-list li {
   width: fit-content;
 }
+
+.input {
+  margin: 4px;
+  border: 1px solid #2E8555;
+  border-radius: 3px;
+  color: #2E8555;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2em;
+  padding: 10px;
+  transition: background 0.3s, color 0.3s;
+}
+
+.try-it-out {
+  line-height: 2em;
+}
+
+#giturl_branches,
+#giturl_tags {
+  display: inline-block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

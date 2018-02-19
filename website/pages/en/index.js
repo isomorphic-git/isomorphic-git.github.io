@@ -158,43 +158,41 @@ const FeatureCallout = props => (
   </div>
 )
 
+const TryGitRemoteInfo = props => (
+  <div className="try-it-out">
+    <h2>Try it out</h2>
+    <label for="giturl">Enter a git URL:</label>
+    <div>
+      <input id="giturl_input" name="giturl" type="text" className="input" defaultValue="https://github.com/facebook/react" size="50"/>
+      <button id="giturl_button" type="button" className="button" value="Fetch Info">Fetch Info</button>
+      <div><b>Branches:</b> <span id="giturl_branches"></span></div>
+      <div><b>Tags:</b> <span id="giturl_tags"></span></div>
+    </div>
+  </div>
+)
+
 const LearnHow = props => (
-  <Block background='light'>
-    {[
-      {
-        content: 'Talk about learning how to use this',
-        image: imgUrl('isomorphic-git-logo.svg'),
-        imageAlign: 'right',
-        title: 'Learn How'
-      }
-    ]}
-  </Block>
-)
+  <Container
+    padding={['bottom', 'top']}
+    id={props.id}
+    background='light'
+  >
+    <div style={{ float: 'right', width: '40%' }}>
+      <TryGitRemoteInfo/>
+    </div>
+    <MarkdownBlock>{`
+isomorphic-git is a pure JavaScript implementation of git that works in node and browser environments (including WebWorkers and ServiceWorkers).
+This means it can be used to read and write to to git repositories, as well as fetch from and push to git remotes like Github.
 
-const TryOut = props => (
-  <Block id='try'>
-    {[
-      {
-        content: 'Talk about trying this out',
-        image: imgUrl('isomorphic-git-logo.svg'),
-        imageAlign: 'left',
-        title: 'Try it Out'
-      }
-    ]}
-  </Block>
-)
+isomorphic-git aims for 100% interoperability with the canonical git implementation.
+This means it does all its operations by modifying files in a ".git" directory just like the git you are used to.
+The included isogit CLI can operate on git repositories on your desktop or server.
 
-const Description = props => (
-  <Block background='dark'>
-    {[
-      {
-        content: 'This is another description of how this project is useful',
-        image: imgUrl('isomorphic-git-logo.svg'),
-        imageAlign: 'right',
-        title: 'Description'
-      }
-    ]}
-  </Block>
+isomorphic-git aims to be a complete solution with no assembly required.
+The API has been designed with modern tools like Rollup and Webpack in mind.
+By providing functionality as individual functions, code bundlers can produce smaller bundles by including only the functions your application uses.
+    `}</MarkdownBlock>
+  </Container>
 )
 
 const Showcase = props => {
@@ -238,8 +236,6 @@ class Index extends React.Component {
           <Features />
           <FeatureCallout />
           <LearnHow />
-          <TryOut />
-          <Description />
           <Showcase language={language} />
         </div>
       </div>

@@ -20,7 +20,7 @@ const siteConfig = {
     },
     { doc: 'quickstart', label: 'Guide' },
     { page: 'help', label: 'Help' },
-    // { blog: true, label: 'Blog' },
+    { blog: true, label: 'Blog' },
     {
       href: 'https://github.com/isomorphic-git/isomorphic-git',
       label: 'Github'
@@ -61,6 +61,7 @@ const siteConfig = {
     '/js/fs.js',
     '/js/object-inspector.min.js',
     '/js/tutorial.js',
+    '/js/try-it-out-giturl.js',
     '//static.getclicky.com/js',
     '/js/analytics.js'
   ],
