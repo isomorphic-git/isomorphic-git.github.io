@@ -67,7 +67,14 @@ const siteConfig = {
   ],
   // stylesheets: ['./css/tutorial.css'],
   // You may provide arbitrary config keys to be used as needed by your template.
-  repoUrl: 'https://github.com/isomorphic-git/isomorphic-git'
+  repoUrl: 'https://github.com/isomorphic-git/isomorphic-git',
+  algolia: {
+    apiKey: 'ac63b0df4513e31143eef156f520056c',
+    indexName: 'isomorphic_git',
+    algoliaOptions: {
+      typoTolerance: 'min'
+    }
+  }
 }
 
 module.exports = siteConfig
