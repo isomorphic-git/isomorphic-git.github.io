@@ -19,6 +19,8 @@ sidebar_label: Alphabetical Index
 ##### [listFiles](listFiles.md)
 ##### [listTags](listTags.md)
 ##### [log](log.md)
+##### [merge](merge.md)
+##### [pull](pull.md)
 ##### [push](push.md)
 ##### [readObject](readObject.md)
 ##### [remove](remove.md)
