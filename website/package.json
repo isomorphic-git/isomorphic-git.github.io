@@ -10,8 +10,8 @@
     "rename-version": "docusaurus-rename-version"
   },
   "devDependencies": {
-    "alex": "^5.1.0",
-    "docusaurus": "^1.0.7",
-    "react-icons": "^2.2.7"
+    "alex": "5.1.0",
+    "docusaurus": "1.0.9",
+    "react-icons": "2.2.7"
   }
 }
