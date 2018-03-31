@@ -10,7 +10,7 @@ Initialize a new repository
 | **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
 | return                  | Promise\<void\>          | Resolves successfully when filesystem operations are complete                                                                                       |
 
-```
+```js live
 let repo = {fs, dir: '$input((.))'}
 await git.init(repo)
 console.log('done')
