@@ -28,7 +28,7 @@ The possible resolve values are:
 | **filepath**            | string                   | The path to the file to query                                                                                                                       |
 | return                  | Promise\<string\>        | Resolves successfully with the file's git status                                                                                                    |
 
-```
+```js live
 let repo = {fs, dir: '$input((.))'}
 let status = await git.status({...repo, filepath: '$input((README.md))'})
 console.log(status)
