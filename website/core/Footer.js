@@ -50,11 +50,6 @@ class Footer extends React.Component {
               User Showcase
             </a>
             <a href='https://gitter.im/isomorphic-git/Lobby'>Project Chat</a>
-          </div>
-          <div>
-            <h5>More</h5>
-            <a href={this.props.config.baseUrl + 'blog'}>Blog</a>
-            <a href='https://github.com/isomorphic-git/'>Source Code</a>
             <a
               className='github-button'
               href={this.props.config.repoUrl}
@@ -64,12 +59,13 @@ class Footer extends React.Component {
               data-count-aria-label='# stargazers on GitHub'
               aria-label='Star this project on GitHub'
             >
-              Star
+              Github
             </a>
-            <a title="Web Analytics" href="http://clicky.com/101095086">
-              <img alt="Web Analytics" src="//static.getclicky.com/media/links/badge.gif" border="0" />
-            </a>
-            <noscript><p><img alt="Clicky" width="1" height="1" src="//in.getclicky.com/101095086ns.gif" /></p></noscript>
+          </div>
+          <div>
+            <h5>More</h5>
+            <a href={this.props.config.baseUrl + 'blog'}>Blog</a>
+            <a href='https://docusaurus.io/en/'>Created with Docusaurus</a>
           </div>
         </section>
       </footer>
