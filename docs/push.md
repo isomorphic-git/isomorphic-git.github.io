@@ -13,6 +13,7 @@ Push a branch
 | url                     | string=undefined         | The URL of the remote git server. The default is the value set in the git config for that remote.                                                   |
 | authUsername            | string=undefined         | The username to use with Basic Auth                                                                                                                 |
 | authPassword            | string=undefined         | The password to use with Basic Auth                                                                                                                 |
+| emitter                 | EventEmitter = undefined | Listeners to this EventEmitter can receive 'message' events.                                                                                        |
 | return                  | Promise\<PushResponse\>  | Resolves successfully when push completes with a detailed description of the operation from the server.                                             |
 
 The push command returns an object that describes the result of the attempted push operation.
@@ -22,6 +23,14 @@ The push command returns an object that describes the result of the attempted pu
 | ------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ok     | Array\<string\>  | The first item is "unpack" if the overall operation was successful. The remaining items are the names of refs that were updated successfully.                                                                    |
 | errors | Array\<string\>  | If the overall operation threw and error, the first item will be "unpack {Overall error message}". The remaining items are individual refs that failed to be updated in the format "{ref name} {error message}". |
+
+
+To monitor progress, create an EventEmitter, add listeners, and pass into the function as the `emitter` argument.
+
+| event   | type   | description                                                                                          |
+| ------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| message | string | The messages from the remote git server, normally shown in the git console prefixed with "`remote:`" |
+
 
  ```js live
 let repo = {fs, dir: '$input((.))'}

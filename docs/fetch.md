@@ -19,7 +19,7 @@ Fetch commits from a remote repository
 | exclude                 | Array\<string\> = [ ]              | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.                                       |
 | relative                | boolean  = false                   | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.                                       |
 | tags                    | boolean  = false                   | Also fetch tags                                                                                                                                     |
-| emitter                 | EventEmitter = undefined           | Listeners to this EventEmitter will receive progress events.                                                                                        |
+| emitter                 | EventEmitter = undefined           | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                                                         |
 | return                  | Promise\<FetchResponse\>           | Resolves successfully when fetch completes                                                                                                          |
 
 The object returned has the following schema:
