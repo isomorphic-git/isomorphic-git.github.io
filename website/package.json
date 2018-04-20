@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "alex": "5.1.0",
-    "docusaurus": "1.0.11",
+    "docusaurus": "1.0.12",
     "react-icons": "2.2.7"
   }
 }
