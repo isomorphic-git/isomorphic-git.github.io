@@ -2,16 +2,13 @@ document.addEventListener('DOMContentLoaded', function listener () {
   document.removeEventListener('DOMContentLoaded', listener)
   let $input = document.getElementById('giturl_input')
   let $button = document.getElementById('giturl_button')
-  console.log($input)
   const change = async function change (event) {
     let value = $input.value
-    console.log(value)
     value = value.replace(/^https?:\/\//, '')
     if (!value.endsWith('.git')) value += '.git'
     let info = await git.getRemoteInfo({
       url: `https://cors-buster-jfpactjnem.now.sh/${value}`
     })
-    console.log(info)
     const limit = 100;
     if (info.refs.tags) {
       let $tags = document.getElementById('giturl_tags')
@@ -24,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function listener () {
       $branches.innerText = branchestext.slice(0, limit)
     }
   }
-
-  $input.addEventListener('change', change)
-  $button.addEventListener('click', change)
+  if ($input && $button) {
+    $input.addEventListener('change', change)
+    $button.addEventListener('click', change)
+  }
 })
