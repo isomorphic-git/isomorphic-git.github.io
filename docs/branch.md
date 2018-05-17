@@ -8,7 +8,7 @@ Create a new branch
 | param                   | type [= default]         | description                                                                                                                                         |
 | ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **ref**                 | string                   | Which branch to checkout.                                                                                                                           |
+| **ref**                 | string                   | What to name the branch                                                                                                                           |
 | return                  | Promise\<void\>          | Resolves successfully when filesystem operations are complete   
 
 ```js live
