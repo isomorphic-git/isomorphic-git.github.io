@@ -6,6 +6,7 @@ sidebar_label: Alphabetical Index
 &nbsp;
 
 ##### [add](add.md)
+##### [branch](branch.md)
 ##### [checkout](checkout.md)
 ##### [clone](clone.md)
 ##### [commit](commit.md)
