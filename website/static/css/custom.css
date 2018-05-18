@@ -1,13 +1,10 @@
 /* your custom css */
 
 .navListItemActive {
-  background-image: linear-gradient(to right, white, transparent);
+  font-weight: bold;
 }
 .navListItem:hover {
-  background-image: linear-gradient(to right, white, transparent);
-}
-.navListItem a {
-  width: 100%;
+  font-weight: bold;
 }
 
 table tr th code, table tr td code {

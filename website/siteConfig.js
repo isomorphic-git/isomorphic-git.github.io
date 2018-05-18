@@ -20,7 +20,6 @@ const siteConfig = {
       label: 'API Docs'
     },
     { doc: 'quickstart', label: 'Guide' },
-    { page: 'help', label: 'Help' },
     { blog: true, label: 'Blog' },
     {
       href: 'https://github.com/isomorphic-git/isomorphic-git',
