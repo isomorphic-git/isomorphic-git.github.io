@@ -44,7 +44,7 @@ Example code:
 let repo = {fs, dir: '$input((.))'}
 await git.fetch({
   ...repo,
-  url: '$input((https://cors-buster-jfpactjnem.now.sh/github.com/isomorphic-git/isomorphic-git))',
+  url: '$input((https://cors-buster-tbgktfqyku.now.sh/github.com/isomorphic-git/isomorphic-git))',
   ref: '$input((master))',
   depth: $input((1)),
   singleBranch: $input((true)),

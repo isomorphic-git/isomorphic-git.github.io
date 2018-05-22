@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function listener () {
     value = value.replace(/^https?:\/\//, '')
     if (!value.endsWith('.git')) value += '.git'
     let info = await git.getRemoteInfo({
-      url: `https://cors-buster-jfpactjnem.now.sh/${value}`
+      url: `https://cors-buster-tbgktfqyku.now.sh/${value}`
     })
     const limit = 100;
     if (info.refs.tags) {

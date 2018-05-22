@@ -20,5 +20,5 @@ ACCESS_CONTROL_ALLOW_ORIGIN = *
 ```
 
 Hopefully Gitlab, Bitbucket, and Github will follow suit, enabling a new generation of web applications that
-interact directly with source code repositories. Until then, you can continue using [cors-buster](https://cors-buster-jfpactjnem.now.sh/)
+interact directly with source code repositories. Until then, you can continue using [cors-buster](https://cors-buster-tbgktfqyku.now.sh/)
 to interact with these sites.
