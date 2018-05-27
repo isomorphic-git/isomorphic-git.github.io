@@ -20,9 +20,10 @@ but it also abbreviates the result by removing the (usually unnecessary) "refs/"
 ```js live
 let repo = {fs, dir: '$input((.))'}
 
-// Write config value
-await git.currentBranch({
+// Get the current branch name
+let branch = await git.currentBranch({
   ...repo,
   fullname: $input((false))
 })
+console.log(branch)
 ```
