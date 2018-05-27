@@ -11,6 +11,7 @@ sidebar_label: Alphabetical Index
 ##### [clone](clone.md)
 ##### [commit](commit.md)
 ##### [config](config.md)
+##### [currentBranch](currentBranch.md)
 ##### [fetch](fetch.md)
 ##### [findRoot](findRoot.md)
 ##### [getRemoteInfo](getRemoteInfo.md)

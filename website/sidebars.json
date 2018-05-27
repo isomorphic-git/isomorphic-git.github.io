@@ -6,6 +6,7 @@
     "Basic Commands": [
       "init",
       "clone",
+      "currentBranch",
       "listBranches",
       "listTags",
       "listFiles",
