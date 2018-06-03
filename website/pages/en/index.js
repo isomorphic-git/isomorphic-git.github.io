@@ -161,7 +161,7 @@ const FeatureCallout = props => (
 const TryGitRemoteInfo = props => (
   <div className="try-it-out">
     <h2>Try it out</h2>
-    <label for="giturl">Enter a git URL:</label>
+    <label htmlFor="giturl">Enter a git URL:</label>
     <div>
       <input id="giturl_input" name="giturl" type="text" className="input" defaultValue="https://github.com/facebook/react" size="50"/>
       <button id="giturl_button" type="button" className="button" value="Fetch Info">Fetch Info</button>
