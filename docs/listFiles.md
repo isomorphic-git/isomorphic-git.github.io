@@ -17,9 +17,9 @@ List all the files in the git index or a commit
 ```js live
 let repo = {fs, dir: '$input((.))'}
 // All the files in the previous commit
-files = await git.listFiles({...repo, ref: '$input((HEAD))'})
+let files = await git.listFiles({...repo, ref: '$input((HEAD))'})
 console.log(files)
 // All the files in the current staging area
-let files = await git.listFiles(repo)
+files = await git.listFiles(repo)
 console.log(files)
 ```
