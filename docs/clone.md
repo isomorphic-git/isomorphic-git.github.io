@@ -22,6 +22,8 @@ Clone a repository
 | emitter                 | EventEmitter = undefined           | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                                                         |
 | return                  | Promise\<void\>                    | Resolves successfully when clone completes                                                                                                          |
 
+> Need to use a Personal Access Token or OAuth? See the [`utils.auth`](utils_auth.html) and [`utils.oauth2`](utils_oauth2.html) functions.
+
 To monitor progress, create an EventEmitter, add listeners, and pass into the function as the `emitter` argument.
 
 | event    | type                                                                            | description                                                                     |

@@ -22,6 +22,8 @@ Fetch commits from a remote repository
 | emitter                 | EventEmitter = undefined           | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                                                         |
 | return                  | Promise\<FetchResponse\>           | Resolves successfully when fetch completes                                                                                                          |
 
+> Need to use a Personal Access Token or OAuth? See the [`utils.auth`](utils_auth.html) and [`utils.oauth2`](utils_oauth2.html) functions.
+
 The object returned has the following schema:
 
 ```ts

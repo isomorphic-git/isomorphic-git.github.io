@@ -16,6 +16,8 @@ Push a branch
 | emitter                 | EventEmitter = undefined | Listeners to this EventEmitter can receive 'message' events.                                                                                        |
 | return                  | Promise\<PushResponse\>  | Resolves successfully when push completes with a detailed description of the operation from the server.                                             |
 
+> Need to use a Personal Access Token or OAuth? See the [`utils.auth`](utils_auth.html) and [`utils.oauth2`](utils_oauth2.html) functions.
+
 The push command returns an object that describes the result of the attempted push operation.
 *Notes:* If there were no errors, then there will be no `errors` property. There can be a mix of `ok` messages and `errors` messages.
 
