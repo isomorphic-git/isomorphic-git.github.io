@@ -29,7 +29,7 @@ sidebar_label: Alphabetical Index
 ##### [resolveRef](resolveRef.md)
 ##### [sign](sign.md)
 ##### [status](status.md)
-##### [utils.auth](utils_auth.md)
-##### [utils.oauth2](utils_oauth2.md)
+##### [utils.auth](utils_auth.md) [deprecated]
+##### [utils.oauth2](utils_oauth2.md) [deprecated]
 ##### [verify](verify.md)
 ##### [version](version.md)

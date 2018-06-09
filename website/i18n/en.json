@@ -7,6 +7,8 @@
     "add": "add",
     "alphabetic": "All Commands",
     "Alphabetical Index": "Alphabetical Index",
+    "authentication": "Authentication",
+    "Authentication": "Authentication",
     "branch": "branch",
     "checkout": "checkout",
     "clone": "clone",
@@ -62,7 +64,8 @@
     "Basic Commands": "Basic Commands",
     "PGP Signing": "PGP Signing",
     "Plumbing Commands": "Plumbing Commands",
-    "Utility Commands": "Utility Commands",
+    "Misc Commands": "Misc Commands",
+    "Deprecated Commands": "Deprecated Commands",
     "Getting Started": "Getting Started"
   },
   "pages-strings": {
