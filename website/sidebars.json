@@ -34,10 +34,12 @@
       "readObject",
       "indexPack"
     ],
-    "Utility Commands": [
-      "utils_auth",
-      "utils_oauth2",
+    "Misc Commands": [
       "version"
+    ],
+    "Deprecated Commands": [
+      "utils_auth",
+      "utils_oauth2"
     ]
   },
   "guide": {
@@ -45,6 +47,7 @@
       "quickstart",
       "browser",
       "fs",
+      "authentication",
       "cli",
       "dir-vs-gitdir"
     ]

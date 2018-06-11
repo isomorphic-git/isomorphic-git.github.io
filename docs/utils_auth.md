@@ -3,6 +3,11 @@ title: auth
 sidebar_label: utils.auth
 ---
 
+> **Deprecated**
+> This will be removed in a the 1.0.0 version of Isomorphic-Git.
+>
+> This functionality is now provided by the [`username`, `password`, and `token`](./authentication.html) arguments
+
 Use with [push](push.md) and [fetch](fetch.md) to set Basic Authentication headers.
 This works for basic username / password auth, or the newer username / token auth
 that is often required if 2FA is enabled.

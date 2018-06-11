@@ -3,6 +3,11 @@ title: oauth2
 sidebar_label: utils.oauth2
 ---
 
+> **Deprecated**
+> This will be removed in the 1.0.0 version of Isomorphic-Git.
+>
+> This functionality is now provided by the [`oauth2format` and `token`](./authentication.html) arguments
+
 | param       | type [= default]                     |
 | ----------- | ------------------------------------ |
 | **company** | string                               |
