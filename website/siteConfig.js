@@ -57,7 +57,7 @@ const siteConfig = {
     '/js/browserfs.js',
     'https://unpkg.com/isomorphic-git',
     'https://unpkg.com/openpgp@2.6.2/dist/openpgp.js',
-    'https://wzrd.in/standalone/pify@latest',
+    '/js/pify.js',
     '/js/fs.js',
     '/js/object-inspector.min.js',
     '/js/tutorial.js',
