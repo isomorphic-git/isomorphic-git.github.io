@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "serve",
+    "build": "cd website && npm run build"
+  },
+  "dependencies": {
+    "serve": "*"
+  }
+}
