@@ -1,0 +1,5 @@
+{
+  "static": {
+    "public": "website/build/isomorphic-git.github.io"
+  }
+}
