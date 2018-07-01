@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "start": "serve",
+    "build": "cd website && npm run build"
+  },
+  "dependencies": {
+    "serve": "*"
+  },
+  "devDependencies": {
+    "alex": "5.1.0",
+    "docusaurus": "1.1.5",
+    "react-icons": "2.2.7"
+  }
+}
