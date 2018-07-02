@@ -72,15 +72,6 @@ Let's see what the recent history of this branch looks like.
 await git.log({fs, dir})
 ```
 
-Notice if you expand the very last log object you'll see it is actually an error message.
-That's because we only fetched 10 commits of history - we don't have the 11th commit.
-
-If we don't want that error at the end of the array, we can tell git.log exactly how deep to go:
-
-```js live
-await git.log({fs, dir, depth: $input((10))})
-```
-
 Git is used to track files. Let's see what kind of file things we can do!
 
 git.status is a major one. That let's us compare the working directory file to the current branch.
@@ -97,8 +88,8 @@ await pfs.writeFile(`${dir}/README.md`, 'Very short README', 'utf8')
 await git.status({fs, dir, filepath: 'README.md'})
 ```
 
-The status is "*modified" with a star.
-Text editors sometimes use a "*" in the title bar to indicate a file has unsaved changes.
+The status is "\*modified" with a star.
+Text editors sometimes use a "\*" in the title bar to indicate a file has unsaved changes.
 That's what is going on here - we've made changes to the file but we haven't added those changes to the git "staging area".
 
 ```js live
@@ -115,7 +106,7 @@ await pfs.writeFile(`${dir}/newfile.txt`, 'Hello World', 'utf8')
 await git.status({fs, dir, filepath: 'newfile.txt'})
 ```
 
-"*added" means the file has been added, but not staged. Simple to fix:
+"\*added" means the file has been added, but not staged. Simple to fix:
 
 ```js live
 await git.add({fs, dir, filepath: 'newfile.txt'})
@@ -174,6 +165,7 @@ commits = await git.log({fs, dir, depth: 1})
 commits[0]
 ```
 
+<!--
 I just had a brilliant idea. What if instead of starting out cloning `isomorphic-git`
 I had you the user create a new Github repo at the beginning with a default 'LICENSE.md' and 'README.md'?
 Then we could actually push the changes we've made here in this last step.
@@ -182,3 +174,4 @@ When you create the repo, I'll have to add instructions for creating an access t
 you can push the results. Wait, Github doesn't allow you to specify write permissions for an individual repo?
 Grr now they'll have to create an organization... wait that's a permanent name thing... ugh. I need
 to build a bot to automate this thing. It can create the repo, then give *you* access to it. Or something.
+-->
