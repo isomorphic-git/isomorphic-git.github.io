@@ -6,7 +6,7 @@ sidebar_label: Quick Start
 
 ## Node Quick Start
 
-Try out the interactive [Quick Start guide on Runkit](https://runkit.com/wmhilton/5a89cd94303ded001277664c)
+Try out the interactive [Quick Start guide on Runkit](https://runkit.com/wmhilton/isomorphic-git-quick-start)
 
 ## Browser Quick Start
 
