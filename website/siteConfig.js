@@ -59,6 +59,7 @@ const siteConfig = {
     'https://unpkg.com/openpgp@2.6.2/dist/openpgp.js',
     '/js/pify.js',
     '/js/fs.js',
+    'https://unpkg.com/@webcomponents/shadydom',
     '/js/object-inspector.min.js',
     '/js/tutorial.js',
     '/js/try-it-out-giturl.js',
