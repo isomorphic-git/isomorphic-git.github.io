@@ -1,0 +1,294 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Blog · isomorphic-git</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta property="og:title" content="Blog · isomorphic-git"/><meta property="og:type" content="website"/><meta property="og:url" content="https://isomorphic-git.github.io/index.html"/><meta property="og:description" content="A pure JavaScript implementation of git for node and browsers!"/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://isomorphic-git.github.io/blog/atom.xml" title="isomorphic-git Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://isomorphic-git.github.io/blog/feed.xml" title="isomorphic-git Blog RSS Feed"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="/js/browserfs.js"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.js"></script><script type="text/javascript" src="/js/pify.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script><script type="text/javascript" src="https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js"></script><link rel="stylesheet" href="/css/main.css"/></head><body class=""><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/isomorphic-git-logo.svg" alt="isomorphic-git"/><h2 class="headerTitleWithLogo">isomorphic-git</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/alphabetic.html" target="_self">API Docs</a></li><li class=""><a href="/docs/quickstart.html" target="_self">Guide</a></li><li class="siteNavGroupActive siteNavItemActive"><a href="/blog" target="_self">Blog</a></li><li class=""><a href="https://github.com/isomorphic-git/isomorphic-git" target="_self">Github</a></li><li class=""><a href="https://npmjs.com/package/isomorphic-git" target="_self">npm</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>Recent Posts</span></h2></div><div class="navGroups"><div class="navGroup navGroupActive"><h3>Recent Posts</h3><ul><li class="navListItem"><a class="navItem" href="/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html">Gogs adds CORS headers for isomorphic-git</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/04/02/contributing-workflow.html">Contributing Workflow</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/02/18/introducing-isomorphic-git.html">Introducing `isomorphic-git`</a></li></ul></div></div></section></div><script>
+          var toggler = document.getElementById('navToggler');
+          var nav = document.getElementById('docsNav');
+          toggler.onclick = function() {
+            nav.classList.toggle('docsSliderActive');
+          };
+        </script></nav></div><div class="container mainContainer documentContainer postContainer blogContainer"><div class="wrapper"><div class="posts"><div class="post"><header class="postHeader"><h1><a href="/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html">Gogs adds CORS headers for isomorphic-git</a></h1><p class="post-meta">April 7, 2018</p><div class="authorBlock"><p class="post-authorName"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener">William Hilton</a></p><div class="authorPhoto"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener"><img src="https://graph.facebook.com/551965935/picture/?height=200&amp;width=200" alt="William Hilton"/></a></div></div></header><article class="post-content"><div><span><p>The Go Git Service (<a href="https://gogs.io">gogs.io</a>) is already the &quot;easiest, fastest, and most painless way of setting up a self-hosted Git service.&quot;
+And now because of a small <a href="https://github.com/gogits/gogs/pull/4970/files">pull request</a> that got accepted,
+I am excited to announce that on 2018-03-31 with the release of <a href="https://github.com/gogits/gogs/releases/tag/v0.11.43">Gogs v0.11.43</a>,
+Gogs became the first git server to fully support CORS with the Git Smart HTTP protocol!!
+This means you can do <strong>cross-domain fetch and push</strong> operations in the browser using isomorphic-git
+<strong>without using a proxy server</strong>.</p>
+<p>To enable CORS, edit the Gogs main config file, <code>custom/conf/app.ini</code>, and add the following:</p>
+<pre><code class="hljs css ini"><span class="hljs-section">[http]</span>
+<span class="hljs-attr">ACCESS_CONTROL_ALLOW_ORIGIN</span> = *
+</code></pre>
+<p>Hopefully Gitlab, Bitbucket, and Github will follow suit, enabling a new generation of web applications that
+interact directly with source code repositories. Until then, you can continue using <a href="https://cors-buster-tbgktfqyku.now.sh/">cors-buster</a>
+to interact with these sites.</p>
+</span></div></article></div><div class="post"><header class="postHeader"><h1><a href="/blog/2018/04/02/contributing-workflow.html">Contributing Workflow</a></h1><p class="post-meta">April 2, 2018</p><div class="authorBlock"><p class="post-authorName"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener">William Hilton</a></p><div class="authorPhoto"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener"><img src="https://graph.facebook.com/551965935/picture/?height=200&amp;width=200" alt="William Hilton"/></a></div></div></header><article class="post-content"><div><span><p>I have gotten questions along the lines of &quot;how do I get started working on the code&quot;?
+So I thought I would walk through what my development process looks like.</p>
+<p>Step one: Pick an issue.
+Today I feel like knocking out an easy bug that I should already know how to fix.
+I will work on <a href="https://github.com/isomorphic-git/isomorphic-git/issues/107">Error when committing without &quot;author&quot; #107</a>.</p>
+<p>Step two: checkout the master branch and do &quot;git pull --ff-only&quot; to make sure I'm working on the latest code.
+This is almost always necessary because the master branch is protected by robots and enforces a &quot;merge only&quot; policy, so you never push or work on the master branch directly.
+(It gets updated through pull requests when they get merged.)</p>
+<p>Step three: Create a new branch with a descriptive name.
+I'm not feeling descriptive though so I'll break my own rule and just call the branch 'issue-107'.</p>
+<p>Step four: Update the unit tests.
+This is the Test Driven Development (TDD) part of the project.
+90% of the time, and nearly 100% of the time for fixing bugs, I know what behavior I want to see in the end, even before I start coding.
+In this case, I want attempting to make a commit without an author throw an error.</p>
+<p>Here's what that test looks like.
+It's in the &quot;<code>commit</code>&quot; function, so its tests go in the &quot;<code>__tests__/test-commit.js</code>&quot; file.
+There is already a test for making a commit, so I'll copy and paste it and then modify it to assert it throws a specific error.</p>
+<pre><code class="hljs css js">it(<span class="hljs-string">'throw error if missing author'</span>, <span class="hljs-keyword">async</span> () =&gt; {
+  <span class="hljs-comment">// Setup</span>
+  <span class="hljs-keyword">let</span> { fs, dir, gitdir } = <span class="hljs-keyword">await</span> makeFixture(<span class="hljs-string">'test-commit'</span>)
+  <span class="hljs-comment">// Test</span>
+  <span class="hljs-keyword">let</span> error = <span class="hljs-literal">null</span>
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> commit({
+      fs,
+      gitdir,
+      <span class="hljs-attr">author</span>: {
+        <span class="hljs-attr">email</span>: <span class="hljs-string">'mrtest@example.com'</span>,
+        <span class="hljs-attr">timestamp</span>: <span class="hljs-number">1262356920</span>
+      },
+      <span class="hljs-attr">message</span>: <span class="hljs-string">'Initial commit'</span>
+    })
+  } <span class="hljs-keyword">catch</span> (err) {
+    error = err.message
+  }
+  expect(error).toBe(<span class="hljs-string">'Author name and email must be specified as an argument or in the .git/config file'</span>)
+  <span class="hljs-comment">// reset for test 2</span>
+  error = <span class="hljs-literal">null</span>
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> commit({
+      fs,
+      gitdir,
+      <span class="hljs-attr">author</span>: {
+        <span class="hljs-attr">name</span>: <span class="hljs-string">'Mr. Test'</span>,
+        <span class="hljs-attr">timestamp</span>: <span class="hljs-number">1262356920</span>
+      },
+      <span class="hljs-attr">message</span>: <span class="hljs-string">'Initial commit'</span>
+    })
+  } <span class="hljs-keyword">catch</span> (err) {
+    error = err.message
+  }
+  expect(error).toBe(<span class="hljs-string">'Author name and email must be specified as an argument or in the .git/config file'</span>)
+})
+</code></pre>
+<p>Now I run <a href="https://facebook.github.io/jest/">jest</a> in watch mode, filtering against the &quot;commit&quot; test.
+If I did it right, the test should fail.</p>
+<pre><code class="hljs css sh">&gt; jest commit --watch
+</code></pre>
+<p>I forgot that the signed commit test with OpenPGP takes quite a while, and the &quot;listCommits&quot; test matches that filter too.
+So it is 21 seconds before I get my lovely error:</p>
+<pre><code class="hljs css sh"> PASS  __tests__\<span class="hljs-built_in">test</span>-listCommits.js (10.628s)
+ FAIL  __tests__\<span class="hljs-built_in">test</span>-commit.js (20.085s)
+  ● commit › throw error <span class="hljs-keyword">if</span> missing author
+
+    expect(received).toBe(expected)
+
+    Expected value to be (using Object.is):
+      <span class="hljs-string">"Author name and email must be specified as an argument or in the .git/config file"</span>
+    Received:
+      <span class="hljs-string">"Cannot read property '_named' of undefined"</span>
+
+      43 |     expect(error).toBe(<span class="hljs-string">'Author name and email must be specified as an argument or in the .git/config file'</span>)
+      44 |     // reset <span class="hljs-keyword">for</span> <span class="hljs-built_in">test</span> 2
+    &gt; 45 |     error = null
+      46 |     try {
+      47 |       <span class="hljs-built_in">let</span> sha = await commit({
+      48 |         fs,
+
+      at Object.it (__tests__/<span class="hljs-built_in">test</span>-commit.js:45:19)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       1 failed, 3 passed, 4 total
+Snapshots:   1 passed, 1 total
+Time:        21.697s
+Ran all <span class="hljs-built_in">test</span> suites matching /commit/i.
+</code></pre>
+<p>That does match the error described in the Github issue #107 though, so I'm on the right track.</p>
+<p>I open up <code>src/commands/commit.js</code>.
+The first thing I notice is a bunch of JSDoc, which is a shame because I quit using JSDoc in favor of documenting
+on the <a href="https://isomorphic-git.github.io/docs/commit.html">website</a> using <a href="https://docusaurus.io/">docusaurus</a>.
+I delete the JSDoc because having out-of-date documentation in the code is worse than having no documentation in the code.</p>
+<p>The actual change is pretty simple:</p>
+<pre><code class="hljs css js diff">  
+  <span class="hljs-comment">// Fill in missing arguments with default values</span>
+  <span class="hljs-keyword">if</span> (author === <span class="hljs-literal">undefined</span>) author = {}
+  <span class="hljs-keyword">if</span> (author.name === <span class="hljs-literal">undefined</span>) {
+    author.name = <span class="hljs-keyword">await</span> config({ fs, gitdir, <span class="hljs-attr">path</span>: <span class="hljs-string">'user.name'</span> })
+  }
+  <span class="hljs-keyword">if</span> (author.email === <span class="hljs-literal">undefined</span>) {
+    author.email = <span class="hljs-keyword">await</span> config({ fs, gitdir, <span class="hljs-attr">path</span>: <span class="hljs-string">'user.email'</span> })
+  }
++ <span class="hljs-keyword">if</span> (author.name === <span class="hljs-literal">undefined</span> || author.email === <span class="hljs-literal">undefined</span>) {
++   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'Author name and email must be specified as an argument or in the .git/config file'</span>)
++ }
+  
+</code></pre>
+<p>I hit File &gt; Save and presto:</p>
+<pre><code class="hljs css sh"> PASS  __tests__\<span class="hljs-built_in">test</span>-listCommits.js
+ FAIL  __tests__\<span class="hljs-built_in">test</span>-commit.js (10.565s)
+  ● commit › throw error <span class="hljs-keyword">if</span> missing author
+
+    expect(received).toBe(expected)
+
+    Expected value to be (using Object.is):
+      <span class="hljs-string">"Author name and email must be specified as an argument or in the .git/config file"</span>
+    Received:
+      <span class="hljs-string">"Cannot read property '_named' of undefined"</span>
+
+      43 |     expect(error).toBe(<span class="hljs-string">'Author name and email must be specified as an argument or in the .git/config file'</span>)
+      44 |     // reset <span class="hljs-keyword">for</span> <span class="hljs-built_in">test</span> 2
+    &gt; 45 |     error = null
+      46 |     try {
+      47 |       <span class="hljs-built_in">let</span> sha = await commit({
+      48 |         fs,
+
+      at Object.it (__tests__/<span class="hljs-built_in">test</span>-commit.js:45:19)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       1 failed, 3 passed, 4 total
+Snapshots:   1 passed, 1 total
+Time:        11.563s
+Ran all <span class="hljs-built_in">test</span> suites matching /commit/i.
+</code></pre>
+<p>Really? Oh, right. I'd already <a href="https://github.com/isomorphic-git/isomorphic-git/issues/107#issuecomment-374827138">figured out</a>
+that this bug stems from the config parser, not the commit function itself, as can be seen from the stack trace in the original bug report:</p>
+<pre><code class="hljs css js">models.js:<span class="hljs-number">440</span> Uncaught (<span class="hljs-keyword">in</span> promise) <span class="hljs-built_in">TypeError</span>: Cannot read property <span class="hljs-string">'_named'</span> <span class="hljs-keyword">of</span> <span class="hljs-literal">undefined</span>
+    at isNamedSection (models.js:<span class="hljs-number">440</span>)
+    at GitConfig.get (models.js:<span class="hljs-number">460</span>)
+    at config (commands.js:<span class="hljs-number">135</span>)
+</code></pre>
+<p>Right. To the config parser! In this case it is <em>not</em> in <code>src/commands/config.js</code> but in <code>src/models/GitConfig.js</code>.
+(The stack trace says <code>models.js</code> instead of <code>GitConfig.js</code> because node is running the files compiled in <code>dist/for-node</code> which
+have each folder <code>commands</code>, <code>managers</code>, <code>models</code>, and <code>utils</code> rolled up into standalone files.)</p>
+<p>I look at <code>isNamedSection</code> first since the error starts there.</p>
+<pre><code class="hljs css js"><span class="hljs-keyword">const</span> isNamedSection = <span class="hljs-function"><span class="hljs-params">section</span> =&gt;</span> schema[section]._named
+</code></pre>
+<p>OK, so <code>schema[section]</code> must be undefined when section = &quot;user&quot;.
+I do not want isNamedSection to ever throw...
+(and here is where I think &quot;Maybe I really should use TypeScript...&quot; but bury the thought)...
+so I will change that.</p>
+<pre><code class="hljs css js"><span class="hljs-keyword">const</span> isNamedSection = <span class="hljs-function"><span class="hljs-params">section</span> =&gt;</span> schema[section] &amp;&amp; schema[section]._named
+</code></pre>
+<p>Ctrl+S.</p>
+<pre><code class="hljs css sh"> FAIL  __tests__\<span class="hljs-built_in">test</span>-commit.js (10.673s)
+  ● commit › throw error <span class="hljs-keyword">if</span> missing author
+
+    expect(received).toBe(expected)
+
+    Expected value to be (using Object.is):
+      <span class="hljs-string">"Author name and email must be specified as an argument or in the .git/config file"</span>
+    Received:
+      <span class="hljs-string">"Cannot read property 'name' of undefined"</span>
+</code></pre>
+<p>I can't say I wasn't expecting something like that.
+I go look through the GitConfig.get method to find and fix the likely culprit:</p>
+<pre><code class="hljs css js diff">  <span class="hljs-comment">// Cast value to correct type</span>
+- <span class="hljs-keyword">let</span> fn = schema[section][key]
++ <span class="hljs-keyword">let</span> fn = schema[section] &amp;&amp; schema[section][key]
+</code></pre>
+<p>(Because <code>schema['user']['name']</code> would be <code>undefined['name']</code> resulting in &quot;Cannot read property 'name' of undefined&quot;.)</p>
+<p>Ctrl+S.</p>
+<pre><code class="hljs css sh"> PASS  __tests__\<span class="hljs-built_in">test</span>-listCommits.js
+ PASS  __tests__\<span class="hljs-built_in">test</span>-commit.js (10.786s)
+
+Test Suites: 2 passed, 2 total
+Tests:       4 passed, 4 total
+Snapshots:   1 passed, 1 total
+Time:        11.797s, estimated 12s
+Ran all <span class="hljs-built_in">test</span> suites matching /commit/i.
+</code></pre>
+<p>Alright! Tests pass, which means <code>GitConfig.get()</code> isn't throwing but returning undefined when the author is missing,
+and therefore our guard in <code>commit.js</code> works and throws our helpful
+'Author name and email must be specified as an argument or in the .git/config file' error.</p>
+<p>I run Ctrl+C to kill jest, then <code>git diff</code> to review my changes.
+They look good (I do not see any temporary changes that I made and forgot to remove) so I go ahead and commit.
+I do not need to mention the issue # in the commit message, because I will have a chance to refine the commit
+message later using the Squash and Merge button in the PR.
+[Editor's Note: I probably <em>should</em> have included the issue # here.]</p>
+<pre><code class="hljs css sh">&gt; git add -u
+&gt; git commit -m <span class="hljs-string">'fix: Throw meaningful error message from "commit" if author is missing'</span>
+husky &gt; npm run -s precommit (node v9.7.1)
+
+found 0 sensitive files
+
+[issue-107 a7d7b55] fix: Throw meaningful error message from <span class="hljs-string">"commit"</span> <span class="hljs-keyword">if</span> author is missing
+ 3 files changed, 42 insertions(+), 29 deletions(-)
+</code></pre>
+<p><a href="https://github.com/typicode/husky">Husky</a> runs a precommit check to make sure no sensitive files like private SSH keys are being committed.
+(Husky is just one of many robots I use to help maintain isomorphic-git.)</p>
+<p>I push the branch, which triggers another automated scan:</p>
+<pre><code class="hljs css sh">husky &gt; npm run -s prepush (node v9.7.1)
+
+nps is executing `lint` : nps lint.js &amp;&amp; nps lint.typescript
+nps is executing `lint.js` : standard src/**/*.js
+nps is executing `lint.typescript` : tsc src/index.d.ts
+Counting objects: 9, <span class="hljs-keyword">done</span>.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (9/9), <span class="hljs-keyword">done</span>.
+Writing objects: 100% (9/9), 1.70 KiB | 289.00 KiB/s, <span class="hljs-keyword">done</span>.
+Total 9 (delta 8), reused 0 (delta 0)
+remote: Resolving deltas: 100% (8/8), completed with 8 <span class="hljs-built_in">local</span> objects.
+To https://github.com/isomorphic-git/isomorphic-git
+ * [new branch]      issue-107 -&gt; issue-107
+Branch issue-107 <span class="hljs-built_in">set</span> up to track remote branch issue-107 from origin.
+</code></pre>
+<p>(If the linter had found any style problems, it would have fixed them using prettier.
+I have not automated ammending the commit though, so I would have to fix the commit with
+<code>git add -u &amp;&amp; git commit --amend --no-edit</code> and try pushing again.)</p>
+<p>Since it succeeded, it will show up on the <a href="https://github.com/isomorphic-git/isomorphic-git">Github page</a>
+near the top, under &quot;Your recently pushed branches:&quot;. I go there and click the &quot;Compare &amp; pull request&quot; button.</p>
+<p>By default, Github uses the commit message as the PR title, which is usually fine.
+However, now I will tack on &quot;(fixes #107)&quot; to the end of the title just so Github automatically creates a hyperlink between
+the issue and the PR.</p>
+<p>... I lied. Github is not smart enough to use the PR title. :eyeroll:
+I edit the PR description to be &quot;fixes #107&quot; and <em>then</em> Github adds the &quot;wmhilton referened this issue a minute ago&quot; link to the PR to the issue.</p>
+<p>Now we wait for the Continuous Integration (CI) system to do its thing.
+I didn't actually check if it would work in the browser -
+which we could have done by running <code>npm run test</code> (which will run Jasmine and Karma) instead of just <code>jest</code> -
+and in fact we didn't run the entire test suite in jest -
+but I am pretty confident that the changes I made won't break anything.
+The CI system will verify that. It uses <a href="https://travis-ci.org/isomorphic-git/isomorphic-git/">Travis CI</a> and will
+run the full gammut of tests, from ensuring the code is in <a href="https://standardjs.com/">Standard Style</a> (which husky already
+checked during the pre-push check) to testing it in real browsers via <a href="https://saucelabs.com/open-source">Sauce Labs</a>.
+Because Travis-CI creates two builds: one for the 'issue-107' branch as-is and one for the PR which tests how the repo would be
+if 'issue-107' is merged into 'master', it takes twice as long. (Because there is a concurrent connection limit with Sauce Labs,
+I have to run Travis tests one-at-a-time or risk the Sauce Labs tests timing out.)
+It takes about 10 minutes per build, so realistically it will be at least 20-30 minutes before we get the green light to merge the PR.</p>
+<p>Not all of the CI statuses have to be green to merge.
+Specifically, the required statuses that a commit must pass are:</p>
+<ul>
+<li>Node Security (a vulnerability scanner)</li>
+<li>Snyk (another vulnerability scanner)</li>
+<li>Travis CI (unit tests)</li>
+</ul>
+<p>The optional statuses are:</p>
+<ul>
+<li>Codecov (test coverage)</li>
+<li>bundlesize (whether the bundle size increased)</li>
+<li>License Compliance (reports any licensing issues in dependencies)</li>
+<li>... and more as I discover more helpful robots and commit scanners</li>
+</ul>
+<p>Github gives you three choices (Create a merge commit, Squash and merge, or Rebase and merge) when you merge a PR.
+I generally go with Squash and Merge because (unlike rebase and merge) it lets you edit the commit message,
+and it results in a smaller master branch. It looks like Github has again chosen the commit title, not the PR title, as the suggested Squashed commit message, so I
+change &quot;(#118)&quot; to be &quot;(fixes #107, PR #118)&quot; and click &quot;Confirm squash and merge&quot;.</p>
+<p>I delete the branch (issue-107) right afterwards, so it doesn't hang around.
+Because the commit starts with the keyword &quot;fix:&quot; <a href="https://github.com/semantic-release/semantic-release">semantic-relase</a>
+will automatically increment the patch version number and publish the build on npm, in about 10-15 minutes once the CI
+tests pass.</p>
+<p>Meanwhile, <a href="https://github.com/isomorphic-git/isomorphic-git/issues/107">issue #107</a> has been automatically closed, because our commit had &quot;fixes #107&quot; in its title.
+Once semantic-release publishes the release containing this fix, the semantic-release bot will even leave a comment on the issue
+(under my name, because of the OAuth token I guess) saying &quot;🎉 This issue has been resolved in version 0.9.9 🎉&quot;.
+This is great for both the original bug report contributor, and future users stumbling across the bug report via search engine,
+wondering whether their version of isomorphic-git has the fix.</p>
+<p>And that is how I do it! Thank you if you read this far. As Mark Twain might have said, &quot;If I had more time, I'd have written a shorter blog post.&quot;</p>
+</span></div></article></div><div class="post"><header class="postHeader"><h1><a href="/blog/2018/02/18/introducing-isomorphic-git.html">Introducing `isomorphic-git`</a></h1><p class="post-meta">February 18, 2018</p><div class="authorBlock"><p class="post-authorName"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener">William Hilton</a></p><div class="authorPhoto"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener"><img src="https://graph.facebook.com/551965935/picture/?height=200&amp;width=200" alt="William Hilton"/></a></div></div></header><article class="post-content"><div><span><p>TODO...</p>
+</span></div></article></div><div class="docs-prevnext"></div></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/quickstart.html">Getting Started</a><a href="/docs/en/alphabetic.html">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><a class="github-button" href="https://github.com/isomorphic-git/isomorphic-git" data-icon="octicon-star" data-count-href="/isomorphic-git/isomorphic-git/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Github</a></div><div><h5>More</h5><a href="/docs/en/in-the-news.html">In The News</a><a href="/blog">Blog</a></div><div><h5>Ad</h5><div id="codefund_ad"></div></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+              var search = docsearch({
+                
+                apiKey: 'ac63b0df4513e31143eef156f520056c',
+                indexName: 'isomorphic_git',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {"typoTolerance":"min"}
+              });
+            </script></body></html>
