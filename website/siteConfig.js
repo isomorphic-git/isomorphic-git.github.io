@@ -66,6 +66,7 @@ const siteConfig = {
     '//static.getclicky.com/js',
     '/js/analytics.js',
     'https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js',
+    'https://buttons.github.io/buttons.js',
   ],
   // stylesheets: ['./css/tutorial.css'],
   // You may provide arbitrary config keys to be used as needed by your template.
