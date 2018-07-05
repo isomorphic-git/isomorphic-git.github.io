@@ -121,7 +121,7 @@ const Features = props => (
     {[
       {
         content: 'Clone repos, create commits, push branches and more in client-side JS.',
-        image: 'https://saucelabs.com/browser-matrix/_wmhilton.svg',
+        image: 'https://badges.herokuapp.com/browsers?googlechrome=+66&firefox=60&microsoftedge=17&safari=11&android=7.1&iphone=11.2',
         imageAlign: 'top',
         title: 'Works In All Modern Browsers'
       },
