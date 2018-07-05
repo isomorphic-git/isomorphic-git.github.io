@@ -6,7 +6,7 @@ void async function() {
     headers: { accept: 'application/vnd.github.v3+json' }
   })
   const data = await response.json()
-  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + ' stars)'
+  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
 }()
 `
 
