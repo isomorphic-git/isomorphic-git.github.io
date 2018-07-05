@@ -2,7 +2,6 @@ const React = require('react')
 
 const script = `
 void async function() {
-  console.log('a')
   const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
     headers: { accept: 'application/vnd.github.v3+json' }
   })
