@@ -51,7 +51,7 @@ const siteConfig = {
     theme: 'default'
   },
   scripts: [
-    'https://buttons.github.io/buttons.js',
+    //'https://buttons.github.io/buttons.js',
     '/js/gitter.js',
     '/js/sidecar.v1.js',
     '/js/browserfs.js',
