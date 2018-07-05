@@ -3,6 +3,7 @@
 <url> <loc>https://isomorphic-git.github.io/help.html</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/help.html" /> </url>
 <url> <loc>https://isomorphic-git.github.io/index.html</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/index.html" /> </url>
 <url> <loc>https://isomorphic-git.github.io/users.html</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/users.html" /> </url>
+<url> <loc>https://isomorphic-git.github.io/blog/2019/07/05/cors-proxy-disabled.html</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/04/02/contributing-workflow.html</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/02/18/introducing-isomorphic-git.html</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>

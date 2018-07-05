@@ -2,12 +2,27 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://isomorphic-git.github.io/blog</id>
     <title>isomorphic-git Blog</title>
-    <updated>2018-04-07T06:00:00Z</updated>
+    <updated>2019-07-05T06:00:00Z</updated>
     <generator>Feed for Node.js</generator>
     <link rel="alternate" href="https://isomorphic-git.github.io/blog"/>
     <subtitle>The best place to stay up-to-date with the latest isomorphic-git news and events.</subtitle>
     <logo>https://isomorphic-git.github.io/img/isomorphic-git-logo.svg</logo>
     <rights>Copyright © 2018 Isomorphic-git Contributors</rights>
+    <entry>
+        <title type="html"><![CDATA[CORS proxy temporarily disabled]]></title>
+        <id>https://isomorphic-git.github.io/blog/2019/07/05/cors-proxy-disabled.html</id>
+        <link href="https://isomorphic-git.github.io/blog/2019/07/05/cors-proxy-disabled.html">
+        </link>
+        <updated>2019-07-05T06:00:00Z</updated>
+        <summary type="html"><![CDATA[<p>Since the start of the isomorphic-git project, I have hosted an instance of <a href="https://www.npmjs.com/package/cors-buster">cors-buster proxy</a> to
+get around the fact that none of the major git hosting sites use CORS headers
+that would allow browsers to c</p>
+]]></summary>
+        <author>
+            <name>William Hilton</name>
+            <uri>https://twitter.com/wmhilton</uri>
+        </author>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Gogs adds CORS headers for isomorphic-git]]></title>
         <id>https://isomorphic-git.github.io/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html</id>
