@@ -35,7 +35,7 @@ Example code:
 let repo = {fs, dir: '$input((.))'}
 await git.clone({
   ...repo,
-  url: '$input((https://cors-buster-tbgktfqyku.now.sh/github.com/isomorphic-git/isomorphic-git))',
+  url: '$input((https://git-cors-proxy.now.sh/github.com/isomorphic-git/isomorphic-git))',
   $textarea((singleBranch: true,
   depth: 1))
 })
