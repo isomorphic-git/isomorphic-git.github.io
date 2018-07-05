@@ -22,3 +22,5 @@ So for now I've had to suspend the proxy until I find time to write some spiffy 
 
 Don't let this stop you from playing with isomorphic-git! Clone https://github.com/wmhilton/cors-buster, or npm install it, or
 deploy your own instance on Now.
+
+**Update: ZEIT has donated credit to cover this month's surprise bandwidth, plus some extra!** Aren't they great?
