@@ -6,19 +6,20 @@
  */
 
 const React = require('react')
+const GitHubStarButton = require('./GitHubStarButton')
 
 class Footer extends React.Component {
-  docUrl (doc, language) {
+  docUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl
     return baseUrl + 'docs/' + (language ? language + '/' : '') + doc
   }
 
-  pageUrl (doc, language) {
+  pageUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl
     return baseUrl + (language ? language + '/' : '') + doc
   }
 
-  render () {
+  render() {
     const currentYear = new Date().getFullYear()
     return (
       <footer className='nav-footer' id='footer'>
@@ -47,17 +48,7 @@ class Footer extends React.Component {
               User Showcase
             </a>
             <a href='https://gitter.im/isomorphic-git/Lobby'>Project Chat</a>
-            <a
-              className='github-button'
-              href={this.props.config.repoUrl}
-              data-icon='octicon-star'
-              data-count-href='/isomorphic-git/isomorphic-git/stargazers'
-              data-show-count
-              data-count-aria-label='# stargazers on GitHub'
-              aria-label='Star this project on GitHub'
-            >
-              Github
-            </a>
+            <GitHubStarButton />
           </div>
           <div>
             <h5>More</h5>
