@@ -63,6 +63,7 @@ const siteConfig = {
     '/js/object-inspector.min.js',
     '/js/tutorial.js',
     '/js/try-it-out-giturl.js',
+    '/js/announcement.js',
     '//static.getclicky.com/js',
     '/js/analytics.js',
     'https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js',
