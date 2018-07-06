@@ -122,14 +122,14 @@ const Features = props => (
       {
         content: 'Clone repos, create commits, push branches and more in client-side JS.',
         image: 'https://badges.herokuapp.com/browsers?googlechrome=+66&firefox=60&microsoftedge=17&safari=11&android=7.1&iphone=11.2',
-        imageAlign: 'top',
-        title: 'Works In All Modern Browsers'
+        imageAlign: 'bottom',
+        title: 'Works in All Modern Browsers'
       },
       {
         content: 'It uses the same on-disk format as `git` so it works with existing repos.',
         image: imgUrl('nodejs-new-pantone-black.png'),
         imageAlign: 'top',
-        title: 'Works on Desktops And Servers'
+        title: 'Works on Desktops and Servers'
       }
     ]}
   </Block>
