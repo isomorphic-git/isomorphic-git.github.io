@@ -1,3 +1,4 @@
+const PropTypes = require('prop-types');
 /**
  * Copyright (c) 2017-present, Facebook, Inc.
  *
@@ -20,31 +21,33 @@ class Footer extends React.Component {
   }
 
   render() {
-    const currentYear = new Date().getFullYear()
     return (
       <footer className='nav-footer' id='footer'>
         <section className='sitemap'>
-          <a href={this.props.config.baseUrl} className='nav-home'>
-            {this.props.config.footerIcon &&
+          {this.props.config.footerIcon && (
+            <a href={this.props.config.baseUrl} className="nav-home">
               <img
-                src={this.props.config.baseUrl + this.props.config.footerIcon}
+                src={`${this.props.config.baseUrl}${
+                  this.props.config.footerIcon
+                }`}
                 alt={this.props.config.title}
-                width='66'
-                height='58'
-              />}
-          </a>
-          <div>
+                width="66"
+                height="58"
+              />
+            </a>
+          )}
+          <div className="footerSection">
             <h5>Docs</h5>
-            <a href={this.docUrl('quickstart.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/quickstart'}>
               Getting Started
             </a>
-            <a href={this.docUrl('alphabetic.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/alphabetic'}>
               API Reference
             </a>
           </div>
           <div>
             <h5>Community</h5>
-            <a href={this.pageUrl('users.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + this.props.language + '/users'}>
               User Showcase
             </a>
             <a href='https://gitter.im/isomorphic-git/Lobby'>Project Chat</a>
@@ -52,7 +55,7 @@ class Footer extends React.Component {
           </div>
           <div>
             <h5>More</h5>
-            <a href={this.docUrl('in-the-news.html', this.props.language)}>In The News</a>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/in-the-news'}>In The News</a>
             <a href={this.props.config.baseUrl + 'blog'}>Blog</a>
           </div>
           <div>
