@@ -76,7 +76,8 @@ const siteConfig = {
     algoliaOptions: {
       typoTolerance: 'min'
     }
-  }
+  },
+  cleanUrl: true,
 }
 
 module.exports = siteConfig

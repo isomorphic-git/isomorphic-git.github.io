@@ -163,7 +163,7 @@ const TryGitRemoteInfo = props => (
     <h2>Try it out</h2>
     <label htmlFor="giturl">Enter a git URL:</label>
     <div>
-      <input id="giturl_input" name="giturl" type="text" className="input" defaultValue="https://github.com/facebook/react" size="50"/>
+      <input id="giturl_input" name="giturl" type="text" className="input" defaultValue="https://github.com/facebook/react" size="50" style={{ maxWidth: '80%' }}/>
       <button id="giturl_button" type="button" className="button" value="Fetch Info">Fetch Info</button>
       <div><b>Branches:</b> <span id="giturl_branches"></span></div>
       <div><b>Tags:</b> <span id="giturl_tags"></span></div>
@@ -177,21 +177,23 @@ const LearnHow = props => (
     id={props.id}
     background='light'
   >
-    <div style={{ float: 'right', width: '40%' }}>
+    <div style={{ float: 'right', width: '40%', marginLeft: '60px' }}>
       <TryGitRemoteInfo/>
     </div>
-    <MarkdownBlock>{`
-isomorphic-git is a pure JavaScript implementation of git that works in node and browser environments (including WebWorkers and ServiceWorkers).
-This means it can be used to read and write to to git repositories, as well as fetch from and push to git remotes like Github.
+    <div style={{ textAlign: 'justify' }}>
+      <MarkdownBlock>{`
+  isomorphic-git is a pure JavaScript implementation of git that works in node and browser environments (including WebWorkers and ServiceWorkers).
+  This means it can be used to read and write to to git repositories, as well as fetch from and push to git remotes like Github.
 
-isomorphic-git aims for 100% interoperability with the canonical git implementation.
-This means it does all its operations by modifying files in a ".git" directory just like the git you are used to.
-The included isogit CLI can operate on git repositories on your desktop or server.
+  isomorphic-git aims for 100% interoperability with the canonical git implementation.
+  This means it does all its operations by modifying files in a ".git" directory just like the git you are used to.
+  The included \`isogit\` CLI can operate on git repositories on your desktop or server.
 
-isomorphic-git aims to be a complete solution with no assembly required.
-The API has been designed with modern tools like Rollup and Webpack in mind.
-By providing functionality as individual functions, code bundlers can produce smaller bundles by including only the functions your application uses.
-    `}</MarkdownBlock>
+  isomorphic-git aims to be a complete solution with no assembly required.
+  The API has been designed with modern tools like Rollup and Webpack in mind.
+  By providing functionality as individual functions, code bundlers can produce smaller bundles by including only the functions your application uses.
+      `}</MarkdownBlock>
+    </div>
   </Container>
 )
 
