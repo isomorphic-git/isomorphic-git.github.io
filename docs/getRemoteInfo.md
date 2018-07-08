@@ -18,7 +18,7 @@ TODO: Document the response object schema.
 
 ```js live
 let info = await git.getRemoteInfo({
-  url: '$input((https://cors-buster-tbgktfqyku.now.sh/github.com/isomorphic-git/isomorphic-git.git))'
+  url: '$input((https://git-cors-proxy.now.sh/github.com/isomorphic-git/isomorphic-git.git))'
 })
 console.log(info)
 
