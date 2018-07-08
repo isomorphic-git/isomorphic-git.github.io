@@ -13,8 +13,6 @@
     "checkout": "checkout",
     "clone": "clone",
     "commit": "commit",
-    "compare": "How does it compare with X?",
-    "Compare with X": "Compare with X",
     "config": "config",
     "currentBranch": "currentBranch",
     "dir-vs-gitdir": "`dir` vs `gitdir`",
@@ -66,7 +64,8 @@
     "Plumbing Commands": "Plumbing Commands",
     "Misc Commands": "Misc Commands",
     "Deprecated Commands": "Deprecated Commands",
-    "Getting Started": "Getting Started"
+    "Getting Started": "Getting Started",
+    "More": "More"
   },
   "pages-strings": {
     "Help Translate|recruit community translators for your project": "Help Translate",

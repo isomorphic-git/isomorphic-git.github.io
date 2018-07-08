@@ -1,3 +1,4 @@
+const PropTypes = require('prop-types');
 /**
  * Copyright (c) 2017-present, Facebook, Inc.
  *
@@ -6,62 +7,55 @@
  */
 
 const React = require('react')
+const GitHubStarButton = require('./GitHubStarButton')
 
 class Footer extends React.Component {
-  docUrl (doc, language) {
+  docUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl
     return baseUrl + 'docs/' + (language ? language + '/' : '') + doc
   }
 
-  pageUrl (doc, language) {
+  pageUrl(doc, language) {
     const baseUrl = this.props.config.baseUrl
     return baseUrl + (language ? language + '/' : '') + doc
   }
 
-  render () {
-    const currentYear = new Date().getFullYear()
+  render() {
     return (
       <footer className='nav-footer' id='footer'>
         <section className='sitemap'>
-          <a href={this.props.config.baseUrl} className='nav-home'>
-            {this.props.config.footerIcon &&
+          {this.props.config.footerIcon && (
+            <a href={this.props.config.baseUrl} className="nav-home">
               <img
-                src={this.props.config.baseUrl + this.props.config.footerIcon}
+                src={`${this.props.config.baseUrl}${
+                  this.props.config.footerIcon
+                }`}
                 alt={this.props.config.title}
-                width='66'
-                height='58'
-              />}
-          </a>
-          <div>
+                width="66"
+                height="58"
+              />
+            </a>
+          )}
+          <div className="footerSection">
             <h5>Docs</h5>
-            <a href={this.docUrl('quickstart.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/quickstart'}>
               Getting Started
             </a>
-            <a href={this.docUrl('alphabetic.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/alphabetic'}>
               API Reference
             </a>
           </div>
           <div>
             <h5>Community</h5>
-            <a href={this.pageUrl('users.html', this.props.language)}>
+            <a href={this.props.config.baseUrl + this.props.language + '/users'}>
               User Showcase
             </a>
             <a href='https://gitter.im/isomorphic-git/Lobby'>Project Chat</a>
-            <a
-              className='github-button'
-              href={this.props.config.repoUrl}
-              data-icon='octicon-star'
-              data-count-href='/isomorphic-git/isomorphic-git/stargazers'
-              data-show-count
-              data-count-aria-label='# stargazers on GitHub'
-              aria-label='Star this project on GitHub'
-            >
-              Github
-            </a>
+            <GitHubStarButton />
           </div>
           <div>
             <h5>More</h5>
-            <a href={this.docUrl('in-the-news.html', this.props.language)}>In The News</a>
+            <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/in-the-news'}>In The News</a>
             <a href={this.props.config.baseUrl + 'blog'}>Blog</a>
           </div>
           <div>

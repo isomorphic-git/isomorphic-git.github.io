@@ -12,9 +12,6 @@ table tr th code, table tr td code {
 }
 
 @media only screen and (min-device-width: 360px) and (max-device-width: 736px) {
-  #giturl_input {
-    width: 80%; 
-  }
 }
 
 @media only screen and (min-width: 1024px) {
@@ -35,6 +32,11 @@ aside {
   font-style: italic;
 }
 
+header img[src="/img/isomorphic-git-logo.svg"],
+footer img[src="/img/isomorphic-git-logo.svg"] {
+  filter: invert(100%);
+}
+
 .imageAlignTop .blockImage {
   max-width: 100%;
 }
@@ -44,7 +46,13 @@ aside {
   /* height: 80px; */
 }
 
+img[src="https://badges.herokuapp.com/browsers?googlechrome=+66&firefox=60&microsoftedge=17&safari=11&android=7.1&iphone=11.2"] {
+  padding-top: 40px;
+  padding-bottom: 20px;
+}
+
 .isomorphic-git-feature-list {
+  list-style: none;
   margin: 40px;
   display: grid;
   grid-gap: 40px;
@@ -79,4 +87,8 @@ aside {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+article em {
+  font-style: italic;
 }

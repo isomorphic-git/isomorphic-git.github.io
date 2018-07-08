@@ -50,6 +50,9 @@
       "authentication",
       "cli",
       "dir-vs-gitdir"
+    ],
+    "More": [
+      "faq"
     ]
   }
 }
