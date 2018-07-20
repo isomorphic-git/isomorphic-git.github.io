@@ -10,6 +10,7 @@ sidebar_label: Alphabetical Index
 - [commit](commit.md)
 - [config](config.md)
 - [currentBranch](currentBranch.md)
+- [expandRef](expandRef.md)
 - [fetch](fetch.md)
 - [findRoot](findRoot.md)
 - [getRemoteInfo](getRemoteInfo.md)

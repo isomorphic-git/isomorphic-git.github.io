@@ -30,6 +30,7 @@
     "Plumbing Commands": [
       "getRemoteInfo",
       "findRoot",
+      "expandRef",
       "resolveRef",
       "readObject",
       "indexPack"
