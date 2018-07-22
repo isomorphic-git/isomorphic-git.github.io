@@ -3,7 +3,7 @@ title: push
 sidebar_label: push
 ---
 
-Push a branch
+Push a branch or tag
 
 | param                                   | type [= default]                              | description                                                                                                                                         |
 | --------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -11,6 +11,7 @@ Push a branch
 | username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                                                       |
 | ref                                     | string=undefined                              | Which branch to push. By default this is the currently checked out branch.                                                                          |
 | remote                                  | string='origin'                               | If URL is not specified, determines which remote to use.                                                                                            |
+| force                                   | bool     = false                              | If true, behaves the same as `git push --force`                                                                                                     |
 | noGitSuffix                             | bool     = false                              | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)                                            |
 | url                                     | string=undefined                              | The URL of the remote git server. The default is the value set in the git config for that remote.                                                   |
 | emitter                                 | EventEmitter = undefined                      | Listeners to this EventEmitter can receive 'message' events.                                                                                        |

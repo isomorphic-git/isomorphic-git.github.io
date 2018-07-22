@@ -16,6 +16,7 @@ sidebar_label: Alphabetical Index
 - [getRemoteInfo](getRemoteInfo.md)
 - [indexPack](indexPack.md)
 - [init](init.md)
+- [isDescendent](isDescendent.md)
 - [listBranches](listBranches.md)
 - [listFiles](listFiles.md)
 - [listTags](listTags.md)

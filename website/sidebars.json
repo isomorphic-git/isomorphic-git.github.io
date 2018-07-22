@@ -33,6 +33,7 @@
       "expandRef",
       "resolveRef",
       "readObject",
+      "isDescendent",
       "indexPack"
     ],
     "Misc Commands": [
