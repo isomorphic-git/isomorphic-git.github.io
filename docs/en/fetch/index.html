@@ -63,7 +63,7 @@
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">let</span> repo = {fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>}
 <span class="hljs-keyword">await</span> git.fetch({
   ...repo,
-  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://git-cors-proxy.now.sh/github.com/isomorphic-git/isomorphic-git))'</span>,
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git))'</span>,
   <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span>,
   <span class="hljs-attr">depth</span>: $input((<span class="hljs-number">1</span>)),
   <span class="hljs-attr">singleBranch</span>: $input((<span class="hljs-literal">true</span>)),

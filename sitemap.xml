@@ -3,8 +3,9 @@
 <url> <loc>https://isomorphic-git.github.io/help</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/help" /> </url>
 <url> <loc>https://isomorphic-git.github.io/index</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/index" /> </url>
 <url> <loc>https://isomorphic-git.github.io/users</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.github.io/en/users" /> </url>
-<url> <loc>https://isomorphic-git.github.io/blog/2019/07/08/cors-proxy-origin-limited</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
-<url> <loc>https://isomorphic-git.github.io/blog/2019/07/05/cors-proxy-disabled</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
+<url> <loc>https://isomorphic-git.github.io/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
+<url> <loc>https://isomorphic-git.github.io/blog/2018/07/08/cors-proxy-origin-limited</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
+<url> <loc>https://isomorphic-git.github.io/blog/2018/07/05/cors-proxy-disabled</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/04/02/contributing-workflow</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.github.io/blog/2018/02/18/introducing-isomorphic-git</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>

@@ -37,7 +37,7 @@
 It just communicates to a remote git server, using the first step of the <code>git-upload-pack</code> handshake, but stopping short of fetching the packfile.</p>
 <p>TODO: Document the response object schema.</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">let</span> info = <span class="hljs-keyword">await</span> git.getRemoteInfo({
-  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://git-cors-proxy.now.sh/github.com/isomorphic-git/isomorphic-git.git))'</span>
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git.git))'</span>
 })
 <span class="hljs-built_in">console</span>.log(info)
 

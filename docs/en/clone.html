@@ -58,7 +58,7 @@
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">let</span> repo = {fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>}
 <span class="hljs-keyword">await</span> git.clone({
   ...repo,
-  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://git-cors-proxy.now.sh/github.com/isomorphic-git/isomorphic-git))'</span>,
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git))'</span>,
   $textarea((singleBranch: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span>))
 })
