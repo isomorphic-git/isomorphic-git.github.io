@@ -11,7 +11,8 @@ const users = require('./users')
 const siteConfig = {
   title: 'isomorphic-git' /* title for your website */,
   tagline: 'A pure JavaScript implementation of git for node and browsers!',
-  url: 'https://isomorphic-git.github.io' /* your website url */,
+  url: 'https://isomorphic-git.org' /* your website url */,
+  cname: 'isomorphic-git.org' /* gets overwritten each time */,
   baseUrl: '/' /* base url for your project */,
   editUrl: 'https://github.com/isomorphic-git/isomorphic-git.github.io/edit/source/docs/',
   headerLinks: [
