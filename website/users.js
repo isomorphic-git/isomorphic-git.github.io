@@ -11,6 +11,12 @@ const users = [
     image: '/img/usedby/git-web-terminal.png',
     infoLink: 'https://github.com/jcubic/git',
     pinned: true
+  },
+  {
+    caption: 'Clever Cloud',
+    image: '/img/usedby/clever-cloud.png',
+    infoLink: 'https://www.clever-cloud.com/',
+    pinned: true
   }
 ]
 module.exports = users
