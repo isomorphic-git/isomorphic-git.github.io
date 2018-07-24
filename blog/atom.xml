@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://isomorphic-git.github.io/blog</id>
+    <id>https://isomorphic-git.org/blog</id>
     <title>isomorphic-git Blog</title>
     <updated>2018-07-23T06:00:00Z</updated>
     <generator>Feed for Node.js</generator>
-    <link rel="alternate" href="https://isomorphic-git.github.io/blog"/>
+    <link rel="alternate" href="https://isomorphic-git.org/blog"/>
     <subtitle>The best place to stay up-to-date with the latest isomorphic-git news and events.</subtitle>
-    <logo>https://isomorphic-git.github.io/img/isomorphic-git-logo.svg</logo>
+    <logo>https://isomorphic-git.org/img/isomorphic-git-logo.svg</logo>
     <rights>Copyright © 2018 Isomorphic-git Contributors</rights>
     <entry>
         <title type="html"><![CDATA[isomorphic-git.org, corporate sponsors, and a new CORS proxy!]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html">
+        <id>https://isomorphic-git.org/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html">
         </link>
         <updated>2018-07-23T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>We have a new home on the web! Instead of <code>isomorphic-git.github.io</code> we now live at <code>isomorphic-git.org</code>. This change happened mostly because we needed our own domain name for…</p>
@@ -27,8 +27,8 @@
     </entry>
     <entry>
         <title type="html"><![CDATA[CORS proxy origin limited]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/07/08/cors-proxy-origin-limited.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/07/08/cors-proxy-origin-limited.html">
+        <id>https://isomorphic-git.org/blog/2018/07/08/cors-proxy-origin-limited.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/07/08/cors-proxy-origin-limited.html">
         </link>
         <updated>2018-07-08T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>See the <a href="/blog/2018/07/05/cors-proxy-disabled">previous post</a> for background.</p>
@@ -42,8 +42,8 @@
     </entry>
     <entry>
         <title type="html"><![CDATA[CORS proxy temporarily disabled]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/07/05/cors-proxy-disabled.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/07/05/cors-proxy-disabled.html">
+        <id>https://isomorphic-git.org/blog/2018/07/05/cors-proxy-disabled.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/07/05/cors-proxy-disabled.html">
         </link>
         <updated>2018-07-05T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>Since the start of the isomorphic-git project, I have hosted an instance of <a href="https://www.npmjs.com/package/cors-buster">cors-buster proxy</a> to
@@ -57,8 +57,8 @@ that would allow browsers to c</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[Gogs adds CORS headers for isomorphic-git]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html">
+        <id>https://isomorphic-git.org/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git.html">
         </link>
         <updated>2018-04-07T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>The Go Git Service (<a href="https://gogs.io">gogs.io</a>) is already the &quot;easiest, fastest, and most painless way of setting up a self-hosted Git service.&quot;
@@ -71,8 +71,8 @@ And now because of a small <a href="https://github.com/gogits/gogs/pull/4970/fil
     </entry>
     <entry>
         <title type="html"><![CDATA[Contributing Workflow]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/04/02/contributing-workflow.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/04/02/contributing-workflow.html">
+        <id>https://isomorphic-git.org/blog/2018/04/02/contributing-workflow.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/04/02/contributing-workflow.html">
         </link>
         <updated>2018-04-02T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>I have gotten questions along the lines of &quot;how do I get started working on the code&quot;?
@@ -87,8 +87,8 @@ Today I feel like knocking out an easy bug that I should alread</p>
     </entry>
     <entry>
         <title type="html"><![CDATA[Introducing `isomorphic-git`]]></title>
-        <id>https://isomorphic-git.github.io/blog/2018/02/18/introducing-isomorphic-git.html</id>
-        <link href="https://isomorphic-git.github.io/blog/2018/02/18/introducing-isomorphic-git.html">
+        <id>https://isomorphic-git.org/blog/2018/02/18/introducing-isomorphic-git.html</id>
+        <link href="https://isomorphic-git.org/blog/2018/02/18/introducing-isomorphic-git.html">
         </link>
         <updated>2018-02-18T06:00:00Z</updated>
         <summary type="html"><![CDATA[<p>TODO...</p>
