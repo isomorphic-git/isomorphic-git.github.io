@@ -5,10 +5,10 @@ authorFBID: 551965935
 title: CORS proxy origin limited
 ---
 
-See the [previous post](./2019-07-05-cors-proxy-disabled.html) for background.
+See the [previous post](/blog/2018/07/05/cors-proxy-disabled) for background.
 
 ## The proxy works for isomorphic-git.github.io
-A new proxy, [git-cors-proxy.now.sh](https://git-cors-proxy.now.sh), has been set up so that the online demos in the API documentation and guide will work again.
+A new proxy, [git-cors-proxy.now.sh](https://cors.isomorphic-git.org), has been set up so that the online demos in the API documentation and guide will work again.
 However, this proxy has been limited to a) only handle legit git clone / fetch / push / getRemoteInfo requests and b) only accept requests from the `https://isomorphic-git.github.io` origin.
 This means that you can use the proxy on this website, but you will need to run your own proxy to use isomorphic-git on your own website.
 
