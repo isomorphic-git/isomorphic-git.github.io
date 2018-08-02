@@ -33,6 +33,7 @@
       "expandRef",
       "resolveRef",
       "readObject",
+      "statusMatrix",
       "isDescendent",
       "indexPack"
     ],
