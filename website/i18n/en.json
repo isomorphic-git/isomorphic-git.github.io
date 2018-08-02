@@ -37,6 +37,7 @@
     "isDescendent": "isDescendent",
     "listBranches": "listBranches",
     "listFiles": "listFiles",
+    "listRemotes": "listRemotes",
     "listTags": "listTags",
     "log": "log",
     "merge": "merge",

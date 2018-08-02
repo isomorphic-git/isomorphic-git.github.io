@@ -20,6 +20,7 @@ sidebar_label: Alphabetical Index
 - [listBranches](listBranches.md)
 - [listFiles](listFiles.md)
 - [listTags](listTags.md)
+- [listRemotes](listRemotes.md)
 - [log](log.md)
 - [merge](merge.md)
 - [pull](pull.md)
