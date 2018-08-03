@@ -30,6 +30,7 @@
 <tr><td><strong>url</strong></td><td>string</td><td>The URL of the git repository.</td></tr>
 <tr><td>username, password, token, oauth2format</td><td>string, string, string, string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td>noGitSuffix</td><td>bool     = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
+<tr><td>forPush</td><td>bool     = false</td><td>By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.</td></tr>
 <tr><td>return</td><td>Promise&lt;Object&gt;</td><td>Resolves successfully with an object listing the branches, tags, and capabilities of the remote.</td></tr>
 </tbody>
 </table>
