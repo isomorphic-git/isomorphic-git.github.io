@@ -50,6 +50,7 @@
     "resolveRef": "resolveRef",
     "sign": "sign",
     "status": "status",
+    "statusMatrix": "statusMatrix",
     "utils_auth": "auth",
     "utils.auth": "utils.auth",
     "utils_oauth2": "oauth2",

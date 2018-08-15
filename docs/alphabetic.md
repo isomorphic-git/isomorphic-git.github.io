@@ -30,6 +30,7 @@ sidebar_label: Alphabetical Index
 - [resolveRef](resolveRef.md)
 - [sign](sign.md)
 - [status](status.md)
+- [statusMatrix](statusMatrix.md)
 - [utils.auth](utils_auth.md) [deprecated]
 - [utils.oauth2](utils_oauth2.md) [deprecated]
 - [verify](verify.md)
