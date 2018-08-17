@@ -27,6 +27,7 @@ sidebar_label: Alphabetical Index
 - [push](push.md)
 - [readObject](readObject.md)
 - [remove](remove.md)
+- [resetIndex](resetIndex.md)
 - [resolveRef](resolveRef.md)
 - [sign](sign.md)
 - [status](status.md)
