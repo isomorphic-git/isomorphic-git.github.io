@@ -43,6 +43,7 @@
 <url> <loc>https://isomorphic-git.org/docs/en/push</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/push.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/readObject</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/readObject.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/remove</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/remove.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/resetIndex</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/resetIndex.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/resolveRef</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/resolveRef.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/sign</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/sign.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/status</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/status.html" /> </url>
