@@ -24,6 +24,9 @@
       "pull",
       "merge"
     ],
+    "Plugins": [
+      "plugin_fs"
+    ],
     "PGP Signing": [
       "sign",
       "verify"

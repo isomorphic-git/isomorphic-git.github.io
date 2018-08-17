@@ -10,9 +10,9 @@ Usually this is straightforward: just specify `username` and `password`.
 
 ```js
 await git.push({
- ...repo,
  username: 'your username',
- password: 'your password'
+ password: 'your password',
+ ...
 })
 ```
 
@@ -28,9 +28,9 @@ Instead, you may have to create a Personal Access Token (or an App Password in B
 
 ```js
 await git.push({
- ...repo,
  username: 'your username', // Note: username is optional for Github
- token: 'your Personal Access Token'
+ token: 'your Personal Access Token',
+ ...
 })
 ```
 
@@ -54,9 +54,9 @@ Note when using OAuth2 tokens, you do not include `username` or `password`.
 
 ```js
 await git.push({
- ...repo,
  oauth2format: 'gitlab',
- token: 'your OAuth2 Token'
+ token: 'your OAuth2 Token',
+ ...
 })
 ```
 

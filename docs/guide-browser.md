@@ -15,20 +15,29 @@ fs.getRootFS().empty()
 
 Here's a whirlwind tour of the main features of `isomorphic-git`.
 
-First, let's set up BrowserFS and isomorphic-git. *Note: I've already done this.*
+First, let's set up BrowserFS and isomorphic-git. *Note: I've already done this for you, which is why there is no RUN button for this code block.*
 
 ```html
 <script src="https://wzrd.in/standalone/pify@latest"></script>
 <script src="https://unpkg.com/browserfs@beta"></script>
 <script src="https://unpkg.com/isomorphic-git"></script>
 <script>
-BrowserFS.configure({
-  fs: 'IndexedDB', options: {}
-}, function (err) {
+
+let fsOptions = {
+  fs: 'IndexedDB',
+  options: {}
+}
+
+BrowserFS.configure(fsOptions, function (err) {
   if (err) return console.log(err)
+
   window.fs = BrowserFS.BFSRequire('fs')
-  window.pfs = pify(fs) // make a Promisified version
-  window.dir = 'tutorial'
+
+  // Initialize isomorphic-git with our new file system
+  git.plugins.set('fs', fs)
+
+  // make a Promisified version for convenience
+  window.pfs = pify(fs) 
 })
 
 </script>
@@ -52,7 +61,6 @@ Since Github hasn't added CORS headers to the git clone endpoint yet, we have to
 
 ```js live
 await git.clone({
-    fs,
     dir,
     url: 'https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git',
     ref: 'master',
@@ -69,7 +77,7 @@ Let's see what the recent history of this branch looks like.
 *Hint: be sure to expand the objects so you can see all the properties.*
 
 ```js live
-await git.log({fs, dir})
+await git.log({dir})
 ```
 
 Git is used to track files. Let's see what kind of file things we can do!
@@ -77,7 +85,7 @@ Git is used to track files. Let's see what kind of file things we can do!
 git.status is a major one. That let's us compare the working directory file to the current branch.
 
 ```js live
-await git.status({fs, dir, filepath: '$input((README.md))'})
+await git.status({dir, filepath: '$input((README.md))'})
 ```
 
 OK so the status is "unmodified" because we haven't modified it.
@@ -85,7 +93,7 @@ What if we change the file by writing over it?
 
 ```js live
 await pfs.writeFile(`${dir}/README.md`, 'Very short README', 'utf8')
-await git.status({fs, dir, filepath: 'README.md'})
+await git.status({dir, filepath: 'README.md'})
 ```
 
 The status is "\*modified" with a star.
@@ -93,8 +101,8 @@ Text editors sometimes use a "\*" in the title bar to indicate a file has unsave
 That's what is going on here - we've made changes to the file but we haven't added those changes to the git "staging area".
 
 ```js live
-await git.add({fs, dir, filepath: 'README.md'})
-await git.status({fs, dir, filepath: 'README.md'})
+await git.add({dir, filepath: 'README.md'})
+await git.status({dir, filepath: 'README.md'})
 ```
 
 Now that we've done "git add" that little star has gone away and the status is just "modified".
@@ -103,42 +111,42 @@ What if we write a new file?
 
 ```js live
 await pfs.writeFile(`${dir}/newfile.txt`, 'Hello World', 'utf8')
-await git.status({fs, dir, filepath: 'newfile.txt'})
+await git.status({dir, filepath: 'newfile.txt'})
 ```
 
 "\*added" means the file has been added, but not staged. Simple to fix:
 
 ```js live
-await git.add({fs, dir, filepath: 'newfile.txt'})
-await git.status({fs, dir, filepath: 'newfile.txt'})
+await git.add({dir, filepath: 'newfile.txt'})
+await git.status({dir, filepath: 'newfile.txt'})
 ```
 
 The third and final trick: deleting a file:
 
 ```js live
 await pfs.unlink(`${dir}/package.json`)
-await git.status({fs, dir, filepath: 'package.json'})
+await git.status({dir, filepath: 'package.json'})
 ```
 
 This last bit has always been unintuitive to me... but you need to tell git you deleted the file.
 ```js live
-await git.remove({fs, dir, filepath: 'package.json'})
-await git.status({fs, dir, filepath: 'package.json'})
+await git.remove({dir, filepath: 'package.json'})
+await git.status({dir, filepath: 'package.json'})
 ```
 
 What happens if you tell git you deleted a file but you really didn't?
 
 ```js live
-await git.remove({fs, dir, filepath: 'package-lock.json'})
-await git.status({fs, dir, filepath: 'package-lock.json'})
+await git.remove({dir, filepath: 'package-lock.json'})
+await git.status({dir, filepath: 'package-lock.json'})
 ```
 
 Does that make sense? No? Sorry, naming things is hard. (Git doesn't do a great job of it either.
 It reports the file as "untracked" and "deleted" at the same time.) OK, enough messing around.
 
 ```js live
-await git.add({fs, dir, filepath: 'package-lock.json'})
-await git.status({fs, dir, filepath: 'package-lock.json'})
+await git.add({dir, filepath: 'package-lock.json'})
+await git.status({dir, filepath: 'package-lock.json'})
 ```
 
 Cool. So we've deleted package.json and replaced the README with the text "Very short README".
@@ -146,7 +154,6 @@ A solid day's work - let's commit those changes.
 
 ```js live
 let sha = await git.commit({
-  fs,
   dir,
   message: 'Delete package.json and overwrite README.',
   author: {
@@ -161,7 +168,7 @@ sha
 git.commit returns the shasum of our new commit. Let's examine our handiwork:
 
 ```js live
-commits = await git.log({fs, dir, depth: 1})
+commits = await git.log({dir, depth: 1})
 commits[0]
 ```
 

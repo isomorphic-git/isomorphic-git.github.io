@@ -5,14 +5,15 @@ sidebar_label: readObject
 
 Read a git object directly by its SHA1 object id
 
-| param                   | type [= default]                | description                                                                                                                                                                        |
-| ----------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string        | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path                                |
-| **oid**                 | string                          | The SHA-1 object id to get.                                                                                                                                                        |
-| format                  | string = 'parsed'               | What format to return the object in. The possible choices are listed below.                                                                                                        |
-| filepath                | string = undefined              | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''`    |
-| encoding                | string = undefined              | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                    |
-| return                  | Promise\<GitObjectDescription\> | Resolves successfully with an array of tag names                                                                                                                                   |
+| param           | type [= default]                | description                                                                                                                                                                     |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| fs [deprecated] | FSModule                        | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).                                                                       |
+| **dir**, gitdir | string, string                  | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path                                                                  |
+| **oid**         | string                          | The SHA-1 object id to get.                                                                                                                                                     |
+| format          | string = 'parsed'               | What format to return the object in. The possible choices are listed below.                                                                                                     |
+| filepath        | string = undefined              | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''` |
+| encoding        | string = undefined              | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                 |
+| return          | Promise\<GitObjectDescription\> | Resolves successfully with an array of tag names                                                                                                                                |
 
 `format` can have the following values:
 
@@ -53,11 +54,10 @@ export interface GitObjectDescription {
 
 ```js live
 // Get the contents of 'README.md' in the master branch.
-let repo = {fs, dir: '$input((.))'}
-let sha = await git.resolveRef({...repo, ref: '$input((master))'})
+let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
 console.log(sha)
 let { object: blob } = await git.readObject({
-  ...repo,
+  dir: '$input((.))',
   oid: sha,
   $textarea((filepath: 'README.md',
   encoding: 'utf8'))
@@ -67,20 +67,19 @@ console.log(blob)
 
 ```js live
 // Find all the .js files in the current master branch containing the word 'commit'
-let repo = {fs, dir: '$input((.))'}
-let sha = await git.resolveRef({...repo, ref: '$input((master))'})
+let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
 console.log(sha)
-let { object: commit } = await git.readObject({...repo, oid: sha})
+let { object: commit } = await git.readObject({ dir: '$input((.))', oid: sha })
 console.log(commit)
 
 const searchTree = async ({oid, prefix = ''}) => {
-  let { object: tree } = await git.readObject({...repo, oid})
+  let { object: tree } = await git.readObject({ dir: '$input((.))', oid })
   for (let entry of tree.entries) {
     if (entry.type === 'tree') {
       await searchTree({oid: entry.oid, prefix: `${prefix}/${entry.path}`})
     } else if (entry.type === 'blob') {
       if ($input((entry.path.endsWith('.js')))) {
-        let { object: blob } = await git.readObject({...repo, oid: entry.oid})
+        let { object: blob } = await git.readObject({ dir: '$input((.))', oid: entry.oid })
         if ($input((blob.toString('utf8').includes('commit')))) {
           console.log(`${prefix}/${entry.path}`)
         }

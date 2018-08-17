@@ -22,14 +22,14 @@ The possible resolve values are:
 | `"*absent"`     | file not present in working dir or HEAD commit, but present in the index |
 
 
-| param                   | type [= default]         | description                                                                                                                                         |
-| ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **filepath**            | string                   | The path to the file to query                                                                                                                       |
-| return                  | Promise\<string\>        | Resolves successfully with the file's git status                                                                                                    |
+| param           | type [= default]  | description                                                                                                    |
+| --------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| fs [deprecated] | FSModule          | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
+| **dir**, gitdir | string, string    | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **filepath**    | string            | The path to the file to query                                                                                  |
+| return          | Promise\<string\> | Resolves successfully with the file's git status                                                               |
 
 ```js live
-let repo = {fs, dir: '$input((.))'}
-let status = await git.status({...repo, filepath: '$input((README.md))'})
+let status = await git.status({ dir: '$input((.))', filepath: '$input((README.md))' })
 console.log(status)
 ```

@@ -5,13 +5,14 @@ sidebar_label: verify
 
 Verify a signed commit
 
-| param                   | type [= default]                 | description                                                                                                                                         |
-| ----------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string         | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **openpgp**             | OpenPGP interface                | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                                                              |
-| **ref**                 | string                           | A reference to the commit to verify                                                                                                                 |
-| **publicKeys**          | string                           | A PGP public key in ASCII armor format.                                                                                                             |
-| return                  | Promise\<false/Array\<string\>\> | The key ids used to sign the commit, in hex format.                                                                                                 |
+| param           | type [= default]                 | description                                                                                                    |
+| --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| fs [deprecated] | FSModule                         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
+| **dir**, gitdir | string, string                   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| **openpgp**     | OpenPGP interface                | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                         |
+| **ref**         | string                           | A reference to the commit to verify                                                                            |
+| **publicKeys**  | string                           | A PGP public key in ASCII armor format.                                                                        |
+| return          | Promise\<false/Array\<string\>\> | The key ids used to sign the commit, in hex format.                                                            |
 
 <aside>
 OpenPGP.js is unfortunately licensed under the LGPL-3.0 and thus cannot be included in a minified bundle with
@@ -31,9 +32,8 @@ you can technically have multiple public keys in a single ASCII armor string. Wh
 should support verifying a single commit signed with multiple keys. Hence why the returned result is an array of key ids.
 
 ```js live
-let repo = {fs, dir: '.'}
 let keyids = await git.verify({
-  ...repo,
+  dir: '.',
   openpgp,
   ref: '$input((HEAD))',
   publicKeys: `$textarea((

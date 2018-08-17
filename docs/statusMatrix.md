@@ -5,12 +5,13 @@ sidebar_label: statusMatrix
 
 Efficiently get the status of multiple files at once.
 
-| param                   | type [= default]         | description                                                                                                                                         |
-| ----------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **fs**, **dir**, gitdir | FSModule, string, string | The filesystem holding the git repo, the [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| ref                     | string = 'HEAD'          | Optionally specify a different commit to compare against the workdir and stage instead of the HEAD.                                                 |
-| pattern                 | string = null            | Filter the results to only those whose filepath matches a glob pattern.                                                                             |
-| return                  | Promise\<StatusMatrix\>  | Resolves with a status matrix, described below.                                                                                                     |
+| param           | type [= default]        | description                                                                                                    |
+| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| fs [deprecated] | FSModule                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
+| **dir**, gitdir | string, string          | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
+| ref             | string = 'HEAD'         | Optionally specify a different commit to compare against the workdir and stage instead of the HEAD.            |
+| pattern         | string = null           | Filter the results to only those whose filepath matches a glob pattern.                                        |
+| return          | Promise\<StatusMatrix\> | Resolves with a status matrix, described below.                                                                |
 
 The returned `StatusMatrix` is admittedly not the easiest format to read.
 However it conveys a large amount of information in dense format that should make it easy to create reports about the current state of the repository;
@@ -19,15 +20,13 @@ My hope is that the speed and flexibility of the function will make up for the l
 
 ```js live
 // get the status of all the files in 'src'
-let repo = {fs, dir: '$input((.))'}
-let status = await git.statusMatrix({...repo, pattern: '$input((src/**))'})
+let status = await git.statusMatrix({ dir: '$input((.))', pattern: '$input((src/**))' })
 console.log(status)
 ```
 
 ```js live
 // get the status of all the JSON and Markdown files
-let repo = {fs, dir: '$input((.))'}
-let status = await git.statusMatrix({...repo, pattern: '$input((**/*.{json,md}))'})
+let status = await git.statusMatrix({ dir: '$input((.))', pattern: '$input((**/*.{json,md}))' })
 console.log(status)
 ```
 
@@ -79,7 +78,7 @@ Here are some examples of queries you can answer using the result:
 ```js
 const FILE = 0, WORKDIR = 2
 
-const filenames = (await statusMatrix({ fs, dir }))
+const filenames = (await statusMatrix({ dir }))
   .filter(row => row[WORKDIR] === 0)
   .map(row => row[FILE])
 ```
@@ -88,7 +87,7 @@ const filenames = (await statusMatrix({ fs, dir }))
 ```js
 const FILE = 0, WORKDIR = 2, STAGE = 3
 
-const filenames = (await statusMatrix({ fs, dir }))
+const filenames = (await statusMatrix({ dir }))
   .filter(row => row[WORKDIR] !== row[STAGE])
   .map(row => row[FILE])
 ```
@@ -97,7 +96,7 @@ const filenames = (await statusMatrix({ fs, dir }))
 ```js
 const FILE = 0, HEAD = 1, WORKDIR = 2
 
-const filenames = (await statusMatrix({ fs, dir }))
+const filenames = (await statusMatrix({ dir }))
   .filter(row => row[HEAD] !== row[WORKDIR])
   .map(row => row[FILE])
 ```
@@ -106,7 +105,7 @@ const filenames = (await statusMatrix({ fs, dir }))
 ```js
 const FILE = 0, HEAD = 1, STAGE = 3
 
-const filenames = (await statusMatrix({ fs, dir }))
+const filenames = (await statusMatrix({ dir }))
   .filter(row => row[HEAD] === row[STAGE])
   .map(row => row[FILE])
 ```
