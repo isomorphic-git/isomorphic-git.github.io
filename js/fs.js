@@ -1,8 +1,18 @@
-BrowserFS.configure({
-  fs: 'IndexedDB', options: {}
-}, function (err) {
+let fsOptions = {
+  fs: 'IndexedDB',
+  options: {}
+}
+
+BrowserFS.configure(fsOptions, function (err) {
   if (err) return console.log(err)
+
   window.fs = BrowserFS.BFSRequire('fs')
-  window.pfs = pify(fs) // make a Promisified version
+
+  // Initialize isomorphic-git with our new file system
+  git.plugins.set('fs', fs)
+
+  // make a Promisified version for convenience
+  window.pfs = pify(fs) 
+
   window.dir = 'tutorial'
 })
