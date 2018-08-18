@@ -62,7 +62,8 @@ Since Github hasn't added CORS headers to the git clone endpoint yet, we have to
 ```js live
 await git.clone({
     dir,
-    url: 'https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git',
+    corsProxy: 'https://cors.isomorphic-git.org',
+    url: 'https://github.com/isomorphic-git/isomorphic-git',
     ref: 'master',
     singleBranch: true,
     depth: 10

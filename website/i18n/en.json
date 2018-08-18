@@ -41,8 +41,6 @@
     "listTags": "listTags",
     "log": "log",
     "merge": "merge",
-    "node": "Using with Node.js",
-    "in Node": "in Node",
     "plugin_fs": "'fs' plugin",
     "pull": "pull",
     "push": "push",

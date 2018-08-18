@@ -11,6 +11,7 @@ Clone a repository
 | **dir**, gitdir                         | string, string                                | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path                                  |
 | username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                                                   |
 | **url**                                 | string                                        | The URL of the remote repository.                                                                                                               |
+| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Value is stored in the git config file for that repo.       |
 | ref                                     | string   = undefined                          | Which branch to clone. By default this is the designated "main branch" of the repository.                                                       |
 | singleBranch                            | bool     = false                              | Instead of the default behavior of fetching all the branches, only fetch a single branch.                                                       |
 | noCheckout                              | bool     = false                              | If true, clone will only fetch the repo, not check out a branch. Skipping checkout can save a lot of time normally spent writing files to disk. |
@@ -36,7 +37,8 @@ Example code:
 ```js live
 await git.clone({
   dir: '$input((.))',
-  url: '$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git))',
+  corsProxy: 'https://cors.isomorphic-git.org',
+  url: '$input((https://github.com/isomorphic-git/isomorphic-git))',
   $textarea((singleBranch: true,
   depth: 1))
 })

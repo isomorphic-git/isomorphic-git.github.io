@@ -5,23 +5,24 @@ sidebar_label: fetch
 
 Fetch commits from a remote repository
 
-| param                                   | type [= default]                              | description                                                                                                    |
-| --------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated]                         | FSModule                                      | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
-| **dir**, gitdir                         | string, string                                | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                  |
-| url                                     | string   = undefined                          | The URL of the remote repository. Will be gotten from gitconfig if absent.                                     |
-| ref                                     | string   = 'HEAD'                             | Which branch to fetch. By default this is the currently checked out branch.                                    |
-| singleBranch                            | bool     = false                              | Instead of the default behavior of fetching all the branches, only fetch a single branch.                      |
-| noGitSuffix                             | bool     = false                              | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)       |
-| remote                                  | string   = 'origin'                           | What to name the remote that is created. The default is 'origin'.                                              |
-| depth                                   | integer  = undefined                          | Determines how much of the git repository's history to retrieve.                                               |
-| since                                   | Date     = undefined                          | Only fetch commits created after the given date. Mutually exclusive with `depth`.                              |
-| exclude                                 | Array\<string\> = [ ]                         | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.  |
-| relative                                | boolean  = false                              | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.  |
-| tags                                    | boolean  = false                              | Also fetch tags                                                                                                |
-| emitter                                 | EventEmitter = undefined                      | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                    |
-| return                                  | Promise\<FetchResponse\>                      | Resolves successfully when fetch completes                                                                     |
+| param                                   | type [= default]                              | description                                                                                                         |
+| --------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| fs [deprecated]                         | FSModule                                      | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).           |
+| **dir**, gitdir                         | string, string                                | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path      |
+| username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                       |
+| url                                     | string   = undefined                          | The URL of the remote repository. Will be gotten from gitconfig if absent.                                          |
+| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Overrides value in repo config. |
+| ref                                     | string   = 'HEAD'                             | Which branch to fetch. By default this is the currently checked out branch.                                         |
+| singleBranch                            | bool     = false                              | Instead of the default behavior of fetching all the branches, only fetch a single branch.                           |
+| noGitSuffix                             | bool     = false                              | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)            |
+| remote                                  | string   = 'origin'                           | What to name the remote that is created. The default is 'origin'.                                                   |
+| depth                                   | integer  = undefined                          | Determines how much of the git repository's history to retrieve.                                                    |
+| since                                   | Date     = undefined                          | Only fetch commits created after the given date. Mutually exclusive with `depth`.                                   |
+| exclude                                 | Array\<string\> = [ ]                         | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.       |
+| relative                                | boolean  = false                              | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.       |
+| tags                                    | boolean  = false                              | Also fetch tags                                                                                                     |
+| emitter                                 | EventEmitter = undefined                      | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                         |
+| return                                  | Promise\<FetchResponse\>                      | Resolves successfully when fetch completes                                                                          |
 
 The object returned has the following schema:
 
@@ -44,7 +45,8 @@ Example code:
 ```js live
 await git.fetch({
   dir: '$input((.))',
-  url: '$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git))',
+  corsProxy: 'https://cors.isomorphic-git.org',
+  url: '$input((https://github.com/isomorphic-git/isomorphic-git))',
   ref: '$input((master))',
   depth: $input((1)),
   singleBranch: $input((true)),
