@@ -31,6 +31,7 @@
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td>username, password, token, oauth2format</td><td>string, string, string, string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td>url</td><td>string   = undefined</td><td>The URL of the remote repository. Will be gotten from gitconfig if absent.</td></tr>
+<tr><td>corsProxy</td><td>string = undefined</td><td>Optional <a href="https://www.npmjs.com/@isomorphic-git/cors-proxy">CORS proxy</a>. Overrides value in repo config.</td></tr>
 <tr><td>ref</td><td>string   = 'HEAD'</td><td>Which branch to fetch. By default this is the currently checked out branch.</td></tr>
 <tr><td>singleBranch</td><td>bool     = false</td><td>Instead of the default behavior of fetching all the branches, only fetch a single branch.</td></tr>
 <tr><td>noGitSuffix</td><td>bool     = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
@@ -63,7 +64,8 @@
 <p>Example code:</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">await</span> git.fetch({
   <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>,
-  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git))'</span>,
+  <span class="hljs-attr">corsProxy</span>: <span class="hljs-string">'https://cors.isomorphic-git.org'</span>,
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'$input((https://github.com/isomorphic-git/isomorphic-git))'</span>,
   <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span>,
   <span class="hljs-attr">depth</span>: $input((<span class="hljs-number">1</span>)),
   <span class="hljs-attr">singleBranch</span>: $input((<span class="hljs-literal">true</span>)),

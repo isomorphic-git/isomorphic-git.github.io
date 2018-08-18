@@ -30,11 +30,12 @@
 <tr><td>fs [deprecated]</td><td>FSModule</td><td>The filesystem containing the git repo. Overrides the fs provided by the <a href="/docs/en/plugin_fs">plugin system</a>.</td></tr>
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td>username, password, token, oauth2format</td><td>string, string, string, string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
-<tr><td>ref</td><td>string=undefined</td><td>Which branch to push. By default this is the currently checked out branch.</td></tr>
-<tr><td>remote</td><td>string='origin'</td><td>If URL is not specified, determines which remote to use.</td></tr>
-<tr><td>force</td><td>bool     = false</td><td>If true, behaves the same as <code>git push --force</code></td></tr>
-<tr><td>noGitSuffix</td><td>bool     = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
-<tr><td>url</td><td>string=undefined</td><td>The URL of the remote git server. The default is the value set in the git config for that remote.</td></tr>
+<tr><td>ref</td><td>string = undefined</td><td>Which branch to push. By default this is the currently checked out branch.</td></tr>
+<tr><td>remote</td><td>string = 'origin'</td><td>If URL is not specified, determines which remote to use.</td></tr>
+<tr><td>force</td><td>bool   = false</td><td>If true, behaves the same as <code>git push --force</code></td></tr>
+<tr><td>noGitSuffix</td><td>bool   = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
+<tr><td>url</td><td>string = undefined</td><td>The URL of the remote git server. The default is the value set in the git config for that remote.</td></tr>
+<tr><td>corsProxy</td><td>string = undefined</td><td>Optional <a href="https://www.npmjs.com/@isomorphic-git/cors-proxy">CORS proxy</a>. Overrides value in repo config.</td></tr>
 <tr><td>emitter</td><td>EventEmitter = undefined</td><td>Listeners to this EventEmitter can receive 'message' events.</td></tr>
 <tr><td>return</td><td>Promise&lt;PushResponse&gt;</td><td>Resolves successfully when push completes with a detailed description of the operation from the server.</td></tr>
 </tbody>

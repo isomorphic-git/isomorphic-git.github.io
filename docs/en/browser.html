@@ -67,7 +67,8 @@ Since Github hasn't added CORS headers to the git clone endpoint yet, we have to
 (They never suspected that a <em>browser</em> would want to run &quot;git clone&quot;!)</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">await</span> git.clone({
     dir,
-    <span class="hljs-attr">url</span>: <span class="hljs-string">'https://cors.isomorphic-git.org/github.com/isomorphic-git/isomorphic-git'</span>,
+    <span class="hljs-attr">corsProxy</span>: <span class="hljs-string">'https://cors.isomorphic-git.org'</span>,
+    <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/isomorphic-git/isomorphic-git'</span>,
     <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>,
     <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>,
     <span class="hljs-attr">depth</span>: <span class="hljs-number">10</span>
