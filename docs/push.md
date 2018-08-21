@@ -11,6 +11,7 @@ Push a branch or tag
 | **dir**, gitdir                         | string, string                                | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path      |
 | username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                       |
 | ref                                     | string = undefined                            | Which branch to push. By default this is the currently checked out branch.                                          |
+| remoteRef                               | string = undefined                            | The name of the receiving branch on the remote. By default this is the same as `ref`.                               |
 | remote                                  | string = 'origin'                             | If URL is not specified, determines which remote to use.                                                            |
 | force                                   | bool   = false                                | If true, behaves the same as `git push --force`                                                                     |
 | noGitSuffix                             | bool   = false                                | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)            |
