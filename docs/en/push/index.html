@@ -31,6 +31,7 @@
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td>username, password, token, oauth2format</td><td>string, string, string, string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td>ref</td><td>string = undefined</td><td>Which branch to push. By default this is the currently checked out branch.</td></tr>
+<tr><td>remoteRef</td><td>string = undefined</td><td>The name of the receiving branch on the remote. By default this is the same as <code>ref</code>.</td></tr>
 <tr><td>remote</td><td>string = 'origin'</td><td>If URL is not specified, determines which remote to use.</td></tr>
 <tr><td>force</td><td>bool   = false</td><td>If true, behaves the same as <code>git push --force</code></td></tr>
 <tr><td>noGitSuffix</td><td>bool   = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
