@@ -35,6 +35,7 @@
       "getRemoteInfo",
       "findRoot",
       "expandRef",
+      "expandOid",
       "resetIndex",
       "resolveRef",
       "readObject",
