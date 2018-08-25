@@ -53,4 +53,5 @@
 <url> <loc>https://isomorphic-git.org/docs/en/utils_oauth2</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/utils_oauth2.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/verify</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/verify.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/version</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/version.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/writeObject</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/writeObject.html" /> </url>
 </urlset>
