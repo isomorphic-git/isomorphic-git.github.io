@@ -18,8 +18,8 @@ Here's a whirlwind tour of the main features of `isomorphic-git`.
 First, let's set up BrowserFS and isomorphic-git. *Note: I've already done this for you, which is why there is no RUN button for this code block.*
 
 ```html
-<script src="https://wzrd.in/standalone/pify@latest"></script>
-<script src="https://unpkg.com/browserfs@beta"></script>
+<script src="https://isomorphic-git.org/js/browserfs.js"></script>
+<script src="https://isomorphic-git.org/js/pify.js"></script>
 <script src="https://unpkg.com/isomorphic-git"></script>
 <script>
 
