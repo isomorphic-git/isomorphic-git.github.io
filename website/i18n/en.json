@@ -58,6 +58,7 @@
     "utils.oauth2": "utils.oauth2",
     "verify": "verify",
     "version": "version",
+    "writeObject": "writeObject",
     "API Docs": "API Docs",
     "Guide": "Guide",
     "Blog": "Blog",

@@ -37,3 +37,4 @@ sidebar_label: Alphabetical Index
 - [utils.oauth2](utils_oauth2.md) [deprecated]
 - [verify](verify.md)
 - [version](version.md)
+- [writeObject](writeObject.md)

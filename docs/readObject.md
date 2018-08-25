@@ -58,7 +58,7 @@ let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
 console.log(sha)
 let { object: blob } = await git.readObject({
   dir: '$input((.))',
-  oid: sha,
+  oid: $input((sha)),
   $textarea((filepath: 'README.md',
   encoding: 'utf8'))
 })

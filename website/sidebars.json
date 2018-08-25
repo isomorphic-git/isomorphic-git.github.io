@@ -39,6 +39,7 @@
       "resetIndex",
       "resolveRef",
       "readObject",
+      "writeObject",
       "statusMatrix",
       "isDescendent",
       "indexPack"
