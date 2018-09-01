@@ -57,7 +57,7 @@ const siteConfig = {
   footerscripts: [
     '/js/gitter.js',
     '/js/sidecar.v1.js',
-    '/js/browserfs.js',
+    '/js/browserfs.min.js',
     'https://unpkg.com/isomorphic-git',
     'https://unpkg.com/openpgp@2.6.2/dist/openpgp.js',
     '/js/pify.js',
