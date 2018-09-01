@@ -25,7 +25,8 @@
       "merge"
     ],
     "Plugins": [
-      "plugin_fs"
+      "plugin_fs",
+      "plugin_credentialManager"
     ],
     "PGP Signing": [
       "sign",
