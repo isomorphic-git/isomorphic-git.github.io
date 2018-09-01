@@ -1,3 +1,5 @@
+;(function () {
+
 function disableEnterKey (event) {
   if (event.key === 'Enter') {
     event.preventDefault()
@@ -112,7 +114,7 @@ function createLogOutputItem (output) {
   return o
 }
 
-document.addEventListener('DOMContentLoaded', function listener () {
+function listener () {
   document.removeEventListener('DOMContentLoaded', listener)
   // Add the RUN buttons
   let blocks = document.querySelectorAll('pre > code.js.live')
@@ -140,4 +142,12 @@ document.addEventListener('DOMContentLoaded', function listener () {
       }
     }
   }
-})
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener('DOMContentLoaded', listener)
+} else {
+  listener()
+}
+
+})();
