@@ -172,14 +172,3 @@ git.commit returns the shasum of our new commit. Let's examine our handiwork:
 commits = await git.log({dir, depth: 1})
 commits[0]
 ```
-
-<!--
-I just had a brilliant idea. What if instead of starting out cloning `isomorphic-git`
-I had you the user create a new Github repo at the beginning with a default 'LICENSE.md' and 'README.md'?
-Then we could actually push the changes we've made here in this last step.
-
-When you create the repo, I'll have to add instructions for creating an access token for that repo so
-you can push the results. Wait, Github doesn't allow you to specify write permissions for an individual repo?
-Grr now they'll have to create an organization... wait that's a permanent name thing... ugh. I need
-to build a bot to automate this thing. It can create the repo, then give *you* access to it. Or something.
--->
