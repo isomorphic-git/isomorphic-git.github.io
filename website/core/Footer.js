@@ -63,6 +63,19 @@ class Footer extends React.Component {
             <div id="codefund_ad"></div>
           </div>
         </section>
+
+        {/* External scripts */}
+        {this.props.config.footerscripts &&
+          this.props.config.footerscripts.map(function(source, idx) {
+            return (
+              <script
+                type="text/javascript"
+                key={'script' + idx}
+                src={source}
+              />
+            );
+          })}
+
       </footer>
     )
   }
