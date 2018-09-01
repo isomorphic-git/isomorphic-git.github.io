@@ -59,7 +59,7 @@ const siteConfig = {
     '/js/sidecar.v1.js',
     '/js/browserfs.min.js',
     'https://unpkg.com/isomorphic-git',
-    'https://unpkg.com/openpgp@2.6.2/dist/openpgp.js',
+    'https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js',
     '/js/pify.js',
     '/js/fs.js',
     'https://unpkg.com/@webcomponents/shadydom',
