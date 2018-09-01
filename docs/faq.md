@@ -7,7 +7,14 @@ sidebar_label: FAQ
 
 Most frequently asked questions will get turned into code.
 For instance, ["How to get the current branch?"](/docs/currentBranch.html) and ["How to list all the files in a commit?"](/docs/listFiles.html) used to be two frequently asked questions.
-So this FAQ is kind of small, because I try to address questions by improving the API whenever possible.
+So this FAQ is kind of small
+
+- [FAQ philosophy](#faq-philosophy)
+- [Is this based on `js-git`?](#is-this-based-on-js-git)
+- [How does this compare with `nodegit`?](#how-does-this-compare-with-nodegit)
+- [How does this compare with...](#how-does-this-compare-with)
+- [Why is there no `default` export in the ES module?](#why-is-there-no-default-export-in-the-es-module)
+- [How to add all untracked files with git.add?](#how-to-add-all-untracked-files-with-gitadd)
 
 ## Is this based on `js-git`?
 
@@ -71,3 +78,39 @@ I haven't had time to review them all.
 - https://github.com/mariusGundersen/es-git
 - https://github.com/SamyPesse/gitkit-js
 - https://github.com/MatrixAI/js-virtualgit
+
+## Why is there no `default` export in the ES module?
+
+> I've noticed that ES6 import of the the module requires import * as git from 'isomorphic-git'.
+> It seems that there's no default export which should just contain all the functions
+> I'm suggesting to have a default export that gathers all the functions together.
+
+_Answer by Will Hilton (@wmhilton):_
+
+Default exports are actually really bad for tree-shaking. If you do `import * as git from 'isomorphic-git'` and only use `git.log`, rollup and webpack are smart enough to only bundle `git.log`.
+But if you do `import git from 'isomorphic-git'` then they can't do any tree-shaking, because you're importing an Object that could have interdependent functions and side effects.
+Plus, if you export a default then the commonjs usage gets weird, because then you have to do `const git = require('git').default`
+So I've concluded that `default` exports are simply a bad pattern, and I don't think anyone should ever use them.
+
+I'll reconsider the matter once Node.js figures out how it is dealing with mixed ES6 imports and CJS requires.
+But for now I think having a `default` export causes more harm than good - since the only good it does is save typing "`* as `" as far as I can tell.
+But that is a VERY good question and one I spent a long time trying to figure out when I was researching how to design the module, and I remember being very disappointed at first when I discovered that `default` exports destroy tree-shaking.
+
+## How to add all untracked files with git.add? 
+
+> I'm looking for a way init a git repo, add all existing files, and commit them, while if I understand correctly, the git.add function needs me to give all of the files explicitly.
+> 
+> Is there a way that I can add all of the files in one or two command?
+
+_Answer by Will Hilton (@wmhilton):_
+
+TLDR:
+```js
+const globby = require('globby');
+const paths = await globby(['./**', './**/.*'], { gitignore: true });
+for (const filepath of paths) {
+    await git.add({ fs, dir, filepath });
+}
+```
+
+Long answer including a browser solution by @jcubic: [#187](https://github.com/isomorphic-git/isomorphic-git/issues/187)
