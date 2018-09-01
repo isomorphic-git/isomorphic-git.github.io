@@ -35,6 +35,7 @@ const siteConfig = {
   /* path to images for header/footer */
   headerIcon: 'img/isomorphic-git-logo.svg',
   footerIcon: 'img/isomorphic-git-logo.svg',
+  twitterImage: 'img/isomorphic-git-logo.svg',
   favicon: 'img/favicon.png',
   /* colors for website */
   colors: {
