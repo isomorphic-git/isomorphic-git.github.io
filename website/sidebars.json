@@ -1,7 +1,8 @@
 {
   "docs": {
     "All Commands": [
-      "alphabetic"
+      "alphabetic",
+      "errors"
     ],
     "Basic Commands": [
       "init",
