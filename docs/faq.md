@@ -15,6 +15,7 @@ So this FAQ is kind of small
 - [How does this compare with...](#how-does-this-compare-with)
 - [Why is there no `default` export in the ES module?](#why-is-there-no-default-export-in-the-es-module)
 - [How to add all untracked files with git.add?](#how-to-add-all-untracked-files-with-gitadd)
+- [How to make a shallow repository unshallow?](#how-to-make-a-shallow-repository-unshallow)
 
 ## Is this based on `js-git`?
 
@@ -114,3 +115,19 @@ for (const filepath of paths) {
 ```
 
 Long answer including a browser solution by @jcubic: [#187](https://github.com/isomorphic-git/isomorphic-git/issues/187)
+
+## How to make a shallow repository unshallow?
+
+> Is there an equivalent to `git fetch --unshallow`?
+
+The fast and dirty solution is just use really big depth, like `{depth: 1000000000}`.
+
+What I would actually recommend would be the following:
+- Start with `{ singleBranch: true, depth: 1 }`
+- Then fetch with `{ depth: 100, relative: true }` which will grab the previous 100 commits
+- Then repeat fetching with `{ depth: 100, relative: true }` as needed until you have the full history. 
+
+This gives you a well-behaved, paginated method for lengthening the git history as needed!
+
+You can tell you have the full history indirectly by a couple of means... probably the easiest would just be `git.log` and when the array returned stops growing in length.
+A slightly more efficient way of telling if you have the full history, would be to grab the oid from the last commit returned by `git.log` and use that as the starting point for the next call to `git.log` with `{ ref: oid }` and keep repeating until git.log only returns one commit. Or you could use the `'progress' event emitter` in `fetch` and if the fetch completed successfully with 0 progress events, I think that would indicate there's no more to fetch. 
