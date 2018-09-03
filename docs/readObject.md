@@ -13,7 +13,7 @@ Read a git object directly by its SHA1 object id
 | format          | string = 'parsed'               | What format to return the object in. The possible choices are listed below.                                                                                                     |
 | filepath        | string = undefined              | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''` |
 | encoding        | string = undefined              | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                 |
-| return          | Promise\<GitObjectDescription\> | Resolves successfully with an array of tag names                                                                                                                                |
+| return          | Promise\<GitObjectDescription\> | Resolves successfully with a git object description.                                                                                                                             |
 
 `format` can have the following values:
 
