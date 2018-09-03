@@ -33,7 +33,7 @@
 <tr><td>format</td><td>string = 'parsed'</td><td>What format to return the object in. The possible choices are listed below.</td></tr>
 <tr><td>filepath</td><td>string = undefined</td><td>Don't return the object with <code>oid</code> itself, but resolve <code>oid</code> to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to <code>''</code></td></tr>
 <tr><td>encoding</td><td>string = undefined</td><td>A convenience argument that only affects blobs. Instead of returning <code>object</code> as a buffer, it returns a string parsed using the given encoding.</td></tr>
-<tr><td>return</td><td>Promise&lt;GitObjectDescription&gt;</td><td>Resolves successfully with an array of tag names</td></tr>
+<tr><td>return</td><td>Promise&lt;GitObjectDescription&gt;</td><td>Resolves successfully with a git object description.</td></tr>
 </tbody>
 </table>
 <p><code>format</code> can have the following values:</p>
