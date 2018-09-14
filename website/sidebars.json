@@ -23,7 +23,8 @@
       "checkout",
       "push",
       "pull",
-      "merge"
+      "merge",
+      "walkBeta1"
     ],
     "Plugins": [
       "plugin_fs",
