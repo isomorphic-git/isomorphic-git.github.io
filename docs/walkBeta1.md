@@ -48,7 +48,7 @@ let trees = [
 
 `filter`, `map`, `reduce`, and `iterate` allow you control the recursive walk by pruning and transforming `TreeEntry`s into the desired result.
 
-### TreeEntry
+## TreeEntry
 The `TreeEntry` is an interface that abstracts computing many common tree / blob stats.
 `filter` and `map` each receive an array of `TreeEntry[]` as their main argument, one `TreeEntry` for each `GitWalker` in the `trees` argument.
 
@@ -92,7 +92,7 @@ await entry.populateHash()
 entry.oid // SHA1 string
 ```
 
-### filter(TreeEntry[]) => boolean
+## filter(TreeEntry[]) => boolean
 
 Default: `async () => true`.
 
@@ -117,7 +117,7 @@ async function filter ([head, workdir, stage]) {
 }
 ```
 
-### map(TreeEntry[]) => any
+## map(TreeEntry[]) => any
 
 Default: `async entry => entry`
 
@@ -155,14 +155,14 @@ async function map([head, workdir]) {
 }
 ```
 
-### iterate(walk, children)
+## iterate(walk, children)
 
 Default: `(recurse, children) => Promise.all([...children].map(recurse))`
 
 The default implementation recurses all children concurrently using Promise.all.
 However you could use a custom function to traverse children serially or use a global queue to throttle recursion.
 
-### reduce(mappedParent, mappedChildren[])
+## reduce(mappedParent, mappedChildren[])
 
 Default: `async (parent, children) => parent === undefined ? children.flat() : [parent, children].flat()`
 
