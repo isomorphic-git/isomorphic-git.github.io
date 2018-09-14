@@ -9,11 +9,11 @@ A powerful recursive tree-walking utility.
 | --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | fs [deprecated] | FSModule                         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
 | **dir**, gitdir | string, string                   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **trees**       | Array<TREE\|WORKDIR\|STAGE>      | The trees you want to traverse                                                                                 |
-| filter          | async (TreeEntry[]) => boolean         | Filter which GitWalkEntries to process                                                                        |
-| map             | async (TreeEntry[]) => any             | Transform GitWalkEntries into a result form                                                                    |
-| iterate         | async (recurse, children) => any | Fine-tune how entries within a tree are iterated over                                                  |
-| reduce          | async (parent, children)         | Control how tree entries are combined with their parent tree result                                            |
+| **trees**       | GitWalker[]                      | The trees you want to traverse                                                                                 |
+| filter          | async (TreeEntry[]) => boolean   | Filter which GitWalkEntries to process                                                                         |
+| map             | async (TreeEntry[]) => any       | Transform GitWalkEntries into a result form                                                                    |
+| iterate         | async (recurse, children) => any | Fine-tune how entries within a tree are iterated over                                                          |
+| reduce          | async (parent, children) => any  | Control how tree entries are combined with their parent tree result                                            |
 | return          | any                              | The finished tree-walking result                                                                               |
 
 
