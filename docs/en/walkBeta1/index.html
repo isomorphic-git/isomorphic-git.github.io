@@ -29,11 +29,11 @@
 <tbody>
 <tr><td>fs [deprecated]</td><td>FSModule</td><td>The filesystem containing the git repo. Overrides the fs provided by the <a href="/docs/en/plugin_fs">plugin system</a>.</td></tr>
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
-<tr><td><strong>trees</strong></td><td>Array&lt;TREE\</td><td>WORKDIR\</td><td>STAGE&gt;</td><td>The trees you want to traverse</td></tr>
+<tr><td><strong>trees</strong></td><td>GitWalker[]</td><td>The trees you want to traverse</td></tr>
 <tr><td>filter</td><td>async (TreeEntry[]) =&gt; boolean</td><td>Filter which GitWalkEntries to process</td></tr>
 <tr><td>map</td><td>async (TreeEntry[]) =&gt; any</td><td>Transform GitWalkEntries into a result form</td></tr>
 <tr><td>iterate</td><td>async (recurse, children) =&gt; any</td><td>Fine-tune how entries within a tree are iterated over</td></tr>
-<tr><td>reduce</td><td>async (parent, children)</td><td>Control how tree entries are combined with their parent tree result</td></tr>
+<tr><td>reduce</td><td>async (parent, children) =&gt; any</td><td>Control how tree entries are combined with their parent tree result</td></tr>
 <tr><td>return</td><td>any</td><td>The finished tree-walking result</td></tr>
 </tbody>
 </table>
