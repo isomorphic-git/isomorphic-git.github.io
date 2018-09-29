@@ -17,7 +17,8 @@ Push a branch or tag
 | noGitSuffix                             | bool   = false                                | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)            |
 | url                                     | string = undefined                            | The URL of the remote git server. The default is the value set in the git config for that remote.                   |
 | corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Overrides value in repo config. |
-| emitter                                 | EventEmitter = undefined                      | Listeners to this EventEmitter can receive 'message' events.                                                        |
+| emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                     |
+| emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                          |
 | return                                  | Promise\<PushResponse\>                       | Resolves successfully when push completes with a detailed description of the operation from the server.             |
 
 The push command returns an object that describes the result of the attempted push operation.
@@ -28,15 +29,11 @@ The push command returns an object that describes the result of the attempted pu
 | ok     | Array\<string\>  | The first item is "unpack" if the overall operation was successful. The remaining items are the names of refs that were updated successfully.                                                                    |
 | errors | Array\<string\>  | If the overall operation threw and error, the first item will be "unpack {Overall error message}". The remaining items are individual refs that failed to be updated in the format "{ref name} {error message}". |
 
+To monitor progress events, see the documentation for the [`'emitter'` plugin](./plugin_emitter.md).
 
-To monitor progress, create an EventEmitter, add listeners, and pass into the function as the `emitter` argument.
+Example code:
 
-| event   | type   | description                                                                                          |
-| ------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| message | string | The messages from the remote git server, normally shown in the git console prefixed with "`remote:`" |
-
-
- ```js live
+```js live
 let pushResponse = await git.push({
   dir: '$input((.))',
   remote: '$input((origin))',

@@ -22,15 +22,11 @@ Clone a repository
 | since                                   | Date     = undefined                          | Only fetch commits created after the given date. Mutually exclusive with `depth`.                                                               |
 | exclude                                 | Array\<string\> = [ ]                         | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.                                   |
 | relative                                | boolean  = false                              | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.                                   |
-| emitter                                 | EventEmitter = undefined                      | Listeners to this EventEmitter can receive 'progress' and 'message' events.                                                                     |
+| emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                     |
+| emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                          |
 | return                                  | Promise\<void\>                               | Resolves successfully when clone completes                                                                                                      |
 
-To monitor progress, create an EventEmitter, add listeners, and pass into the function as the `emitter` argument.
-
-| event    | type                                                                            | description                                                                     |
-| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| message  | string                                                                          | The messages embedded in the git packfile normally displayed in the git console |
-| progress | [ProgressEvent](https://developer.mozilla.org/en-US/docs/Web/API/ProgressEvent) | Just the numbers from those messages                                            |
+To monitor progress events, see the documentation for the [`'emitter'` plugin](./plugin_emitter.md).
 
 Example code:
 
