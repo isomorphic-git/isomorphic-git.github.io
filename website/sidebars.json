@@ -27,6 +27,7 @@
       "walkBeta1"
     ],
     "Plugins": [
+      "plugin_emitter",
       "plugin_fs",
       "plugin_credentialManager"
     ],
