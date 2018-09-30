@@ -5,16 +5,14 @@ sidebar_label: walkBeta1
 
 A powerful recursive tree-walking utility.
 
-| param           | type [= default]                 | description                                                                                                    |
-| --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule                         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
-| **dir**, gitdir | string, string                   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **trees**       | GitWalker[]                      | The trees you want to traverse                                                                                 |
-| filter          | async (TreeEntry[]) => boolean   | Filter which GitWalkEntries to process                                                                         |
-| map             | async (TreeEntry[]) => any       | Transform GitWalkEntries into a result form                                                                    |
-| iterate         | async (recurse, children) => any | Fine-tune how entries within a tree are iterated over                                                          |
-| reduce          | async (parent, children) => any  | Control how tree entries are combined with their parent tree result                                            |
-| return          | any                              | The finished tree-walking result                                                                               |
+| param     | type [= default]                | description                                                      |
+| --------- | ------------------------------- | ---------------------------------------------------------------- |
+| **trees** | Walker[]                        | The trees you want to traverse                                   |
+| filter    | async (WalkerEntry) => boolean | Filter which `WalkerEntry`s to process                           |
+| map       | async (WalkerEntry) => any     | Transform `WalkerEntry`s into a result form                      |
+| reduce    | async (parent, children) => any | Control how mapped entries are combined with their parent result |
+| iterate   | async (walk, children) => any   | Fine-tune how entries within a tree are iterated over            |
+| return    | any                             | The finished tree-walking result                                 |
 
 
 The `walk` API (tentatively named `walkBeta1`) simplifies gathering detailed information about a tree or comparing all the filepaths in two or more trees.
@@ -31,9 +29,10 @@ The trees are represented by three magic functions that can be imported:
 import { TREE, WORKDIR, STAGE } from 'isomorphic-git'
 ```
 
-These functions return objects that implement the `GitWalker` interface.
+These functions return objects that implement the `Walker` interface.
 The only thing they are good for is passing into `walkBeta1`'s `trees` argument.
-Here are the three `trees` passed into `walkBeta1` by the `statusMatrix` command for example:
+Here are the three `Walker`s passed into `walkBeta1` by the `statusMatrix` command for example:
+
 ```js
 let gitdir = '.git'
 let dir = '.'
@@ -46,13 +45,14 @@ let trees = [
 ]
 ```
 
-`filter`, `map`, `reduce`, and `iterate` allow you control the recursive walk by pruning and transforming `TreeEntry`s into the desired result.
+`filter`, `map`, `reduce`, and `iterate` allow you control the recursive walk by pruning and transforming `WalkerTree`s into the desired result.
 
-## TreeEntry
-The `TreeEntry` is an interface that abstracts computing many common tree / blob stats.
-`filter` and `map` each receive an array of `TreeEntry[]` as their main argument, one `TreeEntry` for each `GitWalker` in the `trees` argument.
+## WalkerTree and WalkerEntry
+The `WalkerTree` is an interface that abstracts computing many common tree / blob stats.
+`filter` and `map` each receive an array of `WalkerTree[]` as their main argument, one `WalkerTree` for each `Walker` in the `trees` argument.
+An array of corresponding `WalkerTree` objects is a `WalkerEntry`.
 
-By default, `TreeEntry`s only have three properties:
+By default, `WalkerTree`s only have three properties:
 ```js
 {
   fullpath: string;
@@ -92,7 +92,7 @@ await entry.populateHash()
 entry.oid // SHA1 string
 ```
 
-## filter(TreeEntry[]) => boolean
+## filter(WalkerEntry) => boolean
 
 Default: `async () => true`.
 
@@ -117,7 +117,7 @@ async function filter ([head, workdir, stage]) {
 }
 ```
 
-## map(TreeEntry[]) => any
+## map(WalkerEntry) => any
 
 Default: `async entry => entry`
 
@@ -155,14 +155,7 @@ async function map([head, workdir]) {
 }
 ```
 
-## iterate(walk, children)
-
-Default: `(recurse, children) => Promise.all([...children].map(recurse))`
-
-The default implementation recurses all children concurrently using Promise.all.
-However you could use a custom function to traverse children serially or use a global queue to throttle recursion.
-
-## reduce(mappedParent, mappedChildren[])
+## reduce(parent, children)
 
 Default: `async (parent, children) => parent === undefined ? children.flat() : [parent, children].flat()`
 
@@ -176,4 +169,11 @@ async function reduce (parent, children) {
 }
 ```
 
-For a complete example, it is best to look at the implementation of `statusMatrix` for now.
+## iterate(walk, children)
+
+Default: `(walk, children) => Promise.all([...children].map(walk))`
+
+The default implementation recurses all children concurrently using Promise.all.
+However you could use a custom function to traverse children serially or use a global queue to throttle recursion.
+
+> Note: For a complete example, look at the implementation of `statusMatrix`.
