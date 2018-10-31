@@ -16,9 +16,10 @@ Push a branch or tag
 | force                                   | bool   = false                                | If true, behaves the same as `git push --force`                                                                     |
 | noGitSuffix                             | bool   = false                                | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)            |
 | url                                     | string = undefined                            | The URL of the remote git server. The default is the value set in the git config for that remote.                   |
-| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Overrides value in repo config. |
-| emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                     |
-| emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                          |
+| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Overrides value in repo config.            |
+| headers                                 | object = {}                                   | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                               |
+| emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                          |
+| emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                               |
 | return                                  | Promise\<PushResponse\>                       | Resolves successfully when push completes with a detailed description of the operation from the server.             |
 
 The push command returns an object that describes the result of the attempted push operation.

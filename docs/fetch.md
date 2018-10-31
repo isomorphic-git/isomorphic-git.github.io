@@ -21,6 +21,7 @@ Fetch commits from a remote repository
 | exclude                                 | Array\<string\> = [ ]                         | A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.  |
 | relative                                | boolean  = false                              | Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.  |
 | tags                                    | boolean  = false                              | Also fetch tags                                                                                                |
+| headers                                 | object = {}                                   | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                          |
 | emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                     |
 | emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                          |
 | return                                  | Promise\<FetchResponse\>                      | Resolves successfully when fetch completes                                                                     |
