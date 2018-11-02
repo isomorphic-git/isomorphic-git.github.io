@@ -41,6 +41,7 @@
 <tr><td>exclude</td><td>Array&lt;string&gt; = [ ]</td><td>A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.</td></tr>
 <tr><td>relative</td><td>boolean  = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
 <tr><td>tags</td><td>boolean  = false</td><td>Also fetch tags</td></tr>
+<tr><td>headers</td><td>object = {}</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>emitter [deprecated]</td><td>EventEmitter = undefined</td><td>Overrides the emitter set via the <a href="/docs/en/plugin_emitter">'emitter' plugin</a>.</td></tr>
 <tr><td>emitterPrefix</td><td>string = ''</td><td>Scope emitted events by prepending <code>emitterPrefix</code> to the event name.</td></tr>
 <tr><td>return</td><td>Promise&lt;FetchResponse&gt;</td><td>Resolves successfully when fetch completes</td></tr>

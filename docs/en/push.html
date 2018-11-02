@@ -37,6 +37,7 @@
 <tr><td>noGitSuffix</td><td>bool   = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
 <tr><td>url</td><td>string = undefined</td><td>The URL of the remote git server. The default is the value set in the git config for that remote.</td></tr>
 <tr><td>corsProxy</td><td>string = undefined</td><td>Optional <a href="https://www.npmjs.com/@isomorphic-git/cors-proxy">CORS proxy</a>. Overrides value in repo config.</td></tr>
+<tr><td>headers</td><td>object = {}</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>emitter [deprecated]</td><td>EventEmitter = undefined</td><td>Overrides the emitter set via the <a href="/docs/en/plugin_emitter">'emitter' plugin</a>.</td></tr>
 <tr><td>emitterPrefix</td><td>string = ''</td><td>Scope emitted events by prepending <code>emitterPrefix</code> to the event name.</td></tr>
 <tr><td>return</td><td>Promise&lt;PushResponse&gt;</td><td>Resolves successfully when push completes with a detailed description of the operation from the server.</td></tr>
