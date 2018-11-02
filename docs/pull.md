@@ -14,6 +14,7 @@ Fetch and merge commits from a remote repository *(Currently, only fast-forward 
 | singleBranch                            | bool     = false                              | Instead of the default behavior of fetching all the branches, only fetch a single branch.                      |
 | fastForwardOnly                         | bool     = false                              | Only perform simple fast-forward merges. (Don't create merge commits.)                                         |
 | noGitSuffix                             | bool     = false                              | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)       |
+| headers                                 | object = {}                                   | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                          |
 | emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                     |
 | emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                          |
 | return                                  | Promise\<void\>                               | Resolves successfully when pull operation completes                                                            |
