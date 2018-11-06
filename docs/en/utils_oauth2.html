@@ -42,11 +42,15 @@ Unfortunately, all the major git hosting companies have chosen different convent
 Lucky for you, I already looked up and codified it for you.</p>
 <ul>
 <li>oauth2('github', token) - Github uses <code>token</code> as the username, and <code>'x-oauth-basic'</code> as the password.</li>
+<li>oauth2('githubapp', token) - Github Apps use <code>'x-access-token'</code> as the username, and <code>token</code> as the password.</li>
 <li>oauth2('bitbucket', token) - Bitbucket uses <code>'x-token-auth'</code> as the username, and <code>token</code> as the password.</li>
 <li>oauth2('gitlab', token) - Gitlab uses <code>'oauth2'</code> as the username, and <code>token</code> as the password.</li>
 </ul>
 <p>I will gladly accept pull requests for more companies' conventions.</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">let</span> credentials = git.utils.oauth2(<span class="hljs-string">'github'</span>, <span class="hljs-string">'token'</span>)
+<span class="hljs-built_in">console</span>.log(credentials)
+
+<span class="hljs-keyword">let</span> credentials = git.utils.oauth2(<span class="hljs-string">'githubapp'</span>, <span class="hljs-string">'token'</span>)
 <span class="hljs-built_in">console</span>.log(credentials)
 
 credentials = git.utils.oauth2(<span class="hljs-string">'bitbucket'</span>, <span class="hljs-string">'token'</span>)
