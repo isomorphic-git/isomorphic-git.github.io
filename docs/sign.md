@@ -3,6 +3,12 @@ title: sign
 sidebar_label: sign
 ---
 
+> **Deprecated**
+> This command will be removed in the 1.0.0 version of `isomorphic-git` as it is no longer necessary.
+>
+> Previously, to sign commits you needed two steps, `commit` and then `sign`.
+> Now commits can be signed when they are created with the [`commit`](./commit.md) command, provided you use a [`pgp`](./plugin_pgp.md) plugin.
+
 Create a signed commit
 
 | param           | type [= default]  | description                                                                                                    |

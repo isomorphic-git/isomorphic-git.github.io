@@ -15,7 +15,8 @@
       "push",
       "pull",
       "merge",
-      "walkBeta1"
+      "walkBeta1",
+      "verify"
     ],
     "Files": [
       "add",
@@ -39,13 +40,10 @@
       "listRemotes"
     ],
     "Plugins": [
+      "plugin_credentialManager",
       "plugin_emitter",
       "plugin_fs",
-      "plugin_credentialManager"
-    ],
-    "PGP Signing": [
-      "sign",
-      "verify"
+      "plugin_pgp"
     ],
     "Plumbing Commands": [
       "findRoot",
@@ -64,7 +62,8 @@
     ],
     "Deprecated Commands": [
       "utils_auth",
-      "utils_oauth2"
+      "utils_oauth2",
+      "sign"
     ]
   },
   "guide": {
