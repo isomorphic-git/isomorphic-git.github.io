@@ -10,6 +10,7 @@
 <url> <loc>https://isomorphic-git.org/blog/2018/04/02/contributing-workflow</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.org/blog/2018/02/18/introducing-isomorphic-git</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/add</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/add.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/addRemote</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/addRemote.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/alphabetic</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/alphabetic.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/authentication</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/authentication.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/branch</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/branch.html" /> </url>
@@ -18,6 +19,8 @@
 <url> <loc>https://isomorphic-git.org/docs/en/commit</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/commit.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/config</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/config.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/currentBranch</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/currentBranch.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/deleteBranch</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/deleteBranch.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/deleteRemote</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/deleteRemote.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/dir-vs-gitdir</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/dir-vs-gitdir.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/errors</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/errors.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/expandOid</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/expandOid.html" /> </url>
