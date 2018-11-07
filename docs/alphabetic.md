@@ -4,12 +4,15 @@ sidebar_label: Alphabetical Index
 ---
 
 - [add](add.md)
+- [addRemote](addRemote.md)
 - [branch](branch.md)
 - [checkout](checkout.md)
 - [clone](clone.md)
 - [commit](commit.md)
 - [config](config.md)
 - [currentBranch](currentBranch.md)
+- [deleteBranch](deleteBranch.md)
+- [deleteRemote](deleteRemote.md)
 - [expandOid](expandOid.md)
 - [expandRef](expandRef.md)
 - [fetch](fetch.md)

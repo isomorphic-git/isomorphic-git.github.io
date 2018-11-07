@@ -4,18 +4,9 @@
       "alphabetic",
       "errors"
     ],
-    "Basic Commands": [
+    "Repository": [
       "init",
       "clone",
-      "currentBranch",
-      "listBranches",
-      "listTags",
-      "listFiles",
-      "listRemotes",
-      "add",
-      "branch",
-      "remove",
-      "status",
       "commit",
       "log",
       "config",
@@ -25,6 +16,27 @@
       "pull",
       "merge",
       "walkBeta1"
+    ],
+    "Files": [
+      "add",
+      "remove",
+      "listFiles",
+      "status"
+    ],
+    "Branches": [
+      "currentBranch",
+      "branch",
+      "deleteBranch",
+      "listBranches"
+    ],
+    "Tags": [
+      "listTags"
+    ],
+    "Remotes": [
+      "getRemoteInfo",
+      "addRemote",
+      "deleteRemote",
+      "listRemotes"
     ],
     "Plugins": [
       "plugin_emitter",
@@ -36,7 +48,6 @@
       "verify"
     ],
     "Plumbing Commands": [
-      "getRemoteInfo",
       "findRoot",
       "expandRef",
       "expandOid",
