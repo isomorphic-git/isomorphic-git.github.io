@@ -16,6 +16,7 @@ So this FAQ is kind of small
 - [Why is there no `default` export in the ES module?](#why-is-there-no-default-export-in-the-es-module)
 - [How to add all untracked files with git.add?](#how-to-add-all-untracked-files-with-gitadd)
 - [How to make a shallow repository unshallow?](#how-to-make-a-shallow-repository-unshallow)
+- [Does it support wire protocol version 2?](#does-it-support-wire-protocol-version-2)
 
 ## Is this based on `js-git`?
 
@@ -131,3 +132,7 @@ This gives you a well-behaved, paginated method for lengthening the git history 
 
 You can tell you have the full history indirectly by a couple of means... probably the easiest would just be `git.log` and when the array returned stops growing in length.
 A slightly more efficient way of telling if you have the full history, would be to grab the oid from the last commit returned by `git.log` and use that as the starting point for the next call to `git.log` with `{ ref: oid }` and keep repeating until git.log only returns one commit. Or you could use the `'progress' event emitter` in `fetch` and if the fetch completed successfully with 0 progress events, I think that would indicate there's no more to fetch. 
+
+## Does it support wire protocol version 2?
+
+Not yet, but you can go [upvote the issue](https://github.com/isomorphic-git/isomorphic-git/issues/585)
