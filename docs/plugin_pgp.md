@@ -9,16 +9,21 @@ of the [verify](./verify.md) and [log](./log.md) commands. Here is how:
 ```js
 // Using require() in Node.js
 const git = require('isomorphic-git')
-const { pgp } = require('@isomorphic-git/openpgp-plugin')
+const { pgp } = require('@isomorphic-git/pgp-plugin')
 git.plugins.set('pgp', pgp)
 
 // using ES6 modules
 import { plugins } from 'isomorphic-git'
-import { pgp } from '@isomorphic-git/openpgp-plugin'
+import { pgp } from '@isomorphic-git/pgp-plugin'
 plugins.set('pgp', pgp)
 ```
 
 > Note: only one `pgp` plugin can be registered at a time.
+
+## Choices!
+
+You can choose between an [OpenPGP.js plugin](https://github.com/isomorphic-git/openpgp-plugin) and an [isomorphic-pgp plugin](https://github.com/isomorphic-git/pgp-plugin)!
+The OpenPGP one has much wider support for different keys at the cost of a huge bundle size, while the isomorphic-pgp plugin has restricted key support but 1/10th the size.
 
 ### Implementing your own `pgp` plugin
 
@@ -59,6 +64,8 @@ illegal [[2](#footnote2)].
 
 Therefore, `openpgpjs` support is provided by a separate npm package, under an LGPL license to match
 openpgpjs.
+
+I've also created my own PGP library, `isomorphic-pgp`, to push the envelope of what's possible within realistic bundle size budgets.
 
 #### Footnotes:
 <a name="footnote1">1</a>: [OpenPGP](https://www.openpgp.org/) is the [IETF standardization](https://tools.ietf.org/html/rfc4880) of the original PGP protocol. PGP stands for Pretty Good Privacy. Git's documentation refers to GPG, which is short for [GNU Privacy Guard](https://gnupg.org/), which is a particular implementation of the OpenPGP protocol.
