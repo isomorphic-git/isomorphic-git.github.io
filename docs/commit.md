@@ -17,6 +17,7 @@ Create a new commit
 | author.timestamp      | number = undefined | Set the author timestamp field. This is an alternative to using `date` using an integer number of seconds since the Unix epoch instead of a JavaScript date object. |
 | author.timezoneOffset | number = undefined | Set the author timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.          |
 | committer             | Object = author    | The details about the commit committer, in the same format as the author parameter. If not specified, the author details are used.                                  |
+| signingKey            | string = undefined | Sign the commit using this private PGP key.                                                                                                                         |
 | return                | Promise\<void\>    | Resolves successfully with the object ID (SHA) of the newly created commit.                                                                                         |
 
 ```js live

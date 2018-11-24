@@ -33,7 +33,7 @@ sidebar_label: Alphabetical Index
 - [remove](remove.md)
 - [resetIndex](resetIndex.md)
 - [resolveRef](resolveRef.md)
-- [sign](sign.md)
+- [sign](sign.md) [deprecated]
 - [status](status.md)
 - [statusMatrix](statusMatrix.md)
 - [utils.auth](utils_auth.md) [deprecated]
