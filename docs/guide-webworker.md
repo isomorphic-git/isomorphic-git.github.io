@@ -65,6 +65,7 @@ BrowserFS.configure({ fs: 'IndexedDB', options: {} }, function (err) {
   git.plugins.set('fs', fs)
 
   // Expose it to the main thread
+  const portal = new MagicPortal(self);
   portal.set('git', git)
 })
 ```
