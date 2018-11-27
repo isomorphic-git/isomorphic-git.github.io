@@ -76,6 +76,7 @@
       "dir-vs-gitdir"
     ],
     "More": [
+      "webworker",
       "faq"
     ]
   }
