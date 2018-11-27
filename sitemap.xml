@@ -33,6 +33,7 @@
 <url> <loc>https://isomorphic-git.org/docs/en/cli</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/cli.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/fs</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/fs.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/quickstart</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/quickstart.html" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/webworker</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/webworker.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/in-the-news</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/in-the-news.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/indexPack</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/indexPack.html" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/init</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/init.html" /> </url>
