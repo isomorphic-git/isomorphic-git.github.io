@@ -70,6 +70,7 @@ BrowserFS.configure({ <span class="hljs-attr">fs</span>: <span class="hljs-strin
   git.plugins.set(<span class="hljs-string">'fs'</span>, fs)
 
   <span class="hljs-comment">// Expose it to the main thread</span>
+  <span class="hljs-keyword">const</span> portal = <span class="hljs-keyword">new</span> MagicPortal(self);
   portal.set(<span class="hljs-string">'git'</span>, git)
 })
 </code></pre>
