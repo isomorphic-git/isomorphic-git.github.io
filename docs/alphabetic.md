@@ -42,3 +42,14 @@ sidebar_label: Alphabetical Index
 - [version](version.md)
 - [walkBeta1](walkBeta1.md)
 - [writeObject](writeObject.md)
+
+# Plugins
+
+- [credentialManager](plugin_credentialManager.md)
+- [emitter](plugin_emitter.md)
+- [fs](plugin_fs.md)
+- [pgp](plugin_pgp.md)
+
+# Errors
+(added here so Algolia indexes the page)
+- [Error Code Index](errors.md)
