@@ -183,7 +183,7 @@ const LearnHow = props => (
     <div style={{ textAlign: 'justify' }}>
       <MarkdownBlock>{`
   isomorphic-git is a pure JavaScript implementation of git that works in node and browser environments (including WebWorkers and ServiceWorkers).
-  This means it can be used to read and write to git repositories, as well as fetch from and push to git remotes like Github.
+  This means it can be used to read and write to git repositories, as well as fetch from and push to git remotes like GitHub.
 
   isomorphic-git aims for 100% interoperability with the canonical git implementation.
   This means it does all its operations by modifying files in a ".git" directory just like the git you are used to.

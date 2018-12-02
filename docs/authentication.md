@@ -23,19 +23,19 @@ probably cannot push or pull using your regular username and password.
 Instead, you may have to create a Personal Access Token (or an App Password in Bitbucket lingo) and use that to authenticate.
 ( [Instructions for GitHub](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/)
 | [Instructions for Bitbucket](https://confluence.atlassian.com/bitbucket/app-passwords-828781300.html)
-| [Instructions for Gitlab](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
+| [Instructions for GitLab](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html)
 )
 
 ```js
 await git.push({
- username: 'your username', // Note: username is optional for Github
+ username: 'your username', // Note: username is optional for GitHub
  token: 'your Personal Access Token',
  ...
 })
 ```
 
-If you are writing a third-party app that interacts with Github/Gitlab/Bitbucket, you may be obtaining
-OAuth2 tokens from the service via a feature like "Login with Github".
+If you are writing a third-party app that interacts with GitHub/GitLab/Bitbucket, you may be obtaining
+OAuth2 tokens from the service via a feature like "Login with GitHub".
 Depending on the OAuth2 token's grants, you can use those tokens for pushing and pulling from git repos as well.
 Unfortunately, all the major git hosting companies have chosen different conventions for converting
 OAuth2 tokens into Basic Authentication headers! Therefore it is necessary to specify which company's
@@ -68,7 +68,7 @@ A complete summary of how the four parameters interact to determine the Basic Au
 | X        |          |       |              | Error "Missing token or password"                                                |
 |          | X        |       |              | Error "Missing username"                                                         |
 | X        | X        |       |              | `{authUsername: username, authPassword: password}`                               |
-|          |          | X     |              | `{authUsername: token, authPassword: ''}` (Github's alternative format)          |
+|          |          | X     |              | `{authUsername: token, authPassword: ''}` (GitHub's alternative format)          |
 | X        |          | X     |              | `{authUsername: username, authPassword: token}`                                  |
 |          | X        | X     |              | Error "Cannot mix 'password' with 'token'"                                       |
 | X        | X        | X     |              | Error "Cannot mix 'password' with 'token'"                                       |

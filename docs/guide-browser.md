@@ -56,7 +56,7 @@ await pfs.readdir(dir);
 Now that we've got an empty directory, let's clone a git repository.
 I'm cloning `isomorphic-git` itself (how meta!).
 I'm only cloning a single branch and only to a depth of 10 commits to save time, bandwidth, and browser storage space.
-Since Github hasn't added CORS headers to the git clone endpoint yet, we have to use a [proxy server](https://cors.isomorphic-git.org/).
+Since GitHub hasn't added CORS headers to the git clone endpoint yet, we have to use a [proxy server](https://cors.isomorphic-git.org/).
 (They never suspected that a *browser* would want to run "git clone"!)
 
 ```js live

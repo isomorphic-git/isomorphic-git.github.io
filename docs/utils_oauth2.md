@@ -19,10 +19,10 @@ This for is for *actual* OAuth2 tokens (not "personal access tokens").
 Unfortunately, all the major git hosting companies have chosen different conventions!
 Lucky for you, I already looked up and codified it for you.
 
-- oauth2('github', token) - Github uses `token` as the username, and `'x-oauth-basic'` as the password.
-- oauth2('githubapp', token) - Github Apps use `'x-access-token'` as the username, and `token` as the password.
+- oauth2('github', token) - GitHub uses `token` as the username, and `'x-oauth-basic'` as the password.
+- oauth2('githubapp', token) - GitHub Apps use `'x-access-token'` as the username, and `token` as the password.
 - oauth2('bitbucket', token) - Bitbucket uses `'x-token-auth'` as the username, and `token` as the password.
-- oauth2('gitlab', token) - Gitlab uses `'oauth2'` as the username, and `token` as the password.
+- oauth2('gitlab', token) - GitLab uses `'oauth2'` as the username, and `token` as the password.
 
 I will gladly accept pull requests for more companies' conventions.
 
