@@ -22,7 +22,7 @@ To use this feature you include openpgp with a separate script tag and pass it i
 
 It is up to you to figure out what the commit's public key should be.
 I would use the "author" or "committer" name and email, and look up
-that person's public key from a trusted source such as the Github API.
+that person's public key from a trusted source such as the GitHub API.
 
 The function returns `false` if any of the signatures on a signed git commit are invalid.
 Otherwise, it returns an array of the key ids that were used to sign it.

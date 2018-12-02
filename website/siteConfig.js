@@ -24,7 +24,7 @@ const siteConfig = {
     { blog: true, label: 'Blog' },
     {
       href: 'https://github.com/isomorphic-git/isomorphic-git',
-      label: 'Github'
+      label: 'GitHub'
     },
     {
       href: 'https://npmjs.com/package/isomorphic-git',
