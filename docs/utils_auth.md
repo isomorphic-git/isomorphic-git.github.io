@@ -36,7 +36,7 @@ console.log(credentials)
 credentials = git.utils.auth('username:password')
 console.log(credentials)
 
-// Github/Gitlab Personal Access Token Authentication
+// GitHub/GitLab Personal Access Token Authentication
 credentials = git.utils.auth('username', 'personal access token')
 console.log(credentials)
 
@@ -44,7 +44,7 @@ console.log(credentials)
 credentials = git.utils.auth('username', 'app password')
 console.log(credentials)
 
-// Github (only) lets you leave out the username
+// GitHub (only) lets you leave out the username
 credentials = git.utils.auth('personal access token')
 console.log(credentials)
 ```
