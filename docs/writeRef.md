@@ -16,11 +16,10 @@ Write a ref which refers to the specified object id, or a symbolic ref which ref
 | return          | Promise\<void\> | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
-let head = await git.currentBranch({ dir: '$input((.))', fullname: $input((true)) })
 await git.writeRef({
   dir: '$input((.))',
   ref: '$input((refs/heads/another-branch))',
-  value: $input((head))
+  value: '$input((HEAD))'
 })
 await git.writeRef({
   dir: '$input((.))',

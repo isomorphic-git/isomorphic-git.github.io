@@ -25,7 +25,7 @@ Create an annotated tag
 | return                       | Promise\<void\>    | Resolves successfully when filesystem operations are complete                                                                                                                                                                    |
 
 ```js live
-await git.tag({
+await git.annotatedTag({
   dir: '$input((.))',
   name: '$input((test-tag))',
   annotated: {
