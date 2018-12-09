@@ -30,12 +30,9 @@
 <tr><td>fs [deprecated]</td><td>FSModule</td><td>The filesystem containing the git repo. Overrides the fs provided by the <a href="/docs/en/plugin_fs">plugin system</a>.</td></tr>
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td>fullname</td><td>boolean = false</td><td>Return the full path (e.g. &quot;refs/heads/master&quot;) instead of the abbreviated form.</td></tr>
-<tr><td>return</td><td>Promise&lt;string&gt;</td><td>The name of the current branch</td></tr>
+<tr><td>return</td><td>Promise&lt;string/undefined&gt;</td><td>The name of the current branch or undefined if the HEAD is detached.</td></tr>
 </tbody>
 </table>
-<p>This is a convenience function that does the same thing as:</p>
-<p><code>await git.resolveRef({dir, ref: 'HEAD', depth: 2})</code></p>
-<p>but it also abbreviates the result by removing the (usually unnecessary) &quot;refs/&quot; prefixes from the name.</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-comment">// Get the current branch name</span>
 <span class="hljs-keyword">let</span> branch = <span class="hljs-keyword">await</span> git.currentBranch({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, <span class="hljs-attr">fullname</span>: $input((<span class="hljs-literal">false</span>)) })
 <span class="hljs-built_in">console</span>.log(branch)
