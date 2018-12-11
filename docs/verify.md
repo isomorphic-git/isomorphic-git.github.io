@@ -10,7 +10,7 @@ Verify a signed commit
 | fs [deprecated] | FSModule                         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
 | **dir**, gitdir | string, string                   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
 | **openpgp**     | OpenPGP interface                | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                         |
-| **ref**         | string                           | A reference to the commit to verify                                                                            |
+| **ref**         | string                           | A reference to the commit or tag to verify                                                                     |
 | **publicKeys**  | string                           | A PGP public key in ASCII armor format.                                                                        |
 | return          | Promise\<false/Array\<string\>\> | The key ids used to sign the commit, in hex format.                                                            |
 
