@@ -5,6 +5,7 @@ sidebar_label: Alphabetical Index
 
 - [add](add.md)
 - [addRemote](addRemote.md)
+- [annotatedTag](annotatedTag.md)
 - [branch](branch.md)
 - [checkout](checkout.md)
 - [clone](clone.md)
@@ -12,7 +13,9 @@ sidebar_label: Alphabetical Index
 - [config](config.md)
 - [currentBranch](currentBranch.md)
 - [deleteBranch](deleteBranch.md)
+- [deleteRef](deleteRef.md)
 - [deleteRemote](deleteRemote.md)
+- [deleteTag](deleteTag.md)
 - [expandOid](expandOid.md)
 - [expandRef](expandRef.md)
 - [fetch](fetch.md)
@@ -36,12 +39,14 @@ sidebar_label: Alphabetical Index
 - [sign](sign.md) [deprecated]
 - [status](status.md)
 - [statusMatrix](statusMatrix.md)
+- [tag](tag.md)
 - [utils.auth](utils_auth.md) [deprecated]
 - [utils.oauth2](utils_oauth2.md) [deprecated]
 - [verify](verify.md)
 - [version](version.md)
 - [walkBeta1](walkBeta1.md)
 - [writeObject](writeObject.md)
+- [writeRef](writeRef.md)
 
 # Plugins
 

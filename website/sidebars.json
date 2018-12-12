@@ -31,6 +31,9 @@
       "listBranches"
     ],
     "Tags": [
+      "tag",
+      "annotatedTag",
+      "deleteTag",
       "listTags"
     ],
     "Remotes": [
@@ -51,6 +54,8 @@
       "expandOid",
       "resetIndex",
       "resolveRef",
+      "writeRef",
+      "deleteRef",
       "readObject",
       "writeObject",
       "statusMatrix",
