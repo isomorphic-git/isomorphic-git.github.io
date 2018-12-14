@@ -32,16 +32,17 @@
 <tr><td>username, password, token, oauth2format</td><td>string, string, string, string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td><strong>url</strong></td><td>string</td><td>The URL of the remote repository.</td></tr>
 <tr><td>corsProxy</td><td>string = undefined</td><td>Optional <a href="https://www.npmjs.com/@isomorphic-git/cors-proxy">CORS proxy</a>. Value is stored in the git config file for that repo.</td></tr>
-<tr><td>ref</td><td>string   = undefined</td><td>Which branch to clone. By default this is the designated &quot;main branch&quot; of the repository.</td></tr>
-<tr><td>singleBranch</td><td>bool     = false</td><td>Instead of the default behavior of fetching all the branches, only fetch a single branch.</td></tr>
-<tr><td>noCheckout</td><td>bool     = false</td><td>If true, clone will only fetch the repo, not check out a branch. Skipping checkout can save a lot of time normally spent writing files to disk.</td></tr>
-<tr><td>noGitSuffix</td><td>bool     = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
-<tr><td>noTags</td><td>bool     = false</td><td>By default clone will fetch all tags. <code>noTags</code> disables that behavior.</td></tr>
-<tr><td>remote</td><td>string   = 'origin'</td><td>What to name the remote that is created. The default is 'origin'.</td></tr>
-<tr><td>depth</td><td>integer  = undefined</td><td>Determines how much of the git repository's history to retrieve.</td></tr>
-<tr><td>since</td><td>Date     = undefined</td><td>Only fetch commits created after the given date. Mutually exclusive with <code>depth</code>.</td></tr>
+<tr><td>ref</td><td>string = undefined</td><td>Which branch to clone. By default this is the designated &quot;main branch&quot; of the repository.</td></tr>
+<tr><td>singleBranch</td><td>bool = false</td><td>Instead of the default behavior of fetching all the branches, only fetch a single branch.</td></tr>
+<tr><td>noCheckout</td><td>bool = false</td><td>If true, clone will only fetch the repo, not check out a branch. Skipping checkout can save a lot of time normally spent writing files to disk.</td></tr>
+<tr><td>noGitSuffix</td><td>bool = false</td><td>If true, clone will not auto-append a <code>.git</code> suffix to the <code>url</code>. (<strong>AWS CodeCommit needs this option</strong>)</td></tr>
+<tr><td>noTags</td><td>bool = false</td><td>By default clone will fetch all tags. <code>noTags</code> disables that behavior.</td></tr>
+<tr><td>remote</td><td>string = 'origin'</td><td>What to name the remote that is created. The default is 'origin'.</td></tr>
+<tr><td>depth</td><td>integer = undefined</td><td>Determines how much of the git repository's history to retrieve.</td></tr>
+<tr><td>since</td><td>Date = undefined</td><td>Only fetch commits created after the given date. Mutually exclusive with <code>depth</code>.</td></tr>
 <tr><td>exclude</td><td>Array&lt;string&gt; = [ ]</td><td>A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.</td></tr>
-<tr><td>relative</td><td>boolean  = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
+<tr><td>relative</td><td>boolean = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
+<tr><td>headers</td><td>object = {}</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>emitter [deprecated]</td><td>EventEmitter = undefined</td><td>Overrides the emitter set via the <a href="/docs/en/plugin_emitter">'emitter' plugin</a>.</td></tr>
 <tr><td>emitterPrefix</td><td>string = ''</td><td>Scope emitted events by prepending <code>emitterPrefix</code> to the event name.</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when clone completes</td></tr>
