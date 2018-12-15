@@ -33,7 +33,7 @@
 <tr><td>return</td><td>Promise&lt;Array&lt;string&gt;&gt;</td><td>Resolves successfully with an array of branch names</td></tr>
 </tbody>
 </table>
-<p>By default it lists local branches. If a 'remote' is specified, it lists the remote's branches.</p>
+<p>By default it lists local branches. If a 'remote' is specified, it lists the remote's branches. When listing remote branches, the HEAD branch is not filtered out, so it may be included in the list of results.</p>
 <p>Note that specifying a remote does not actually contact the server and update the list of branches.
 If you want an up-to-date list, first do a <code>fetch</code> to that remote.
 (Which branch you fetch doesn't matter - the list of branches available on the remote is updated during the fetch handshake.)</p>
