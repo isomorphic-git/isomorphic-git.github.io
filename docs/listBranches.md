@@ -12,7 +12,7 @@ List branches
 | remote          | string   = undefined       | Instead of the branches in `refs/heads`, list the branches in `refs/remotes/${remote}`.                        |
 | return          | Promise\<Array\<string\>\> | Resolves successfully with an array of branch names                                                            |
 
-By default it lists local branches. If a 'remote' is specified, it lists the remote's branches.
+By default it lists local branches. If a 'remote' is specified, it lists the remote's branches. When listing remote branches, the HEAD branch is not filtered out, so it may be included in the list of results.
 
 Note that specifying a remote does not actually contact the server and update the list of branches.
 If you want an up-to-date list, first do a `fetch` to that remote.
