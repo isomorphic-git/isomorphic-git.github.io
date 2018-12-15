@@ -197,6 +197,17 @@ const LearnHow = props => (
   </Container>
 )
 
+const Praise = props => {
+  return (
+    <div
+      className='productShowcaseSection paddingBottom'
+      style={{ maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}
+    >
+      <a className="twitter-moment" href="https://twitter.com/i/moments/1073726885362888706?ref_src=twsrc%5Etfw">Praise for Isomorphic-Git</a>
+    </div>
+  )
+}
+
 const Showcase = props => {
   if ((siteConfig.users || []).length === 0) {
     return null
@@ -238,6 +249,7 @@ class Index extends React.Component {
           <Features />
           <FeatureCallout />
           <LearnHow />
+          <Praise />
           <Showcase language={language} />
         </div>
       </div>

@@ -56,6 +56,7 @@ const siteConfig = {
     '/js/announcement.js',
   ],
   footerscripts: [
+    'https://platform.twitter.com/widgets.js',
     '/js/gitter.js',
     '/js/sidecar.v1.js',
     '/js/browserfs.min.js',
