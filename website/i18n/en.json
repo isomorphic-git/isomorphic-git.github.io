@@ -57,6 +57,8 @@
     "plugin_emitter": "'emitter' plugin",
     "emitter": "emitter",
     "plugin_fs": "'fs' plugin",
+    "plugin_http": "'http' plugin",
+    "http": "http",
     "plugin_pgp": "'pgp' plugin",
     "pgp": "pgp",
     "pull": "pull",

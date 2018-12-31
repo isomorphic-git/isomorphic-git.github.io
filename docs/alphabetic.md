@@ -53,6 +53,7 @@ sidebar_label: Alphabetical Index
 - [credentialManager](plugin_credentialManager.md)
 - [emitter](plugin_emitter.md)
 - [fs](plugin_fs.md)
+- [http](plugin_http.md)
 - [pgp](plugin_pgp.md)
 
 # Errors
