@@ -24,37 +24,28 @@
         </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/isomorphic-git/isomorphic-git.github.io/edit/source/docs/guide-browser.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Browser Quick Start</h1></header><article><div><span><p><br></p>
 <aside>
 If you've already done the tutorial or need a clean slate, you can run this snippet to clean up the file system.
-<pre><code class="hljs css languages- js live">fs.getRootFS().empty()
+<pre><code class="hljs css languages- js live"><span class="hljs-built_in">window</span>.fs = <span class="hljs-keyword">new</span> LightningFS(<span class="hljs-string">'fs'</span>, { <span class="hljs-attr">wipe</span>: <span class="hljs-literal">true</span> })
+git.plugins.set(<span class="hljs-string">'fs'</span>, <span class="hljs-built_in">window</span>.fs)
+<span class="hljs-built_in">window</span>.pfs = pify(<span class="hljs-built_in">window</span>.fs)
 </code></pre>
 </aside>
 <p>Here's a whirlwind tour of the main features of <code>isomorphic-git</code>.</p>
-<p>First, let's set up BrowserFS and isomorphic-git. <em>Note: I've already done this for you, which is why there is no RUN button for this code block.</em></p>
-<pre><code class="hljs css languages- html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://isomorphic-git.org/js/browserfs.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<p>First, let's set up LightningFS and isomorphic-git. <em>Note: I've already done this for you, which is why there is no RUN button for this code block.</em></p>
+<pre><code class="hljs css languages- html">
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/@isomorphic-git/lightning-fs@1"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://isomorphic-git.org/js/pify.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/isomorphic-git"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="javascript">
+<span class="hljs-comment">// Initialize isomorphic-git with a file system</span>
+<span class="hljs-built_in">window</span>.fs = <span class="hljs-keyword">new</span> LightningFS(<span class="hljs-string">'fs'</span>)
+git.plugins.set(<span class="hljs-string">'fs'</span>, <span class="hljs-built_in">window</span>.fs)
 
-<span class="hljs-keyword">let</span> fsOptions = {
-  <span class="hljs-attr">fs</span>: <span class="hljs-string">'IndexedDB'</span>,
-  <span class="hljs-attr">options</span>: {}
-}
-
-BrowserFS.configure(fsOptions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-  <span class="hljs-keyword">if</span> (err) <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.log(err)
-
-  <span class="hljs-built_in">window</span>.fs = BrowserFS.BFSRequire(<span class="hljs-string">'fs'</span>)
-
-  <span class="hljs-comment">// Initialize isomorphic-git with our new file system</span>
-  git.plugins.set(<span class="hljs-string">'fs'</span>, fs)
-
-  <span class="hljs-comment">// make a Promisified version for convenience</span>
-  <span class="hljs-built_in">window</span>.pfs = pify(fs) 
-})
-
+<span class="hljs-comment">// make a Promisified version for convenience</span>
+<span class="hljs-built_in">window</span>.pfs = pify(<span class="hljs-built_in">window</span>.fs)
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 <p>Now let's pick a directory to work in.</p>
-<pre><code class="hljs css languages- js live"><span class="hljs-built_in">window</span>.dir = $input((<span class="hljs-string">'tutorial'</span>))
+<pre><code class="hljs css languages- js live"><span class="hljs-built_in">window</span>.dir = $input((<span class="hljs-string">'/tutorial'</span>))
 <span class="hljs-built_in">console</span>.log(dir);
 <span class="hljs-keyword">await</span> pfs.mkdir(dir);
 <span class="hljs-comment">// Behold - it is empty!</span>
@@ -66,12 +57,12 @@ I'm only cloning a single branch and only to a depth of 10 commits to save time,
 Since GitHub hasn't added CORS headers to the git clone endpoint yet, we have to use a <a href="https://cors.isomorphic-git.org/">proxy server</a>.
 (They never suspected that a <em>browser</em> would want to run &quot;git clone&quot;!)</p>
 <pre><code class="hljs css languages- js live"><span class="hljs-keyword">await</span> git.clone({
-    dir,
-    <span class="hljs-attr">corsProxy</span>: <span class="hljs-string">'https://cors.isomorphic-git.org'</span>,
-    <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/isomorphic-git/isomorphic-git'</span>,
-    <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>,
-    <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>,
-    <span class="hljs-attr">depth</span>: <span class="hljs-number">10</span>
+  dir,
+  <span class="hljs-attr">corsProxy</span>: <span class="hljs-string">'https://cors.isomorphic-git.org'</span>,
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/isomorphic-git/isomorphic-git'</span>,
+  <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>,
+  <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">depth</span>: <span class="hljs-number">10</span>
 });
 
 <span class="hljs-comment">// Now it should not be empty...</span>
@@ -148,7 +139,7 @@ void async function() {
   const data = await response.json()
   document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
 }()
-</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div><div><h5>Ad</h5><div id="codefund_ad"></div></div></section><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="/js/browserfs.min.js"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/pify.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script><script type="text/javascript" src="https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div><div><h5>Ad</h5><div id="codefund_ad"></div></div></section><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs@1.0.2/dist/lightning-fs.min.js"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/pify.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script><script type="text/javascript" src="https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
               var search = docsearch({
                 
                 apiKey: 'ac63b0df4513e31143eef156f520056c',

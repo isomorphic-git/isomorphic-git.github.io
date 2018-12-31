@@ -1,18 +1,8 @@
-let fsOptions = {
-  fs: 'IndexedDB',
-  options: {}
-}
+// Initialize isomorphic-git with a file system
+window.fs = new LightningFS('fs')
+git.plugins.set('fs', window.fs)
 
-BrowserFS.configure(fsOptions, function (err) {
-  if (err) return console.log(err)
+// make a Promisified version for convenience
+window.pfs = pify(window.fs) 
 
-  window.fs = BrowserFS.BFSRequire('fs')
-
-  // Initialize isomorphic-git with our new file system
-  git.plugins.set('fs', fs)
-
-  // make a Promisified version for convenience
-  window.pfs = pify(fs) 
-
-  window.dir = 'tutorial'
-})
+window.dir = '/tutorial'

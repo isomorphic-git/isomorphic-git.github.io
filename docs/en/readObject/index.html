@@ -74,10 +74,10 @@
 }
 </code></pre>
 <pre><code class="hljs css languages- js live"><span class="hljs-comment">// Get the contents of 'README.md' in the master branch.</span>
-<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span> })
+<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span> })
 <span class="hljs-built_in">console</span>.log(sha)
 <span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: blob } = <span class="hljs-keyword">await</span> git.readObject({
-  <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>,
+  <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>,
   <span class="hljs-attr">oid</span>: $input((sha)),
   $textarea((filepath: <span class="hljs-string">'README.md'</span>,
   <span class="hljs-attr">encoding</span>: <span class="hljs-string">'utf8'</span>))
@@ -85,19 +85,19 @@
 <span class="hljs-built_in">console</span>.log(blob)
 </code></pre>
 <pre><code class="hljs css languages- js live"><span class="hljs-comment">// Find all the .js files in the current master branch containing the word 'commit'</span>
-<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span> })
+<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'$input((master))'</span> })
 <span class="hljs-built_in">console</span>.log(sha)
-<span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: commit } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, <span class="hljs-attr">oid</span>: sha })
+<span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: commit } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>, <span class="hljs-attr">oid</span>: sha })
 <span class="hljs-built_in">console</span>.log(commit)
 
 <span class="hljs-keyword">const</span> searchTree = <span class="hljs-keyword">async</span> ({oid, prefix = <span class="hljs-string">''</span>}) =&gt; {
-  <span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: tree } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, oid })
+  <span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: tree } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>, oid })
   <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> entry <span class="hljs-keyword">of</span> tree.entries) {
     <span class="hljs-keyword">if</span> (entry.type === <span class="hljs-string">'tree'</span>) {
       <span class="hljs-keyword">await</span> searchTree({<span class="hljs-attr">oid</span>: entry.oid, <span class="hljs-attr">prefix</span>: <span class="hljs-string">`<span class="hljs-subst">${prefix}</span>/<span class="hljs-subst">${entry.path}</span>`</span>})
     } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (entry.type === <span class="hljs-string">'blob'</span>) {
       <span class="hljs-keyword">if</span> ($input((entry.path.endsWith(<span class="hljs-string">'.js'</span>)))) {
-        <span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: blob } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((.))'</span>, <span class="hljs-attr">oid</span>: entry.oid })
+        <span class="hljs-keyword">let</span> { <span class="hljs-attr">object</span>: blob } = <span class="hljs-keyword">await</span> git.readObject({ <span class="hljs-attr">dir</span>: <span class="hljs-string">'$input((/))'</span>, <span class="hljs-attr">oid</span>: entry.oid })
         <span class="hljs-keyword">if</span> ($input((blob.toString(<span class="hljs-string">'utf8'</span>).includes(<span class="hljs-string">'commit'</span>)))) {
           <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`<span class="hljs-subst">${prefix}</span>/<span class="hljs-subst">${entry.path}</span>`</span>)
         }
@@ -117,7 +117,7 @@ void async function() {
   const data = await response.json()
   document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
 }()
-</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div><div><h5>Ad</h5><div id="codefund_ad"></div></div></section><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="/js/browserfs.min.js"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/pify.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script><script type="text/javascript" src="https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div><div><h5>Ad</h5><div id="codefund_ad"></div></div></section><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs@1.0.2/dist/lightning-fs.min.js"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/pify.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script><script type="text/javascript" src="https://codefund.io/scripts/aa6eb5e6-191a-4a38-8109-63fdd08d0e58/embed.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
               var search = docsearch({
                 
                 apiKey: 'ac63b0df4513e31143eef156f520056c',
