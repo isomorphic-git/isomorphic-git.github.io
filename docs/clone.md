@@ -33,7 +33,7 @@ Example code:
 
 ```js live
 await git.clone({
-  dir: '$input((.))',
+  dir: '$input((/))',
   corsProxy: 'https://cors.isomorphic-git.org',
   url: '$input((https://github.com/isomorphic-git/isomorphic-git))',
   $textarea((singleBranch: true,

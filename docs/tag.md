@@ -15,5 +15,5 @@ Create a lightweight tag
 | return          | Promise\<void\>    | Resolves successfully when filesystem operations are complete                                                                                       |
 
 ```js live
-await git.tag({ dir: '$input((.))', name: '$input((test-tag))' })
+await git.tag({ dir: '$input((/))', ref: '$input((test-tag))' })
 ```

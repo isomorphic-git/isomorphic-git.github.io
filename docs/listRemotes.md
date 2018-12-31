@@ -12,6 +12,6 @@ List remotes
 | return          | Promise\<Array\<{remote: string, url: string}\>\> | Resolves successfully with an array of `{remote, url}` objects                                                 |
 
 ```js live
-let remotes = await git.listRemotes({ dir: '$input((.))' })
+let remotes = await git.listRemotes({ dir: '$input((/))' })
 console.log(remotes)
 ```

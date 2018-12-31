@@ -14,6 +14,6 @@ Get the name of the branch currently pointed to by .git/HEAD
 
 ```js live
 // Get the current branch name
-let branch = await git.currentBranch({ dir: '$input((.))', fullname: $input((false)) })
+let branch = await git.currentBranch({ dir: '$input((/))', fullname: $input((false)) })
 console.log(branch)
 ```

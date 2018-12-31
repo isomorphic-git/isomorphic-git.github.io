@@ -54,10 +54,10 @@ export interface GitObjectDescription {
 
 ```js live
 // Get the contents of 'README.md' in the master branch.
-let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
+let sha = await git.resolveRef({ dir: '$input((/))', ref: '$input((master))' })
 console.log(sha)
 let { object: blob } = await git.readObject({
-  dir: '$input((.))',
+  dir: '$input((/))',
   oid: $input((sha)),
   $textarea((filepath: 'README.md',
   encoding: 'utf8'))
@@ -67,19 +67,19 @@ console.log(blob)
 
 ```js live
 // Find all the .js files in the current master branch containing the word 'commit'
-let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
+let sha = await git.resolveRef({ dir: '$input((/))', ref: '$input((master))' })
 console.log(sha)
-let { object: commit } = await git.readObject({ dir: '$input((.))', oid: sha })
+let { object: commit } = await git.readObject({ dir: '$input((/))', oid: sha })
 console.log(commit)
 
 const searchTree = async ({oid, prefix = ''}) => {
-  let { object: tree } = await git.readObject({ dir: '$input((.))', oid })
+  let { object: tree } = await git.readObject({ dir: '$input((/))', oid })
   for (let entry of tree.entries) {
     if (entry.type === 'tree') {
       await searchTree({oid: entry.oid, prefix: `${prefix}/${entry.path}`})
     } else if (entry.type === 'blob') {
       if ($input((entry.path.endsWith('.js')))) {
-        let { object: blob } = await git.readObject({ dir: '$input((.))', oid: entry.oid })
+        let { object: blob } = await git.readObject({ dir: '$input((/))', oid: entry.oid })
         if ($input((blob.toString('utf8').includes('commit')))) {
           console.log(`${prefix}/${entry.path}`)
         }

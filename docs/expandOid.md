@@ -13,6 +13,6 @@ Expand and resolve a short oid into a full oid
 | return          | Promise\<string\> | Resolves successfully with the full oid (like "0414d2a286d7bbc7a4a326a61c1f9f888a8ab87f")                      |
 
 ```js live
-let oid = await git.expandOid({ dir: '$input((.))', oid: '$input((0414d2a))'})
+let oid = await git.expandOid({ dir: '$input((/))', oid: '$input((0414d2a))'})
 console.log(oid)
 ```

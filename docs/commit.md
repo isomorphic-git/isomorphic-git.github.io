@@ -22,7 +22,7 @@ Create a new commit
 
 ```js live
 let sha = await git.commit({
-  dir: '$input((.))',
+  dir: '$input((/))',
   author: {
     name: '$input((Mr. Test))',
     email: '$input((mrtest@example.com))'

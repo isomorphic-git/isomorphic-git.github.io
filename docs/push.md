@@ -36,7 +36,7 @@ Example code:
 
 ```js live
 let pushResponse = await git.push({
-  dir: '$input((.))',
+  dir: '$input((/))',
   remote: '$input((origin))',
   ref: '$input((master))',
   token: $input((process.env.GITHUB_TOKEN)),

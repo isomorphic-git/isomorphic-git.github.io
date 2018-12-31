@@ -13,6 +13,6 @@ Expand an abbreviated ref to its full name
 | return          | Promise\<string\> | Resolves successfully with a full ref name ("refs/tags/v1.0.0")                                                |
 
 ```js live
-let fullRef = await git.expandRef({ dir: '$input((.))', ref: '$input((master))'})
+let fullRef = await git.expandRef({ dir: '$input((/))', ref: '$input((master))'})
 console.log(fullRef)
 ```

@@ -30,7 +30,7 @@ I will gladly accept pull requests for more companies' conventions.
 let credentials = git.utils.oauth2('github', 'token')
 console.log(credentials)
 
-let credentials = git.utils.oauth2('githubapp', 'token')
+credentials = git.utils.oauth2('githubapp', 'token')
 console.log(credentials)
 
 credentials = git.utils.oauth2('bitbucket', 'token')

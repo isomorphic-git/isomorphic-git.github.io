@@ -25,7 +25,7 @@ Create an annotated tag
 
 ```js live
 await git.annotatedTag({
-  dir: '$input((.))',
+  dir: '$input((/))',
   ref: '$input((test-tag))',
   message: '$input((This commit is awesome))',
   tagger: {
@@ -33,4 +33,5 @@ await git.annotatedTag({
     email: '$input((mrtest@example.com))'
   }
 })
+console.log('done')
 ```

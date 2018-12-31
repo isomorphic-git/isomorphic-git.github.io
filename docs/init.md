@@ -13,6 +13,6 @@ Initialize a new repository
 | return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
-await git.init({ dir: '$input((.))' })
+await git.init({ dir: '$input((/))' })
 console.log('done')
 ```

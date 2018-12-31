@@ -16,6 +16,6 @@ Note that this does NOT delete the file in the working directory.
 | return          | Promise\<void\> | Resolves successfully once the git index has been updated                                                      |
 
 ```js live
-await git.resetIndex({ dir: '$input((.))', filepath: '$input((README.md))' })
+await git.resetIndex({ dir: '$input((/))', filepath: '$input((README.md))' })
 console.log('done')
 ```

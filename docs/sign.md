@@ -34,7 +34,7 @@ multiple keys, so while I haven't tested it, it should support signing a single 
 
 ```js live
 let sha = await git.sign({
-  dir: '$input((.))',
+  dir: '$input((/))',
   openpgp,
   privateKeys: `$textarea((
 -----BEGIN PGP PRIVATE KEY BLOCK-----

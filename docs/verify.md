@@ -33,7 +33,7 @@ should support verifying a single commit signed with multiple keys. Hence why th
 
 ```js live
 let keyids = await git.verify({
-  dir: '.',
+  dir: '$input((/))',
   openpgp,
   ref: '$input((HEAD))',
   publicKeys: `$textarea((

@@ -41,7 +41,7 @@ Example code:
 
 ```js live
 await git.fetch({
-  dir: '$input((.))',
+  dir: '$input((/))',
   corsProxy: 'https://cors.isomorphic-git.org',
   url: '$input((https://github.com/isomorphic-git/isomorphic-git))',
   ref: '$input((master))',

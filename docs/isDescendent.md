@@ -15,8 +15,8 @@ Check whether a git commit is descended from another
 | return          | Promise\<boolean\> | Resolves to true if `oid` is a descendent of `ancestor`                                                        |
 
 ```js live
-let oid = await git.resolveRef({ dir: '$input((.))', ref: '$input((master))' })
-let ancestor = await git.resolveRef({ dir: '$input((.))', ref: '$input((v0.20.0))' })
+let oid = await git.resolveRef({ dir: '$input((/))', ref: '$input((master))' })
+let ancestor = await git.resolveRef({ dir: '$input((/))', ref: '$input((v0.20.0))' })
 console.log(oid, ancestor)
-await git.isDescendent({ dir: '$input((.))', oid, ancestor, depth: $input((-1)) })
+await git.isDescendent({ dir: '$input((/))', oid, ancestor, depth: $input((-1)) })
 ```

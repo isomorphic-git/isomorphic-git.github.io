@@ -13,6 +13,6 @@ Removes the local config entry for a given remote
 | return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
-await git.deleteRemote({ dir: '$input((.))', remote: '$input((upstream))' })
+await git.deleteRemote({ dir: '$input((/))', remote: '$input((upstream))' })
 console.log('done')
 ```

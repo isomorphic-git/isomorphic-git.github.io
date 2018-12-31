@@ -13,6 +13,6 @@ Deletes a local branch
 | return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
-await git.deleteTag({ dir: '$input((.))', ref: '$input((test-tag))' })
+await git.deleteTag({ dir: '$input((/))', ref: '$input((test-tag))' })
 console.log('done')
 ```

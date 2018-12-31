@@ -13,6 +13,6 @@ Create a new branch
 | return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
-await git.branch({ dir: '$input((.))', ref: '$input((develop))' })
+await git.branch({ dir: '$input((/))', ref: '$input((develop))' })
 console.log('done')
 ```

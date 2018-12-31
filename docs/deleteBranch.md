@@ -15,6 +15,6 @@ Deletes a local branch
 > Note: This only deletes loose branches - it should be fixed in the future to delete packed branch names as well.
 
 ```js live
-await git.deleteBranch({ dir: '$input((.))', ref: '$input((local-branch))' })
+await git.deleteBranch({ dir: '$input((/))', ref: '$input((local-branch))' })
 console.log('done')
 ```

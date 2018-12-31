@@ -23,14 +23,14 @@ If `value` is provided, it writes to the config file. Otherwise it reads from it
 ```js live
 // Write config value
 await git.config({
-  dir: '$input((.))',
+  dir: '$input((/))',
   path: '$input((user.name))',
   value: '$input((Mr. Test))'
 })
 
 // Read config value
 let value = await git.config({
-  dir: '$input((.))',
+  dir: '$input((/))',
   path: '$input((user.name))'
 })
 console.log(value)

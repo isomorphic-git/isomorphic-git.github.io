@@ -20,13 +20,13 @@ My hope is that the speed and flexibility of the function will make up for the l
 
 ```js live
 // get the status of all the files in 'src'
-let status = await git.statusMatrix({ dir: '$input((.))', pattern: '$input((src/**))' })
+let status = await git.statusMatrix({ dir: '$input((/))', pattern: '$input((src/**))' })
 console.log(status)
 ```
 
 ```js live
 // get the status of all the JSON and Markdown files
-let status = await git.statusMatrix({ dir: '$input((.))', pattern: '$input((**/*.{json,md}))' })
+let status = await git.statusMatrix({ dir: '$input((/))', pattern: '$input((**/*.{json,md}))' })
 console.log(status)
 ```
 

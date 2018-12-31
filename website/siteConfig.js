@@ -59,7 +59,7 @@ const siteConfig = {
     'https://platform.twitter.com/widgets.js',
     '/js/gitter.js',
     '/js/sidecar.v1.js',
-    '/js/browserfs.min.js',
+    'https://unpkg.com/@isomorphic-git/lightning-fs@1.0.2/dist/lightning-fs.min.js',
     'https://unpkg.com/isomorphic-git',
     'https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js',
     '/js/pify.js',

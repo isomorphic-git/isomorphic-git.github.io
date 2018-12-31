@@ -17,15 +17,16 @@ Write a ref which refers to the specified object id, or a symbolic ref which ref
 
 ```js live
 await git.writeRef({
-  dir: '$input((.))',
+  dir: '$input((/))',
   ref: '$input((refs/heads/another-branch))',
   value: '$input((HEAD))'
 })
 await git.writeRef({
-  dir: '$input((.))',
+  dir: '$input((/))',
   ref: '$input((HEAD))',
   value: '$input((refs/heads/another-branch))',
   force: $input((true)),
   symbolic: $input((true))
 })
+console.log('done')
 ```

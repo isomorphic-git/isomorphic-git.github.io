@@ -25,6 +25,6 @@ export interface MergeReport {
 ```
 
 ```js live
-let m = await git.merge({ dir: '$input((.))', ours: '$input((master))', theirs: '$input((remotes/origin/master))' })
+let m = await git.merge({ dir: '$input((/))', ours: '$input((master))', theirs: '$input((remotes/origin/master))' })
 console.log(m)
 ```

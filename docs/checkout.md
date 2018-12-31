@@ -20,6 +20,6 @@ If the branch already exists it will check out that branch. Otherwise, it will c
 Example code:
 
 ```js live
-await git.checkout({ dir: '$input((.))', ref: '$input((master))' })
+await git.checkout({ dir: '$input((/))', ref: '$input((master))' })
 console.log('done')
 ```

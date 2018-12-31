@@ -15,6 +15,6 @@ Create the .idx file for a given .pack file
 | return               | Promise\<void\>          | Resolves when filesystem operations are complete                                                               |
 
 ```js live
-await git.indexPack({ dir: '$input((.))', filepath: '$input((pack-9cbd243a1caa4cb4bef976062434a958d82721a9.pack))' })
+await git.indexPack({ dir: '$input((/))', filepath: '$input((pack-9cbd243a1caa4cb4bef976062434a958d82721a9.pack))' })
 console.log('done')
 ```

@@ -30,11 +30,11 @@ shucks I haven't written that page yet. :( Well, described in the [TypeScript de
 
 ```js live
 // Manually create an annotated tag.
-let sha = await git.resolveRef({ dir: '$input((.))', ref: '$input((HEAD))' })
+let sha = await git.resolveRef({ dir: '$input((/))', ref: '$input((HEAD))' })
 console.log('commit', sha)
 
 let oid = await git.writeObject({
-  dir: '$input((.))',
+  dir: '$input((/))',
   type: 'tag',
   object: {
     object: sha,

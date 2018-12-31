@@ -25,7 +25,7 @@ Example code:
 
 ```js live
 await git.pull({
-  dir: '$input((.))',
+  dir: '$input((/))',
   ref: '$input((master))',
   singleBranch: $input((true))
 })

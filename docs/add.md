@@ -14,10 +14,10 @@ Add a file to the git index (aka staging area)
 
  ```js live
  await new Promise((resolve, reject) => fs.writeFile(
-   '$input((README.md))',
+   '$input((/README.md))',
    `$textarea((# TEST))`,
    (err) => err ? reject(err) : resolve()
  ))
- await git.add({ dir: '$input((.))', filepath: '$input((README.md))' })
+ await git.add({ dir: '$input((/))', filepath: '$input((README.md))' })
  console.log('done')
  ```

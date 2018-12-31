@@ -30,6 +30,6 @@ The possible resolve values are:
 | return          | Promise\<string\> | Resolves successfully with the file's git status                                                               |
 
 ```js live
-let status = await git.status({ dir: '$input((.))', filepath: '$input((README.md))' })
+let status = await git.status({ dir: '$input((/))', filepath: '$input((README.md))' })
 console.log(status)
 ```

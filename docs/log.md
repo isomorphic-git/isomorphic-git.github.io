@@ -39,6 +39,6 @@ export interface CommitDescription {
 ```
 
 ```js live
-let commits = await git.log({ dir: '$input((.))', depth: $input((5)), ref: '$input((master))' })
+let commits = await git.log({ dir: '$input((/))', depth: $input((5)), ref: '$input((master))' })
 console.log(commits)
 ```

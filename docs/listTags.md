@@ -12,6 +12,6 @@ List tags
 | return          | Promise\<Array\<string\>\> | Resolves successfully with an array of tag names                                                               |
 
 ```js live
-let tags = await git.listTags({ dir: '$input((.))' })
+let tags = await git.listTags({ dir: '$input((/))' })
 console.log(tags)
 ```
