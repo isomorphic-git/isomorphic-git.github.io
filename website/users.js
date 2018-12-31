@@ -17,6 +17,12 @@ const users = [
     image: '/img/usedby/clever-cloud.png',
     infoLink: 'https://www.clever-cloud.com/',
     pinned: true
+  },
+  {
+    caption: 'Antora',
+    image: '/img/usedby/antora.png',
+    infoLink: 'https://antora.org',
+    pinned: true
   }
 ]
 module.exports = users
