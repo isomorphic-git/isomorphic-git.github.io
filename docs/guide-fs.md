@@ -28,7 +28,7 @@ It was designed from scratch for `isomorphic-git` (by the same author) to eek ou
 for fewer bytes. As an added bonus it's dead simple to configure.
 
 ```html
-<script src="https://unpkg.com/@isomorphic-git/lightning-fs@1"></script>
+<script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
 <script src="https://unpkg.com/isomorphic-git"></script>
 <script>
 const fs = new LightningFS('my-app')

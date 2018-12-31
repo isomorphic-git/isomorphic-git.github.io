@@ -21,7 +21,7 @@ First, let's set up LightningFS and isomorphic-git. *Note: I've already done thi
 
 ```html
 
-<script src="https://unpkg.com/@isomorphic-git/lightning-fs@1"></script>
+<script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
 <script src="https://isomorphic-git.org/js/pify.js"></script>
 <script src="https://unpkg.com/isomorphic-git"></script>
 <script>
