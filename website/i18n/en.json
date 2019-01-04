@@ -4,101 +4,272 @@
     "next": "Next",
     "previous": "Previous",
     "tagline": "A pure JavaScript implementation of git for node and browsers!",
-    "add": "add",
-    "addRemote": "addRemote",
-    "alphabetic": "All Commands",
-    "Alphabetical Index": "Alphabetical Index",
-    "annotatedTag": "annotatedTag",
-    "authentication": "Authentication",
-    "Authentication": "Authentication",
-    "branch": "branch",
-    "checkout": "checkout",
-    "clone": "clone",
-    "commit": "commit",
-    "config": "config",
-    "currentBranch": "currentBranch",
-    "deleteBranch": "deleteBranch",
-    "deleteRef": "deleteRef",
-    "deleteRemote": "deleteRemote",
-    "deleteTag": "deleteTag",
-    "dir-vs-gitdir": "`dir` vs `gitdir`",
-    "dir vs gitdir": "dir vs gitdir",
-    "errors": "Error Codes",
-    "Error Code Index": "Error Code Index",
-    "expandOid": "expandOid",
-    "expandRef": "expandRef",
-    "faq": "Frequently Asked Questions",
-    "FAQ": "FAQ",
-    "fetch": "fetch",
-    "findRoot": "findRoot",
-    "getRemoteInfo": "getRemoteInfo",
-    "browser": "Browser Quick Start",
-    "Browser Quick Start": "Browser Quick Start",
-    "cli": "isogit CLI",
-    "isogit CLI": "isogit CLI",
-    "fs": "fs",
-    "Bring Your Own FS": "Bring Your Own FS",
-    "quickstart": "Quick Start",
-    "Quick Start": "Quick Start",
-    "webworker": "WebWorker Guide",
-    "WebWorker Guide": "WebWorker Guide",
-    "in-the-news": "In The News",
-    "indexPack": "indexPack",
-    "init": "init",
-    "isDescendent": "isDescendent",
-    "listBranches": "listBranches",
-    "listFiles": "listFiles",
-    "listRemotes": "listRemotes",
-    "listTags": "listTags",
-    "log": "log",
-    "merge": "merge",
-    "plugin_credentialManager": "'credentialManager' plugin",
-    "credentialManager": "credentialManager",
-    "plugin_emitter": "'emitter' plugin",
-    "emitter": "emitter",
-    "plugin_fs": "'fs' plugin",
-    "plugin_http": "'http' plugin",
-    "http": "http",
-    "plugin_pgp": "'pgp' plugin",
-    "pgp": "pgp",
-    "pull": "pull",
-    "push": "push",
-    "readObject": "readObject",
-    "remove": "remove",
-    "resetIndex": "resetIndex",
-    "resolveRef": "resolveRef",
-    "sign": "sign",
-    "snippets": "Useful Code Snippets",
-    "Useful Snippets": "Useful Snippets",
-    "status": "status",
-    "statusMatrix": "statusMatrix",
-    "tag": "tag",
-    "utils_auth": "auth",
-    "utils.auth": "utils.auth",
-    "utils_oauth2": "oauth2",
-    "utils.oauth2": "utils.oauth2",
-    "verify": "verify",
-    "version": "version",
-    "walkBeta1": "walkBeta1",
-    "writeObject": "writeObject",
-    "writeRef": "writeRef",
-    "API Docs": "API Docs",
-    "Guide": "Guide",
-    "Blog": "Blog",
-    "GitHub": "GitHub",
-    "npm": "npm",
-    "All Commands": "All Commands",
-    "Repository": "Repository",
-    "Files": "Files",
-    "Branches": "Branches",
-    "Tags": "Tags",
-    "Remotes": "Remotes",
-    "Plugins": "Plugins",
-    "Plumbing Commands": "Plumbing Commands",
-    "Misc Commands": "Misc Commands",
-    "Deprecated Commands": "Deprecated Commands",
-    "Getting Started": "Getting Started",
-    "More": "More"
+    "docs": {
+      "add": {
+        "title": "add",
+        "sidebar_label": "add"
+      },
+      "addRemote": {
+        "title": "addRemote",
+        "sidebar_label": "addRemote"
+      },
+      "alphabetic": {
+        "title": "All Commands",
+        "sidebar_label": "Alphabetical Index"
+      },
+      "annotatedTag": {
+        "title": "annotatedTag",
+        "sidebar_label": "annotatedTag"
+      },
+      "authentication": {
+        "title": "Authentication",
+        "sidebar_label": "Authentication"
+      },
+      "branch": {
+        "title": "branch",
+        "sidebar_label": "branch"
+      },
+      "checkout": {
+        "title": "checkout",
+        "sidebar_label": "checkout"
+      },
+      "clone": {
+        "title": "clone",
+        "sidebar_label": "clone"
+      },
+      "commit": {
+        "title": "commit",
+        "sidebar_label": "commit"
+      },
+      "config": {
+        "title": "config",
+        "sidebar_label": "config"
+      },
+      "currentBranch": {
+        "title": "currentBranch",
+        "sidebar_label": "currentBranch"
+      },
+      "deleteBranch": {
+        "title": "deleteBranch",
+        "sidebar_label": "deleteBranch"
+      },
+      "deleteRef": {
+        "title": "deleteRef",
+        "sidebar_label": "deleteRef"
+      },
+      "deleteRemote": {
+        "title": "deleteRemote",
+        "sidebar_label": "deleteRemote"
+      },
+      "deleteTag": {
+        "title": "deleteTag",
+        "sidebar_label": "deleteTag"
+      },
+      "dir-vs-gitdir": {
+        "title": "`dir` vs `gitdir`",
+        "sidebar_label": "dir vs gitdir"
+      },
+      "errors": {
+        "title": "Error Codes",
+        "sidebar_label": "Error Code Index"
+      },
+      "expandOid": {
+        "title": "expandOid",
+        "sidebar_label": "expandOid"
+      },
+      "expandRef": {
+        "title": "expandRef",
+        "sidebar_label": "expandRef"
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "sidebar_label": "FAQ"
+      },
+      "fetch": {
+        "title": "fetch",
+        "sidebar_label": "fetch"
+      },
+      "findRoot": {
+        "title": "findRoot",
+        "sidebar_label": "findRoot"
+      },
+      "getRemoteInfo": {
+        "title": "getRemoteInfo",
+        "sidebar_label": "getRemoteInfo"
+      },
+      "browser": {
+        "title": "Browser Quick Start",
+        "sidebar_label": "Browser Quick Start"
+      },
+      "cli": {
+        "title": "isogit CLI",
+        "sidebar_label": "isogit CLI"
+      },
+      "fs": {
+        "title": "Bring Your Own FS",
+        "sidebar_label": "Bring Your Own FS"
+      },
+      "quickstart": {
+        "title": "Quick Start",
+        "sidebar_label": "Quick Start"
+      },
+      "webworker": {
+        "title": "WebWorker Guide",
+        "sidebar_label": "WebWorker Guide"
+      },
+      "in-the-news": {
+        "title": "In The News"
+      },
+      "indexPack": {
+        "title": "indexPack",
+        "sidebar_label": "indexPack"
+      },
+      "init": {
+        "title": "init",
+        "sidebar_label": "init"
+      },
+      "isDescendent": {
+        "title": "isDescendent",
+        "sidebar_label": "isDescendent"
+      },
+      "listBranches": {
+        "title": "listBranches",
+        "sidebar_label": "listBranches"
+      },
+      "listFiles": {
+        "title": "listFiles",
+        "sidebar_label": "listFiles"
+      },
+      "listRemotes": {
+        "title": "listRemotes",
+        "sidebar_label": "listRemotes"
+      },
+      "listTags": {
+        "title": "listTags",
+        "sidebar_label": "listTags"
+      },
+      "log": {
+        "title": "log",
+        "sidebar_label": "log"
+      },
+      "merge": {
+        "title": "merge",
+        "sidebar_label": "merge"
+      },
+      "plugin_credentialManager": {
+        "title": "'credentialManager' plugin",
+        "sidebar_label": "credentialManager"
+      },
+      "plugin_emitter": {
+        "title": "'emitter' plugin",
+        "sidebar_label": "emitter"
+      },
+      "plugin_fs": {
+        "title": "'fs' plugin",
+        "sidebar_label": "fs"
+      },
+      "plugin_http": {
+        "title": "'http' plugin",
+        "sidebar_label": "http"
+      },
+      "plugin_pgp": {
+        "title": "'pgp' plugin",
+        "sidebar_label": "pgp"
+      },
+      "pull": {
+        "title": "pull",
+        "sidebar_label": "pull"
+      },
+      "push": {
+        "title": "push",
+        "sidebar_label": "push"
+      },
+      "readObject": {
+        "title": "readObject",
+        "sidebar_label": "readObject"
+      },
+      "remove": {
+        "title": "remove",
+        "sidebar_label": "remove"
+      },
+      "resetIndex": {
+        "title": "resetIndex",
+        "sidebar_label": "resetIndex"
+      },
+      "resolveRef": {
+        "title": "resolveRef",
+        "sidebar_label": "resolveRef"
+      },
+      "sign": {
+        "title": "sign",
+        "sidebar_label": "sign"
+      },
+      "snippets": {
+        "title": "Useful Code Snippets",
+        "sidebar_label": "Useful Snippets"
+      },
+      "status": {
+        "title": "status",
+        "sidebar_label": "status"
+      },
+      "statusMatrix": {
+        "title": "statusMatrix",
+        "sidebar_label": "statusMatrix"
+      },
+      "tag": {
+        "title": "tag",
+        "sidebar_label": "tag"
+      },
+      "utils_auth": {
+        "title": "auth",
+        "sidebar_label": "utils.auth"
+      },
+      "utils_oauth2": {
+        "title": "oauth2",
+        "sidebar_label": "utils.oauth2"
+      },
+      "verify": {
+        "title": "verify",
+        "sidebar_label": "verify"
+      },
+      "version": {
+        "title": "version",
+        "sidebar_label": "version"
+      },
+      "walkBeta1": {
+        "title": "walkBeta1",
+        "sidebar_label": "walkBeta1"
+      },
+      "writeObject": {
+        "title": "writeObject",
+        "sidebar_label": "writeObject"
+      },
+      "writeRef": {
+        "title": "writeRef",
+        "sidebar_label": "writeRef"
+      }
+    },
+    "links": {
+      "API Docs": "API Docs",
+      "Guide": "Guide",
+      "Blog": "Blog",
+      "GitHub": "GitHub",
+      "npm": "npm"
+    },
+    "categories": {
+      "All Commands": "All Commands",
+      "Repository": "Repository",
+      "Files": "Files",
+      "Branches": "Branches",
+      "Tags": "Tags",
+      "Remotes": "Remotes",
+      "Plugins": "Plugins",
+      "Plumbing Commands": "Plumbing Commands",
+      "Misc Commands": "Misc Commands",
+      "Deprecated Commands": "Deprecated Commands",
+      "Getting Started": "Getting Started",
+      "More": "More"
+    }
   },
   "pages-strings": {
     "Help Translate|recruit community translators for your project": "Help Translate",
