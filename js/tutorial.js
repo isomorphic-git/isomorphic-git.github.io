@@ -117,7 +117,7 @@ function createLogOutputItem (output) {
 function listener () {
   document.removeEventListener('DOMContentLoaded', listener)
   // Add the RUN buttons
-  let blocks = document.querySelectorAll('pre > code.js.live')
+  let blocks = document.querySelectorAll('pre > code.language-js.live')
   for (let block of blocks) {
     block.parentNode.insertBefore(createButton(), block)
   }
