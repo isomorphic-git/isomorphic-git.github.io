@@ -10,6 +10,7 @@ Create a new branch
 | fs [deprecated] | FSModule         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
 | **dir**, gitdir | string, string   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
 | **ref**         | string           | What to name the branch                                                                                        |
+| checkout        | boolean = false  | Update `HEAD` to point at the newly created branch                                                             |
 | return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
 
 ```js live
