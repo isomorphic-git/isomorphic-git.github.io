@@ -73,3 +73,33 @@ const systemGitCredentialManager = {
 
 git.plugins.set('credentialManager', systemGitCredentialManager)
 ```
+
+## GitHub Pages deploy script
+```js
+// website/scripts/deploy-gh-pages.js
+const path = require('path')
+const fs = require('fs')
+const git = require('isomorphic-git')
+git.plugins.set('fs', fs)
+
+// PARAMETERS - CHANGE THESE FOR YOUR CODE
+let url = 'https://github.com/isomorphic-git/isomorphic-git.github.io'
+let sourceDir = path.join(__dirname, '../..')
+let buildDir = path.join(sourceDir, 'website/build/isomorphic-git.github.io')
+
+;(async () => {
+  dir = sourceDir
+  let commit = await git.log({ dir, depth: 1 })
+  commit = commit[0]
+  let message = commit.message
+
+  dir = buildDir
+  await git.init({ dir })
+  await git.addRemote({ dir, url, remote: 'origin' })
+  await git.fetch({ dir, ref: 'master', depth: 1 })
+  await git.checkout({ dir, ref: 'master', noCheckout: true })
+  await git.add({ dir, filepath: '.' })
+  await git.commit({ dir, author: commit.author, message: commit.message })
+  await git.push({ dir, oauth2format: 'github', token: process.env.GITHUB_TOKEN })
+})()
+```
