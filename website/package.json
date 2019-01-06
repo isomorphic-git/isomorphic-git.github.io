@@ -4,7 +4,7 @@
     "start": "docusaurus-start",
     "lint": "alex ../docs",
     "build": "docusaurus-build",
-    "publish-gh-pages": "docusaurus-publish",
+    "publish-gh-pages": "node ./scripts/deploy-gh-pages.js",
     "write-translations": "docusaurus-write-translations",
     "version": "docusaurus-version",
     "rename-version": "docusaurus-rename-version"
@@ -12,6 +12,7 @@
   "devDependencies": {
     "alex": "5.1.0",
     "docusaurus": "1.6.2",
+    "isomorphic-git": "0.51.0",
     "react-icons": "2.2.7"
   }
 }
