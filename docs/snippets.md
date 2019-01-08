@@ -7,6 +7,12 @@ Looking for useful code snippets? Look right here! Have a useful code snippet? A
 
 All snippets are published under the MIT License.
 
+- [git add --no-all .](#git-add-no-all-)
+- [git add -A .](#git-add-a-)
+- [Use native git credential manager](#use-native-git-credential-manager)
+- [GitHub Pages deploy script](#github-pages-deploy-script)
+- [git log -- path/to/file](#git-log-path-to-file)
+
 ## git add --no-all .
 
 ```js
