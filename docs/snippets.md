@@ -103,3 +103,35 @@ let buildDir = path.join(sourceDir, 'website/build/isomorphic-git.github.io')
   await git.push({ dir, oauth2format: 'github', token: process.env.GITHUB_TOKEN })
 })()
 ```
+
+## git log -- path/to/file
+```js
+const git = require('.')
+git.plugins.set('fs', require('fs'))
+
+// PARAMETERS - CHANGE THESE FOR YOUR CODE
+const dir = '.'
+const filepath = 'path/to/file'
+
+;(async () => {
+  let commits = await git.log({dir: '.'})
+  let lastSHA = null
+  let lastCommit = null
+  let commitsThatMatter = []
+  for (let commit of commits) {
+    try {
+      let o = await git.readObject({ dir, oid: commit.oid, filepath })
+      if (o.oid !== lastSHA) {
+        if (lastSHA !== null) commitsThatMatter.push(lastCommit)
+        lastSHA = o.oid
+      }
+    } catch (err) {
+      // file no longer there
+      commitsThatMatter.push(lastCommit)
+      break;
+    }
+    lastCommit = commit
+  }
+  console.log(commitsThatMatter)
+})()
+```
