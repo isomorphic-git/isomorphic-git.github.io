@@ -10,7 +10,7 @@
     "rename-version": "docusaurus-rename-version"
   },
   "devDependencies": {
-    "alex": "5.1.0",
+    "alex": "^7.1.0",
     "docusaurus": "1.6.2",
     "isomorphic-git": "0.51.0",
     "react-icons": "2.2.7"
