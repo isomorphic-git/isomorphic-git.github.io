@@ -58,10 +58,6 @@ class Footer extends React.Component {
             <a href={this.props.config.baseUrl + 'docs/' + this.props.language + '/in-the-news'}>In The News</a>
             <a href={this.props.config.baseUrl + 'blog'}>Blog</a>
           </div>
-          <div>
-            <h5>Ad</h5>
-            <div id="codefund_ad"></div>
-          </div>
         </section>
 
         {/* External scripts */}
