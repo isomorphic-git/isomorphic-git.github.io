@@ -3,6 +3,6 @@ window.fs = new LightningFS('fs')
 git.plugins.set('fs', window.fs)
 
 // make a Promisified version for convenience
-window.pfs = pify(window.fs) 
+window.pfs = window.fs.promises
 
 window.dir = '/tutorial'

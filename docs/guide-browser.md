@@ -11,7 +11,7 @@ If you've already done the tutorial or need a clean slate, you can run this snip
 ```js live
 window.fs = new LightningFS('fs', { wipe: true })
 git.plugins.set('fs', window.fs)
-window.pfs = pify(window.fs)
+window.pfs = window.fs.promises
 ```
 </aside>
 
@@ -20,17 +20,14 @@ Here's a whirlwind tour of the main features of `isomorphic-git`.
 First, let's set up LightningFS and isomorphic-git. *Note: I've already done this for you, which is why there is no RUN button for this code block.*
 
 ```html
-
 <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
-<script src="https://isomorphic-git.org/js/pify.js"></script>
 <script src="https://unpkg.com/isomorphic-git"></script>
 <script>
 // Initialize isomorphic-git with a file system
 window.fs = new LightningFS('fs')
 git.plugins.set('fs', window.fs)
-
-// make a Promisified version for convenience
-window.pfs = pify(window.fs)
+// I prefer using the Promisified version honestly
+window.pfs = window.fs.promises
 </script>
 ```
 
