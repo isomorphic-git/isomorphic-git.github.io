@@ -6,6 +6,8 @@ function disableEnterKey (event) {
   }
 }
 
+window.disableEnterKey = disableEnterKey;
+
 async function evalToFakeConsole (text, printOut) {
   // We have to sneak in the return statement ourselves.
   let lines = text.split('\n').map(x => x.trim()).filter(x => x !== '')
