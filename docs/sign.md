@@ -17,7 +17,7 @@ Create a signed commit
 | **dir**, gitdir | string, string    | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
 | **openpgp**     | OpenPGP interface | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                         |
 | **privateKeys** | string            | A PGP private key in ASCII armor format.                                                                       |
-| return          | Promise\<string\> | Resolves successfully with the object ID of the newly created commit.                                          |
+| return          | Promise\<string\> | Resolves successfully with the SHA-1 object id of the newly created commit.                                    |
 
 <aside>
 OpenPGP.js is unfortunately licensed under the LGPL-3.0 and thus cannot be included in a minified bundle with

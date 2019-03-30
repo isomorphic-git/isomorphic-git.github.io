@@ -18,9 +18,9 @@ Returns an array of objects with a schema like this:
 
 ```ts
 export interface CommitDescription {
-  oid: string,      // SHA1 object id of this commit
+  oid: string,      // SHA-1 object id of this commit
   message: string,  // Commit message
-  tree: string,     // SHA1 object id of corresponding file tree
+  tree: string,     // SHA-1 object id of corresponding file tree
   parent: string[], // an array of zero or more SHA1 object ids
   author: {
     name: string,          // The author's name

@@ -18,7 +18,7 @@ Create a new commit
 | author.timezoneOffset | number = undefined | Set the author timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.          |
 | committer             | Object = author    | The details about the commit committer, in the same format as the author parameter. If not specified, the author details are used.                                  |
 | signingKey            | string = undefined | Sign the commit using this private PGP key.                                                                                                                         |
-| return                | Promise\<void\>    | Resolves successfully with the object ID (SHA) of the newly created commit.                                                                                         |
+| return                | Promise\<void\>    | Resolves successfully with the SHA-1 object id of the newly created commit.                                                                                         |
 
 ```js live
 let sha = await git.commit({

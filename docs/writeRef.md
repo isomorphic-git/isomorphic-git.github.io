@@ -3,7 +3,7 @@ title: writeRef
 sidebar_label: writeRef
 ---
 
-Write a ref which refers to the specified object id, or a symbolic ref which refers to the specified ref.
+Write a ref which refers to the specified SHA-1 object id, or a symbolic ref which refers to the specified ref.
 
 | param           | type, default   | description                                                                                                    |
 | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------- |

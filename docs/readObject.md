@@ -3,7 +3,7 @@ title: readObject
 sidebar_label: readObject
 ---
 
-Read a git object directly by its SHA1 object id
+Read a git object directly by its SHA-1 object id
 
 | param           | type [= default]                | description                                                                                                                                                                     |
 | --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -13,14 +13,14 @@ Read a git object directly by its SHA1 object id
 | format          | string = 'parsed'               | What format to return the object in. The possible choices are listed below.                                                                                                     |
 | filepath        | string = undefined              | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''` |
 | encoding        | string = undefined              | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                 |
-| return          | Promise\<GitObjectDescription\> | Resolves successfully with a git object description.                                                                                                                             |
+| return          | Promise\<GitObjectDescription\> | Resolves successfully with a git object description.                                                                                                                            |
 
 `format` can have the following values:
 
 | param      | description                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 'deflated' | Return the raw deflate-compressed buffer for an object if possible. Useful for efficiently shuffling around loose objects when you don't care about the contents and can save time by not inflating them. |
-| 'wrapped'  | Return the inflated object buffer wrapped in the git object header if possible. This is the raw data used when calculating the SHA object id of a git object.                                             |
+| 'wrapped'  | Return the inflated object buffer wrapped in the git object header if possible. This is the raw data used when calculating the SHA-1 object id of a git object.                                           |
 | 'content'  | Return the object buffer without the git header.                                                                                                                                                          |
 | 'parsed'   | Returns a parsed representation of the object.                                                                                                                                                            |
 

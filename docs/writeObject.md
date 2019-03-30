@@ -14,16 +14,16 @@ Write a git object directly
 | format          | string = 'parsed'         | What format the object is in. The possible choices are listed below.                                           |
 | oid             | string = undefined        | If `format` is `'deflated'` then this param is required. Otherwise it is calculated.                           |
 | encoding        | string = undefined        | If `type` is `'blob'` then `content` will be converted to a Buffer using `encoding`.                           |
-| return          | Promise\<string\>         | Resolves successfully with the object id of the newly written object.                                          |
+| return          | Promise\<string\>         | Resolves successfully with the SHA-1 object id of the newly written object.                                    |
 
 `format` can have the following values:
 
-| param      | description                                                                                                                                                    |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 'deflated' | Treat `object` as the raw deflate-compressed buffer for an object, meaning can be written to `.git/objects/*/*` as-is.                                         |
-| 'wrapped'  | Treat `object` as the inflated object buffer wrapped in the git object header. This is the raw buffer used when calculating the SHA object id of a git object. |
-| 'content'  | Treat `object` as the object buffer without the git header.                                                                                                    |
-| 'parsed'   | Treat `object` as a parsed representation of the object.                                                                                                       |
+| param      | description                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 'deflated' | Treat `object` as the raw deflate-compressed buffer for an object, meaning can be written to `.git/objects/*/*` as-is.                                           |
+| 'wrapped'  | Treat `object` as the inflated object buffer wrapped in the git object header. This is the raw buffer used when calculating the SHA-1 object id of a git object. |
+| 'content'  | Treat `object` as the object buffer without the git header.                                                                                                      |
+| 'parsed'   | Treat `object` as a parsed representation of the object.                                                                                                         |
 
 If `format` is `'parsed'`, then `object` must match one of the schemas for `CommitDescription`, `TreeDescription`, or `TagDescription` described in... 
 shucks I haven't written that page yet. :( Well, described in the [TypeScript definition](https://github.com/isomorphic-git/isomorphic-git/blob/master/src/index.d.ts) for now.
