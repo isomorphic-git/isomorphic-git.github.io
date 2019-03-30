@@ -30,7 +30,9 @@ The object returned has the following schema:
 
 ```ts
 export interface FetchResponse {
-  defaultBranch: string // The branch that is cloned if no branch is specified (typically "master")
+  defaultBranch: string; // The branch that is cloned if no branch is specified (typically "master")
+  fetchHead: string | null; // The SHA-1 object id of the fetched head commit
+  headers?: object; // The HTTP response headers returned by the git server.
 }
 ```
 Future versions of isomorphic-git might return additional metadata.
