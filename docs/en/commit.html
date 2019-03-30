@@ -44,7 +44,7 @@
 <tr><td>author.timezoneOffset</td><td>number = undefined</td><td>Set the author timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
 <tr><td>committer</td><td>Object = author</td><td>The details about the commit committer, in the same format as the author parameter. If not specified, the author details are used.</td></tr>
 <tr><td>signingKey</td><td>string = undefined</td><td>Sign the commit using this private PGP key.</td></tr>
-<tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully with the object ID (SHA) of the newly created commit.</td></tr>
+<tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully with the SHA-1 object id of the newly created commit.</td></tr>
 </tbody>
 </table>
 <pre><code class="hljs css language-js live"><span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.commit({

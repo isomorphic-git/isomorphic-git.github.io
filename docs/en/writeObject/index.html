@@ -40,7 +40,7 @@
 <tr><td>format</td><td>string = 'parsed'</td><td>What format the object is in. The possible choices are listed below.</td></tr>
 <tr><td>oid</td><td>string = undefined</td><td>If <code>format</code> is <code>'deflated'</code> then this param is required. Otherwise it is calculated.</td></tr>
 <tr><td>encoding</td><td>string = undefined</td><td>If <code>type</code> is <code>'blob'</code> then <code>content</code> will be converted to a Buffer using <code>encoding</code>.</td></tr>
-<tr><td>return</td><td>Promise&lt;string&gt;</td><td>Resolves successfully with the object id of the newly written object.</td></tr>
+<tr><td>return</td><td>Promise&lt;string&gt;</td><td>Resolves successfully with the SHA-1 object id of the newly written object.</td></tr>
 </tbody>
 </table>
 <p><code>format</code> can have the following values:</p>
@@ -50,7 +50,7 @@
 </thead>
 <tbody>
 <tr><td>'deflated'</td><td>Treat <code>object</code> as the raw deflate-compressed buffer for an object, meaning can be written to <code>.git/objects/*/*</code> as-is.</td></tr>
-<tr><td>'wrapped'</td><td>Treat <code>object</code> as the inflated object buffer wrapped in the git object header. This is the raw buffer used when calculating the SHA object id of a git object.</td></tr>
+<tr><td>'wrapped'</td><td>Treat <code>object</code> as the inflated object buffer wrapped in the git object header. This is the raw buffer used when calculating the SHA-1 object id of a git object.</td></tr>
 <tr><td>'content'</td><td>Treat <code>object</code> as the object buffer without the git header.</td></tr>
 <tr><td>'parsed'</td><td>Treat <code>object</code> as a parsed representation of the object.</td></tr>
 </tbody>

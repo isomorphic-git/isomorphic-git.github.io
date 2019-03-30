@@ -47,7 +47,7 @@ Now commits can be signed when they are created with the <a href="/docs/en/commi
 <tr><td><strong>dir</strong>, gitdir</td><td>string, string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path, and optionally the <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td><strong>openpgp</strong></td><td>OpenPGP interface</td><td>An instance of the <a href="https://unpkg.com/openpgp@2.6.2">OpenPGP library</a>.</td></tr>
 <tr><td><strong>privateKeys</strong></td><td>string</td><td>A PGP private key in ASCII armor format.</td></tr>
-<tr><td>return</td><td>Promise&lt;string&gt;</td><td>Resolves successfully with the object ID of the newly created commit.</td></tr>
+<tr><td>return</td><td>Promise&lt;string&gt;</td><td>Resolves successfully with the SHA-1 object id of the newly created commit.</td></tr>
 </tbody>
 </table>
 <aside>

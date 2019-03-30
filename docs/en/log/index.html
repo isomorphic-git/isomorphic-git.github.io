@@ -43,9 +43,9 @@
 </table>
 <p>Returns an array of objects with a schema like this:</p>
 <pre><code class="hljs css language-ts"><span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> CommitDescription {
-  oid: <span class="hljs-built_in">string</span>,      <span class="hljs-comment">// SHA1 object id of this commit</span>
+  oid: <span class="hljs-built_in">string</span>,      <span class="hljs-comment">// SHA-1 object id of this commit</span>
   message: <span class="hljs-built_in">string</span>,  <span class="hljs-comment">// Commit message</span>
-  tree: <span class="hljs-built_in">string</span>,     <span class="hljs-comment">// SHA1 object id of corresponding file tree</span>
+  tree: <span class="hljs-built_in">string</span>,     <span class="hljs-comment">// SHA-1 object id of corresponding file tree</span>
   parent: <span class="hljs-built_in">string</span>[], <span class="hljs-comment">// an array of zero or more SHA1 object ids</span>
   author: {
     name: <span class="hljs-built_in">string</span>,          <span class="hljs-comment">// The author's name</span>

@@ -55,7 +55,9 @@
 </table>
 <p>The object returned has the following schema:</p>
 <pre><code class="hljs css language-ts"><span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> FetchResponse {
-  defaultBranch: <span class="hljs-built_in">string</span> <span class="hljs-comment">// The branch that is cloned if no branch is specified (typically "master")</span>
+  defaultBranch: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// The branch that is cloned if no branch is specified (typically "master")</span>
+  fetchHead: <span class="hljs-built_in">string</span> | <span class="hljs-literal">null</span>; <span class="hljs-comment">// The SHA-1 object id of the fetched head commit</span>
+  headers?: object; <span class="hljs-comment">// The HTTP response headers returned by the git server.</span>
 }
 </code></pre>
 <p>Future versions of isomorphic-git might return additional metadata.</p>
