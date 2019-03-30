@@ -61,7 +61,8 @@
       "writeObject",
       "statusMatrix",
       "isDescendent",
-      "indexPack"
+      "indexPack",
+      "packObjects"
     ],
     "Misc Commands": [
       "version"
