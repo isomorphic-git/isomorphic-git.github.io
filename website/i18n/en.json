@@ -156,6 +156,10 @@
         "title": "merge",
         "sidebar_label": "merge"
       },
+      "packObjects": {
+        "title": "packObjects",
+        "sidebar_label": "packObjects"
+      },
       "plugin_credentialManager": {
         "title": "'credentialManager' plugin",
         "sidebar_label": "credentialManager"

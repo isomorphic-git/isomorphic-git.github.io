@@ -1,0 +1,16 @@
+{
+  "name": "@isomorphic-git/isomorphic-git.org",
+  "scripts": {
+    "start": "serve",
+    "build": "cd website && npm run build"
+  },
+  "dependencies": {
+    "serve": "*"
+  },
+  "devDependencies": {
+    "alex": "^7.1.0",
+    "docusaurus": "1.6.2",
+    "isomorphic-git": "0.51.0",
+    "react-icons": "2.2.7"
+  }
+}

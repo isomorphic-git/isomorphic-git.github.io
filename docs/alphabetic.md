@@ -30,6 +30,7 @@ sidebar_label: Alphabetical Index
 - [listRemotes](listRemotes.md)
 - [log](log.md)
 - [merge](merge.md)
+- [packObjects](packObjects.md)
 - [pull](pull.md)
 - [push](push.md)
 - [readObject](readObject.md)
