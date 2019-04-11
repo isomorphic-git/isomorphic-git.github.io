@@ -61,14 +61,17 @@
 <url> <loc>https://isomorphic-git.org/docs/en/resolveRef</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/resolveRef" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/sign</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/sign" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/snippets</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/snippets" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/STAGE</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/STAGE" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/status</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/status" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/statusMatrix</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/statusMatrix" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/tag</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/tag" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/TREE</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/TREE" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/utils_auth</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/utils_auth" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/utils_oauth2</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/utils_oauth2" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/verify</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/verify" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/version</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/version" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/walkBeta1</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/walkBeta1" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/WORKDIR</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/WORKDIR" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/writeObject</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/writeObject" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/writeRef</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/writeRef" /> </url>
 </urlset>
