@@ -5,13 +5,15 @@ sidebar_label: statusMatrix
 
 Efficiently get the status of multiple files at once.
 
-| param           | type [= default]        | description                                                                                                    |
-| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
-| **dir**, gitdir | string, string          | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| ref             | string = 'HEAD'         | Optionally specify a different commit to compare against the workdir and stage instead of the HEAD.            |
-| pattern         | string = null           | Filter the results to only those whose filepath matches a glob pattern.                                        |
-| return          | Promise\<StatusMatrix\> | Resolves with a status matrix, described below.                                                                |
+| param           | type [= default]                    | description                                                                                               |
+| --------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| core            | string = 'default'                  | The plugin core identifier to use for plugin injection                                                    |
+| fs [deprecated] | FileSystem                          | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
+| **dir**         | string                              | The [working tree](dir-vs-gitdir.md) directory path                                                       |
+| **gitdir**      | string = join(dir, '.git')          | The [git directory](dir-vs-gitdir.md) path                                                                |
+| ref             | string = 'HEAD'                     | Optionally specify a different commit to compare against the workdir and stage instead of the HEAD        |
+| pattern         | string                              | Filter the results to only those whose filepath matches a glob pattern                                    |
+| return          | Promise\<Array\<Array\<number\>\>\> | Resolves with a status matrix, described below.                                                           |
 
 The returned `StatusMatrix` is admittedly not the easiest format to read.
 However it conveys a large amount of information in dense format that should make it easy to create reports about the current state of the repository;
@@ -26,7 +28,7 @@ console.log(status)
 
 ```js live
 // get the status of all the JSON and Markdown files
-let status = await git.statusMatrix({ dir: '$input((/))', pattern: '$input((**/*.{json,md}))' })
+let status = await git.statusMatrix({ dir: '$input((/))', pattern: '$input((**\/*.{json,md}))' })
 console.log(status)
 ```
 
@@ -110,8 +112,6 @@ const filenames = (await statusMatrix({ dir }))
   .map(row => row[FILE])
 ```
 
-
-
 For reference, here are all possible combinations:
 
 | HEAD | WORKDIR | STAGE | `git status --short` equivalent |
@@ -131,4 +131,3 @@ For reference, here are all possible combinations:
 | 1    | 2       | 1     | ` M`                            |
 | 1    | 2       | 2     | `M `                            |
 | 1    | 2       | 3     | `MM`                            |
-

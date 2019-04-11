@@ -38,14 +38,17 @@ sidebar_label: Alphabetical Index
 - [resetIndex](resetIndex.md)
 - [resolveRef](resolveRef.md)
 - [sign](sign.md) [deprecated]
+- [STAGE](./STAGE.md)
 - [status](status.md)
 - [statusMatrix](statusMatrix.md)
 - [tag](tag.md)
+- [TREE](./TREE.md)
 - [utils.auth](utils_auth.md) [deprecated]
 - [utils.oauth2](utils_oauth2.md) [deprecated]
 - [verify](verify.md)
 - [version](version.md)
 - [walkBeta1](walkBeta1.md)
+- [WORKDIR](./WORKDIR.md)
 - [writeObject](writeObject.md)
 - [writeRef](writeRef.md)
 

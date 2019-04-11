@@ -5,17 +5,39 @@ sidebar_label: readObject
 
 Read a git object directly by its SHA-1 object id
 
-| param           | type [= default]                | description                                                                                                                                                                     |
-| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule                        | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).                                                                       |
-| **dir**, gitdir | string, string                  | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path                                                                  |
-| **oid**         | string                          | The SHA-1 object id to get.                                                                                                                                                     |
-| format          | string = 'parsed'               | What format to return the object in. The possible choices are listed below.                                                                                                     |
-| filepath        | string = undefined              | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''` |
-| encoding        | string = undefined              | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                 |
-| return          | Promise\<GitObjectDescription\> | Resolves successfully with a git object description.                                                                                                                            |
+| param           | type [= default]                                         | description                                                                                                                                                                     |
+| --------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| core            | string = 'default'                                       | The plugin core identifier to use for plugin injection                                                                                                                          |
+| fs [deprecated] | FileSystem                                               | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).                                                                       |
+| dir             | string                                                   | The [working tree](dir-vs-gitdir.md) directory path                                                                                                                             |
+| **gitdir**      | string = join(dir,'.git')                                | The [git directory](dir-vs-gitdir.md) path                                                                                                                                      |
+| **oid**         | string                                                   | The SHA-1 object id to get                                                                                                                                                      |
+| format          | 'deflated' | 'wrapped' | 'content' | 'parsed' = 'parsed' | What format to return the object in. The choices are described in more detail below.                                                                                            |
+| filepath        | string                                                   | Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''` |
+| encoding        | string                                                   | A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.                                 |
+| return          | Promise\<GitObjectDescription\>                          | Resolves successfully with a git object description                                                                                                                             |
 
-`format` can have the following values:
+The object returned has the following schema:
+
+```ts
+type GitObjectDescription = {
+  oid: string;
+  type?: 'blob' | 'tree' | 'commit' | 'tag';
+  format: 'deflated' | 'wrapped' | 'content' | 'parsed';
+  object: Buffer | String | CommitDescription | TreeDescription;
+  source?: string;
+}
+```
+
+Regarding `GitObjectDescription`:
+
+- `oid` will be the same as the `oid` argument unless the `filepath` argument is provided, in which case it will be the oid of the tree or blob being returned.
+- `type` is not included for 'deflated' and 'wrapped' formatted objects because you likely don't care or plan to decode that information yourself.
+- `format` is usually, but not always, the format you requested. Packfiles do not store each object individually compressed so if you end up reading the object from a packfile it will be returned in format 'content' even if you requested 'deflated' or 'wrapped'.
+- `object` will be an actual Object if format is 'parsed' and the object is a commit, tree, or annotated tag. Blobs are still formatted as Buffers unless an encoding is provided in which case they'll be strings. If format is anything other than 'parsed', object will be a Buffer.
+- `source` is the name of the packfile or loose object file where the object was found.
+
+The `format` parameter can have the following values:
 
 | param      | description                                                                                                                                                                                               |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,33 +46,7 @@ Read a git object directly by its SHA-1 object id
 | 'content'  | Return the object buffer without the git header.                                                                                                                                                          |
 | 'parsed'   | Returns a parsed representation of the object.                                                                                                                                                            |
 
-Returns an object with a schema like this:
-
-```ts
-export interface GitObjectDescription {
-  // Will be the same as the `oid` argument unless the `filepath` argument is provided,
-  // in which case it will be the oid of the tree or blob being returned.
-  oid: string,
-
-  // Note: The type is not included for 'deflated' and 'wrapped' formatted objects
-  // because you likely don't care or plan to decode that information yourself.
-  type?: 'blob' | 'tree' | 'commit' | 'tag',
-
-  // This is usually, but not always, the format you requested. Packfiles do not store
-  // each object individually compressed so if you end up reading the object from a packfile
-  // it will be returned in format 'content' even if you requested 'deflated' or 'wrapped'.
-  format: 'deflated' | 'wrapped' | 'content' | 'parsed',
-
-  // If format is 'parsed', commits and trees are returned as Objects, but blobs are still formatted as Buffers
-  // unless an encoding is provided in which case they'll be strings.
-  // If format is anything other than 'parsed', object will be a Buffer.
-  // TODO: Eventually there will be a TagDescription as well for parsing annotated tags.
-  object: Buffer | String | CommitDescription | TreeDescription,
-
-  // This is the name of the packfile or loose object file where the object was found.
-  source?: string
-}
-```
+Example Code:
 
 ```js live
 // Get the contents of 'README.md' in the master branch.

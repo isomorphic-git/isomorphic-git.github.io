@@ -11,13 +11,15 @@ sidebar_label: sign
 
 Create a signed commit
 
-| param           | type [= default]  | description                                                                                                    |
-| --------------- | ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule          | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
-| **dir**, gitdir | string, string    | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **openpgp**     | OpenPGP interface | An instance of the [OpenPGP library](https://unpkg.com/openpgp@2.6.2).                                         |
-| **privateKeys** | string            | A PGP private key in ASCII armor format.                                                                       |
-| return          | Promise\<string\> | Resolves successfully with the SHA-1 object id of the newly created commit.                                    |
+| param           | type [= default]           | description                                                                                               |
+| --------------- | -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| core            | string = 'default'         | The plugin core identifier to use for plugin injection                                                    |
+| fs [deprecated] | FileSystem                 | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
+| dir             | string                     | The [working tree](dir-vs-gitdir.md) directory path                                                       |
+| **gitdir**      | string = join(dir, '.git') | The [git directory](dir-vs-gitdir.md) path                                                                |
+| **openpgp**     | string                     | An instance of the [OpenPGP library](https://unpkg.com/openpgp%402.6.2)                                   |
+| **privateKeys** | string                     | A PGP private key in ASCII armor format                                                                   |
+| return          | Promise\<void\>            | Resolves successfully when filesystem operations are completed                                            |
 
 <aside>
 OpenPGP.js is unfortunately licensed under the LGPL-3.0 and thus cannot be included in a minified bundle with
@@ -31,6 +33,8 @@ leaving the original commit dangling.
 The `privateKeys` argument is a single string in ASCII armor format. However, it is plural "keys" because
 you can technically have multiple private keys in a single ASCII armor string. The openpgp.sign() function accepts
 multiple keys, so while I haven't tested it, it should support signing a single commit with multiple keys.
+
+Example Code:
 
 ```js live
 let sha = await git.sign({
