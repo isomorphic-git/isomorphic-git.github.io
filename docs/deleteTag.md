@@ -3,14 +3,18 @@ title: deleteTag
 sidebar_label: deleteTag
 ---
 
-Deletes a local branch
+Delete a local tag ref
 
-| param           | type [= default] | description                                                                                                    |
-| --------------- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).      |
-| **dir**, gitdir | string, string   | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path |
-| **ref**         | string           | The tag to delete                                                                                              |
-| return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                                  |
+| param           | type [= default]          | description                                                                                               |
+| --------------- | ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| core            | string = 'default'        | The plugin core identifier to use for plugin injection                                                    |
+| fs [deprecated] | FileSystem                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
+| dir             | string                    | The [working tree](dir-vs-gitdir.md) directory path                                                       |
+| **gitdir**      | string = join(dir,'.git') | The [git directory](dir-vs-gitdir.md) path                                                                |
+| **ref**         | string                    | The tag to delete                                                                                         |
+| return          | Promise\<void\>           | Resolves successfully when filesystem operations are complete                                             |
+
+Example Code:
 
 ```js live
 await git.deleteTag({ dir: '$input((/))', ref: '$input((test-tag))' })

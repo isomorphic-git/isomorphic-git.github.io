@@ -5,22 +5,39 @@ sidebar_label: push
 
 Push a branch or tag
 
-| param                                   | type [= default]                              | description                                                                                                         |
-| --------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| fs [deprecated]                         | FSModule                                      | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).           |
-| **dir**, gitdir                         | string, string                                | The [working tree](dir-vs-gitdir.md) directory path, and optionally the [git directory](dir-vs-gitdir.md) path      |
-| username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                       |
-| ref                                     | string = undefined                            | Which branch to push. By default this is the currently checked out branch.                                          |
-| remoteRef                               | string = undefined                            | The name of the receiving branch on the remote. By default this is the same as `ref`.                               |
-| remote                                  | string = 'origin'                             | If URL is not specified, determines which remote to use.                                                            |
-| force                                   | bool   = false                                | If true, behaves the same as `git push --force`                                                                     |
-| noGitSuffix                             | bool   = false                                | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)            |
-| url                                     | string = undefined                            | The URL of the remote git server. The default is the value set in the git config for that remote.                   |
-| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Overrides value in repo config.            |
-| headers                                 | object = {}                                   | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                               |
-| emitter [deprecated]                    | EventEmitter = undefined                      | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                          |
-| emitterPrefix                           | string = ''                                   | Scope emitted events by prepending `emitterPrefix` to the event name.                                               |
-| return                                  | Promise\<PushResponse\>                       | Resolves successfully when push completes with a detailed description of the operation from the server.             |
+| param                | type [= default]          | description                                                                                                |
+| -------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| core                 | string = 'default'        | The plugin core identifier to use for plugin injection                                                     |
+| fs [deprecated]      | FileSystem                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).  |
+| dir                  | string                    | The [working tree](dir-vs-gitdir.md) directory path                                                        |
+| **gitdir**           | string = join(dir,'.git') | The [git directory](dir-vs-gitdir.md) path                                                                 |
+| ref                  | string                    | Which branch to push. By default this is the currently checked out branch.                                 |
+| remoteRef            | string                    | The name of the receiving branch on the remote. By default this is the same as `ref`. (See note below)     |
+| remote               | string                    | If URL is not specified, determines which remote to use.                                                   |
+| force                | boolean = false           | If true, behaves the same as `git push --force`                                                            |
+| noGitSuffix          | boolean = false           | If true, do not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)           |
+| url                  | string                    | The URL of the remote git server. The default is the value set in the git config for that remote.          |
+| corsProxy            | string                    | Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config. |
+| username             | string                    | See the [Authentication](./authentication.html) documentation                                              |
+| password             | string                    | See the [Authentication](./authentication.html) documentation                                              |
+| token                | string                    | See the [Authentication](./authentication.html) documentation                                              |
+| oauth2format         | string                    | See the [Authentication](./authentication.html) documentation                                              |
+| headers              | object                    | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                      |
+| emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                 |
+| emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name.                                      |
+| return               | Promise\<PushResponse\>   | Resolves successfully when push completes with a detailed description of the operation from the server.    |
+
+Returns an object with a schema like this:
+
+```ts
+type PushResponse = {
+  ok?: Array<string>;
+  errors?: Array<string>;
+  headers?: object;
+}
+```
+
+> *Note:* The behavior of `remoteRef` is reasonable but not the _correct_ behavior. It _should_ be using the configured remote tracking branch! TODO: I need to fix this
 
 The push command returns an object that describes the result of the attempted push operation.
 *Notes:* If there were no errors, then there will be no `errors` property. There can be a mix of `ok` messages and `errors` messages.
@@ -32,7 +49,7 @@ The push command returns an object that describes the result of the attempted pu
 
 To monitor progress events, see the documentation for the [`'emitter'` plugin](./plugin_emitter.md).
 
-Example code:
+Example Code:
 
 ```js live
 let pushResponse = await git.push({

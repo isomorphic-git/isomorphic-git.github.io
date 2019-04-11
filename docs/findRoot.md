@@ -5,14 +5,17 @@ sidebar_label: findRoot
 
 Find the root git directory
 
-| param           | type [= default] | description                                                                                               |
-| --------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
-| fs [deprecated] | FSModule         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
-| **filepath**    | string           | The file directory to start searching in.                                                                 |
-| return          | Promise\<void\>  | Resolves successfully when filesystem operations are complete                                             |
-| throws          | Error            | Error('Unable to find git root')                                                                          |
+| param           | type [= default]   | description                                                                                               |
+| --------------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| core            | string = 'default' | The plugin core identifier to use for plugin injection                                                    |
+| fs [deprecated] | FileSystem         | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
+| **filepath**    | string             | The file directory to start searching in.                                                                 |
+| return          | Promise\<string\>  | Resolves successfully with a root git directory path                                                      |
+| throws          | Error              | [GitRootNotFoundError](./errors.md#gitrootnotfounderror)                                                  |
 
 Starting at `filepath`, walks upward until it finds a directory that contains a subdirectory called '.git'.
+
+Example Code:
 
 ```js live
 let gitroot = await git.findRoot({

@@ -5,20 +5,37 @@ sidebar_label: getRemoteInfo
 
 List a remote servers branches, tags, and capabilities.
 
-| param                                   | type [= default]                              | description                                                                                                                    |
-| --------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **url**                                 | string                                        | The URL of the git repository.                                                                                                 |
-| corsProxy                               | string = undefined                            | Optional [CORS proxy](https://www.npmjs.com/@isomorphic-git/cors-proxy). Value is stored in the git config file for that repo. |
-| username, password, token, oauth2format | string,&nbsp;string,&nbsp;string,&nbsp;string | See the [Authentication](./authentication.html) documentation                                                                  |
-| noGitSuffix                             | bool = false                                  | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)                       |
-| forPush                                 | bool = false                                  | By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.                    |
-| headers                                 | object = {}                                   | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                                          |
-| return                                  | Promise\<Object\>                             | Resolves successfully with an object listing the branches, tags, and capabilities of the remote.                               |
+| param        | type [= default]             | description                                                                                                 |
+| ------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| core         | string = 'default'           | The plugin core identifier to use for plugin injection                                                      |
+| **url**      | string                       | The URL of the remote repository. Will be gotten from gitconfig if absent.                                  |
+| corsProxy    | string                       | Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.  |
+| forPush      | boolean = false              | By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities. |
+| noGitSuffix  | boolean = false              | If true, clone will not auto-append a `.git` suffix to the `url`. (**AWS CodeCommit needs this option**)    |
+| username     | string                       | See the [Authentication](./authentication.html) documentation                                               |
+| password     | string                       | See the [Authentication](./authentication.html) documentation                                               |
+| token        | string                       | See the [Authentication](./authentication.html) documentation                                               |
+| oauth2format | string                       | See the [Authentication](./authentication.html) documentation                                               |
+| headers      | object                       | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                       |
+| return       | Promise\<RemoteDescription\> | Resolves successfully with an object listing the branches, tags, and capabilities of the remote.            |
+
+The object returned has the following schema:
+
+```ts
+type RemoteDescription = {
+  capabilities: Array<string>; // The list of capabilities returned by the server (part of the Git protocol)
+  refs: {
+    heads: Object<string, string>; // The branches on the remote
+    pull: Object<string, string>; // The special branches representing pull requests (non-standard)
+    tags: Object<string, string>; // The tags on the remote
+  };
+}
+```
 
 This is a rare command that doesn't require an `fs`, `dir`, or even `gitdir` argument.
 It just communicates to a remote git server, using the first step of the `git-upload-pack` handshake, but stopping short of fetching the packfile.
 
-TODO: Document the response object schema.
+Example Code:
 
 ```js live
 let info = await git.getRemoteInfo({

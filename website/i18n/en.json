@@ -212,6 +212,10 @@
         "title": "Useful Code Snippets",
         "sidebar_label": "Useful Snippets"
       },
+      "STAGE": {
+        "title": "STAGE",
+        "sidebar_label": "STAGE"
+      },
       "status": {
         "title": "status",
         "sidebar_label": "status"
@@ -223,6 +227,10 @@
       "tag": {
         "title": "tag",
         "sidebar_label": "tag"
+      },
+      "TREE": {
+        "title": "TREE",
+        "sidebar_label": "TREE"
       },
       "utils_auth": {
         "title": "auth",
@@ -243,6 +251,10 @@
       "walkBeta1": {
         "title": "walkBeta1",
         "sidebar_label": "walkBeta1"
+      },
+      "WORKDIR": {
+        "title": "WORKDIR",
+        "sidebar_label": "WORKDIR"
       },
       "writeObject": {
         "title": "writeObject",
@@ -267,6 +279,7 @@
       "Branches": "Branches",
       "Tags": "Tags",
       "Remotes": "Remotes",
+      "Walking": "Walking",
       "Plugins": "Plugins",
       "Plumbing Commands": "Plumbing Commands",
       "Misc Commands": "Misc Commands",

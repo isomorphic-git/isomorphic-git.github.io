@@ -5,15 +5,40 @@ sidebar_label: walkBeta1
 
 A powerful recursive tree-walking utility.
 
-| param     | type [= default]                | description                                                      |
-| --------- | ------------------------------- | ---------------------------------------------------------------- |
-| **trees** | Walker[]                        | The trees you want to traverse                                   |
-| filter    | async (WalkerEntry) => boolean | Filter which `WalkerEntry`s to process                           |
-| map       | async (WalkerEntry) => any     | Transform `WalkerEntry`s into a result form                      |
-| reduce    | async (parent, children) => any | Control how mapped entries are combined with their parent result |
-| iterate   | async (walk, children) => any   | Fine-tune how entries within a tree are iterated over            |
-| return    | any                             | The finished tree-walking result                                 |
+| param     | type [= default] | description                                                      |
+| --------- | ---------------- | ---------------------------------------------------------------- |
+| **trees** | Array\<Walker\>  | The trees you want to traverse                                   |
+| filter    | function         | Filter which `WalkerEntry`s to process                           |
+| map       | function         | Transform `WalkerEntry`s into a result form                      |
+| reduce    | function         | Control how mapped entries are combined with their parent result |
+| iterate   | function         | Fine-tune how entries within a tree are iterated over            |
+| return    | Promise\<any\>   | The finished tree-walking result                                 |
 
+The `WalkerEntry` is an interface that abstracts computing many common tree / blob stats.
+
+```ts
+type WalkerEntry = {
+  fullpath: string;
+  basename: string;
+  exists: boolean;
+  populateStat: function;
+  type?: 'tree' | 'blob' | 'special' | 'commit';
+  ctimeSeconds?: number;
+  ctimeNanoseconds?: number;
+  mtimeSeconds?: number;
+  mtimeNanoseconds?: number;
+  dev?: number;
+  ino?: number;
+  mode?: number | string; // WORKDIR and STAGE return numbers, TREE returns a string... I'll fix this in walkBeta2
+  uid?: number;
+  gid?: number;
+  size?: number;
+  populateContent: function;
+  content?: Buffer;
+  populateHash: function;
+  oid?: string;
+}
+```
 
 The `walk` API (tentatively named `walkBeta1`) simplifies gathering detailed information about a tree or comparing all the filepaths in two or more trees.
 Trees can be file directories, git commits, or git indexes (aka staging areas).
@@ -45,14 +70,15 @@ let trees = [
 ]
 ```
 
+See the doc pages for [TREE](./TREE.md), [WORKDIR](./WORKDIR.md), and [STAGE](./STAGE.md).
+
 `filter`, `map`, `reduce`, and `iterate` allow you control the recursive walk by pruning and transforming `WalkerTree`s into the desired result.
 
-## WalkerTree and WalkerEntry
-The `WalkerTree` is an interface that abstracts computing many common tree / blob stats.
-`filter` and `map` each receive an array of `WalkerTree[]` as their main argument, one `WalkerTree` for each `Walker` in the `trees` argument.
-An array of corresponding `WalkerTree` objects is a `WalkerEntry`.
+## WalkerEntry
+The `WalkerEntry` is an interface that abstracts computing many common tree / blob stats.
+`filter` and `map` each receive an array of `WalkerEntry[]` as their main argument, one `WalkerEntry` for each `Walker` in the `trees` argument.
 
-By default, `WalkerTree`s only have three properties:
+By default, `WalkerEntry`s only have three properties:
 ```js
 {
   fullpath: string;
@@ -92,7 +118,7 @@ await entry.populateHash()
 entry.oid // SHA1 string
 ```
 
-## filter(WalkerEntry) => boolean
+## filter(WalkerEntry[]) => boolean
 
 Default: `async () => true`.
 
@@ -117,7 +143,7 @@ async function filter ([head, workdir, stage]) {
 }
 ```
 
-## map(WalkerEntry) => any
+## map(WalkerEntry[]) => any
 
 Default: `async entry => entry`
 
