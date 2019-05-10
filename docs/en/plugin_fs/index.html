@@ -45,7 +45,9 @@ Hop over to the <a href="/docs/en/browser">Browser QuickStart</a> to see how tha
 <p>Note: only one <code>fs</code> plugin can be registered at a time.</p>
 </blockquote>
 <h3><a class="anchor" aria-hidden="true" id="implementing-your-own-fs-plugin"></a><a href="#implementing-your-own-fs-plugin" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Implementing your own <code>fs</code> plugin</h3>
-<p>An <code>fs</code> plugin must implement the following subset of node's <code>fs</code> module:</p>
+<p>There are actually TWO ways to implement an <code>fs</code> plugin: the classic &quot;callback&quot; API and the newer &quot;promise&quot; API. If your <code>fs</code> plugin object provides a <code>promises</code> property, <code>isomorphic-git</code> will use the &quot;promise&quot; API <em>exclusively</em>.</p>
+<h4><a class="anchor" aria-hidden="true" id="using-the-callback-api"></a><a href="#using-the-callback-api" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using the &quot;callback&quot; API</h4>
+<p>A &quot;callback&quot; <code>fs</code> plugin must implement the following subset of node's <code>fs</code> module:</p>
 <ul>
 <li><a href="https://nodejs.org/api/fs.html#fs_fs_readfile_path_options_callback">fs.readFile(path[, options], callback)</a></li>
 <li><a href="https://nodejs.org/api/fs.html#fs_fs_writefile_file_data_options_callback">fs.writeFile(file, data[, options], callback)</a></li>
@@ -57,6 +59,25 @@ Hop over to the <a href="/docs/en/browser">Browser QuickStart</a> to see how tha
 <li><a href="https://nodejs.org/api/fs.html#fs_fs_lstat_path_options_callback">fs.lstat(path[, options], callback)</a></li>
 <li><a href="https://nodejs.org/api/fs.html#fs_fs_readlink_path_options_callback">fs.readlink(path[, options], callback)</a></li>
 <li><a href="https://nodejs.org/api/fs.html#fs_fs_symlink_target_path_type_callback">fs.symlink(target, path[, type], callback)</a></li>
+</ul>
+<p>Internally, <code>isomorphic-git</code> wraps the provided &quot;callback&quot; API functions using <a href="https://www.npmjs.com/package/pify"><code>pify</code></a>.</p>
+<p>As of node v12 the <code>fs.promises</code> API has been stabilized. (<code>lightning-fs</code> also provides a <code>fs.promises</code> API!) Nowadays, wrapping the callback functions
+with <code>pify</code> is redundant and potentially less performant than using the native promisified versions. Plus, if you're writing your own <code>fs</code> plugin,
+the <code>fs.promises</code> API lets you write straightforward implementations using <code>async / await</code> without the messy optional argument handling the callback API needs.
+Therefore a second API is now supported...</p>
+<h4><a class="anchor" aria-hidden="true" id="using-the-promise-api-preferred"></a><a href="#using-the-promise-api-preferred" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using the &quot;promise&quot; API (preferred)</h4>
+<p>A &quot;promise&quot; <code>fs</code> plugin must implement the same set functions as a &quot;callback&quot; plugin, but it implements the promisified versions, and they should all be on a property called <code>promises</code>:</p>
+<ul>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_readfile_path_options">fs.promises.readFile(path[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_writefile_file_data_options">fs.promises.writeFile(file, data[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_unlink_path">fs.promises.unlink(path)</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_readdir_path_options">fs.promises.readdir(path[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_mkdir_path_options">fs.promises.mkdir(path[, mode])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_rmdir_path">fs.promises.rmdir(path)</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_stat_path_options">fs.promises.stat(path[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_lstat_path_options">fs.promises.lstat(path[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_readlink_path_options">fs.promises.readlink(path[, options])</a></li>
+<li><a href="https://nodejs.org/api/fs.html#fs_fspromises_symlink_target_path_type">fs.promises.symlink(target, path[, type])</a></li>
 </ul>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/en/plugin_emitter"><span class="arrow-prev">← </span><span>emitter</span></a><a class="docs-next button" href="/docs/en/plugin_http"><span>http</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
 void async function() {
