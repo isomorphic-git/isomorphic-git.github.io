@@ -7,11 +7,12 @@ Looking for useful code snippets? Look right here! Have a useful code snippet? A
 
 All snippets are published under the MIT License.
 
-- [git add --no-all .](#git-add-no-all-)
-- [git add -A .](#git-add-a-)
+- [git add --no-all .](#git-add---no-all)
+- [git add -A .](#git-add--a)
 - [Use native git credential manager](#use-native-git-credential-manager)
 - [GitHub Pages deploy script](#github-pages-deploy-script)
-- [git log -- path/to/file](#git-log-path-to-file)
+- [git log -- path/to/file](#git-log----pathtofile)
+- [git diff --name-status \<commitHash1\> \<commitHash2\>](#git-diff---name-status-commithash1-commithash2)
 
 ## git add --no-all .
 
@@ -140,4 +141,57 @@ const filepath = 'path/to/file'
   }
   console.log(commitsThatMatter)
 })()
+```
+
+## git diff --name-status \<commitHash1\> \<commitHash2\>
+Adapted from [GitViz](https://github.com/kpj/GitViz/blob/83dfc65624f5dae41ffb9e8a97d2ee61512c1365/src/git-handler.js) by @kpj
+```js
+async function getFileStateChanges (commitHash1, commitHash2, dir) {
+  return git.walkBeta1({
+    trees: [
+      git.TREE({ dir: dir, ref: commitHash1 }),
+      git.TREE({ dir: dir, ref: commitHash2 })
+    ],
+    map: async function ([A, B]) {
+      // ignore directories
+      if (A.fullpath === '.') {
+        return
+      }
+      await A.populateStat()
+      if (A.type === 'tree') {
+        return
+      }
+      await B.populateStat()
+      if (B.type === 'tree') {
+        return
+      }
+
+      // generate ids
+      await A.populateHash()
+      await B.populateHash()
+
+      // determine modification type
+      let type = 'equal'
+      if (A.oid !== B.oid) {
+        type = 'modify'
+      }
+      if (A.oid === undefined) {
+        type = 'add'
+      }
+      if (B.oid === undefined) {
+        type = 'remove'
+      }
+      if (A.oid === undefined && B.oid === undefined) {
+        console.log('Something weird happened:')
+        console.log(A)
+        console.log(B)
+      }
+
+      return {
+        path: `/${A.fullpath}`,
+        type: type
+      }
+    }
+  })
+}
 ```
