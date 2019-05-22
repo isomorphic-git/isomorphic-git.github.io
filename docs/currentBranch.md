@@ -12,7 +12,7 @@ Get the name of the branch currently pointed to by .git/HEAD
 | dir             | string                        | The [working tree](dir-vs-gitdir.md) directory path                                                       |
 | **gitdir**      | string = join(dir,'.git')     | The [git directory](dir-vs-gitdir.md) path                                                                |
 | fullname        | boolean = false               | Return the full path (e.g. "refs/heads/master") instead of the abbreviated form.                          |
-| return          | Promise\<(string|undefined)\> | The name of the current branch or undefined if the HEAD is detached.                                      |
+| return          | Promise\<(string\|undefined)\> | The name of the current branch or undefined if the HEAD is detached.                                      |
 
 Example Code:
 
