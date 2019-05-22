@@ -39,10 +39,18 @@ password), instead of failing `isomorphic-git` could interactively prompt the us
 A `credentialManager` plugin must implement the following API:
 
 ```ts
+interface IAuthJSON {
+  username?: string;
+  password?: string;
+  token?: string;
+  oauth2format?: string;
+  [x: string]: JSON;
+}
+
 interface GitCredentialManagerPlugin {
-  fill ({ url: string }): Promise<JSON>;
-  approved ({ url: string, auth: JSON }): Promise<void>;
-  rejected ({ url: string, auth: JSON }): Promise<void>;
+  fill ({ url: string }): Promise<IAuthJSON>;
+  approved ({ url: string, auth: IAuthJSON }): Promise<void>;
+  rejected ({ url: string, auth: IAuthJSON }): Promise<void>;
 }
 ```
 
