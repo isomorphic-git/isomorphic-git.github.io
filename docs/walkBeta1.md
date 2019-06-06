@@ -203,3 +203,12 @@ The default implementation recurses all children concurrently using Promise.all.
 However you could use a custom function to traverse children serially or use a global queue to throttle recursion.
 
 > Note: For a complete example, look at the implementation of `statusMatrix`.
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/walkBeta1.js';
+  }
+})();
+</script>

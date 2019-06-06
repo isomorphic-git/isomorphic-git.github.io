@@ -22,3 +22,12 @@ Example Code:
 await git.deleteRef({ dir: '$input((/))', ref: '$input((refs/tags/test-tag))' })
 console.log('done')
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/deleteRef.js';
+  }
+})();
+</script>

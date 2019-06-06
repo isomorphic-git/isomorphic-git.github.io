@@ -23,3 +23,12 @@ let gitroot = await git.findRoot({
 })
 console.log(gitroot) // '/path/to/some/gitrepo'
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/findRoot.js';
+  }
+})();
+</script>

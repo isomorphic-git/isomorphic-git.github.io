@@ -24,3 +24,12 @@ let ancestor = await git.resolveRef({ dir: '$input((/))', ref: '$input((v0.20.0)
 console.log(oid, ancestor)
 await git.isDescendent({ dir: '$input((/))', oid, ancestor, depth: $input((-1)) })
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/isDescendent.js';
+  }
+})();
+</script>

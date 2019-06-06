@@ -20,3 +20,12 @@ Example Code:
 let oid = await git.expandOid({ dir: '$input((/))', oid: '$input((0414d2a))'})
 console.log(oid)
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/expandOid.js';
+  }
+})();
+</script>

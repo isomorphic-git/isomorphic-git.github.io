@@ -15,3 +15,12 @@ Get a git commit Walker
 | return          | Walker                     | Returns a git commit Walker                                                                               |
 
 See [walkBeta1](./walkBeta1.md)
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/TREE.js';
+  }
+})();
+</script>

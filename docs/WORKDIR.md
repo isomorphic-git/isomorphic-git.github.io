@@ -14,3 +14,12 @@ Get a working directory Walker
 | return          | Walker                     | Returns a working directory Walker                                                                        |
 
 See [walkBeta1](./walkBeta1.md)
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/WORKDIR.js';
+  }
+})();
+</script>

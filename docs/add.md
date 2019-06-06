@@ -25,3 +25,12 @@ await new Promise((resolve, reject) => fs.writeFile(
 await git.add({ dir: '$input((/))', filepath: '$input((README.md))' })
 console.log('done')
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/add.js';
+  }
+})();
+</script>

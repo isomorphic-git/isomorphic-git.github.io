@@ -22,3 +22,12 @@ Example Code:
 await git.addRemote({ dir: '$input((/))', remote: '$input((upstream))', url: '$input((https://github.com/isomorphic-git/isomorphic-git))' })
 console.log('done')
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/addRemote.js';
+  }
+})();
+</script>

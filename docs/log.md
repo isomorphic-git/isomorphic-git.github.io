@@ -48,3 +48,12 @@ Example Code:
 let commits = await git.log({ dir: '$input((/))', depth: $input((5)), ref: '$input((master))' })
 console.log(commits)
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/log.js';
+  }
+})();
+</script>

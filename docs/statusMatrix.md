@@ -131,3 +131,12 @@ For reference, here are all possible combinations:
 | 1    | 2       | 1     | ` M`                            |
 | 1    | 2       | 2     | `M `                            |
 | 1    | 2       | 3     | `MM`                            |
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/statusMatrix.js';
+  }
+})();
+</script>

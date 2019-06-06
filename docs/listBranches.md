@@ -28,3 +28,12 @@ console.log(branches)
 let remoteBranches = await git.listBranches({ dir: '$input((/))', remote: '$input((origin))' })
 console.log(remoteBranches)
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/listBranches.js';
+  }
+})();
+</script>

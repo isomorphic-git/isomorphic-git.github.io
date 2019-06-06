@@ -14,3 +14,12 @@ Get a git index Walker
 | return          | Walker                     | Returns a git index Walker                                                                                |
 
 See [walkBeta1](./walkBeta1.md)
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/STAGE.js';
+  }
+})();
+</script>
