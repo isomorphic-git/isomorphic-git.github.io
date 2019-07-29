@@ -82,6 +82,7 @@
 <tr><td>token</td><td>string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td>oauth2format</td><td>string</td><td>See the <a href="./authentication.html">Authentication</a> documentation</td></tr>
 <tr><td>headers</td><td>object</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
+<tr><td>prune</td><td>boolean</td><td>Delete local remote-tracking branches that are not present on the remote</td></tr>
 <tr><td>emitter [deprecated]</td><td>EventEmitter</td><td>Overrides the emitter set via the <a href="/docs/en/plugin_emitter">'emitter' plugin</a>.</td></tr>
 <tr><td>emitterPrefix</td><td>string = ''</td><td>Scope emitted events by prepending <code>emitterPrefix</code> to the event name.</td></tr>
 <tr><td>return</td><td>Promise&lt;FetchResponse&gt;</td><td>Resolves successfully when fetch completes</td></tr>
@@ -92,6 +93,7 @@
   defaultBranch: <span class="hljs-built_in">string</span> | <span class="hljs-literal">null</span>; <span class="hljs-comment">// The branch that is cloned if no branch is specified (typically "master")</span>
   fetchHead: <span class="hljs-built_in">string</span> | <span class="hljs-literal">null</span>; <span class="hljs-comment">// The SHA-1 object id of the fetched head commit</span>
   headers?: object; <span class="hljs-comment">// The HTTP response headers returned by the git server</span>
+  pruned?: <span class="hljs-built_in">Array</span>&lt;<span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// A list of branches that were pruned, if you provided the `prune` parameter</span>
 }
 </code></pre>
 <p>Future versions of isomorphic-git might return additional metadata.</p>

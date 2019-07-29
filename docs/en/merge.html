@@ -69,6 +69,7 @@
 <tr><td>ours</td><td>string</td><td>The branch receiving the merge. If undefined, defaults to the current branch.</td></tr>
 <tr><td><strong>theirs</strong></td><td>string</td><td>The branch to be merged</td></tr>
 <tr><td>fastForwardOnly</td><td>boolean = false</td><td>If true, then non-fast-forward merges will throw an Error instead of performing a merge.</td></tr>
+<tr><td>dryRun</td><td>boolean = false</td><td>If true, simulates a merge so you can test whether it would succeed.</td></tr>
 <tr><td>return</td><td>Promise&lt;MergeReport&gt;</td><td>Resolves to a description of the merge operation</td></tr>
 </tbody>
 </table>
