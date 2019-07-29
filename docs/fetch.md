@@ -27,6 +27,7 @@ Fetch commits from a remote repository
 | token                | string                    | See the [Authentication](./authentication.html) documentation                                                 |
 | oauth2format         | string                    | See the [Authentication](./authentication.html) documentation                                                 |
 | headers              | object                    | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                         |
+| prune                | boolean                   | Delete local remote-tracking branches that are not present on the remote                                      |
 | emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                    |
 | emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name.                                         |
 | return               | Promise\<FetchResponse\>  | Resolves successfully when fetch completes                                                                    |
@@ -38,6 +39,7 @@ type FetchResponse = {
   defaultBranch: string | null; // The branch that is cloned if no branch is specified (typically "master")
   fetchHead: string | null; // The SHA-1 object id of the fetched head commit
   headers?: object; // The HTTP response headers returned by the git server
+  pruned?: Array<string>; // A list of branches that were pruned, if you provided the `prune` parameter
 }
 ```
 

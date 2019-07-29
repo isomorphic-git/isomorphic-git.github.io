@@ -14,6 +14,7 @@ Merge one or more branches *(Currently, only fast-forward merges are implemented
 | ours            | string                    | The branch receiving the merge. If undefined, defaults to the current branch.                             |
 | **theirs**      | string                    | The branch to be merged                                                                                   |
 | fastForwardOnly | boolean = false           | If true, then non-fast-forward merges will throw an Error instead of performing a merge.                  |
+| dryRun          | boolean = false           | If true, simulates a merge so you can test whether it would succeed.                                      |
 | return          | Promise\<MergeReport\>    | Resolves to a description of the merge operation                                                          |
 
 Returns an object with a schema like this:
