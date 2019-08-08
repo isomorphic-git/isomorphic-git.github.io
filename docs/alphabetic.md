@@ -21,6 +21,7 @@ sidebar_label: Alphabetical Index
 - [fetch](fetch.md)
 - [findRoot](findRoot.md)
 - [getRemoteInfo](getRemoteInfo.md)
+- [hashBlob](hashBlob.md)
 - [indexPack](indexPack.md)
 - [init](init.md)
 - [isDescendent](isDescendent.md)

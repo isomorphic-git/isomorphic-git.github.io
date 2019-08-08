@@ -64,6 +64,7 @@
       "deleteRef",
       "readObject",
       "writeObject",
+      "hashBlob",
       "statusMatrix",
       "isDescendent",
       "indexPack",
