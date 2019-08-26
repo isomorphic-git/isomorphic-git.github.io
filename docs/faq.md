@@ -80,6 +80,7 @@ I haven't had time to review them all.
 - https://github.com/mariusGundersen/es-git
 - https://github.com/SamyPesse/gitkit-js
 - https://github.com/MatrixAI/js-virtualgit
+- http://gitlet.maryrosecook.com/docs/gitlet.html <-- one of my favorites!
 
 ## Why is there no `default` export in the ES module?
 
