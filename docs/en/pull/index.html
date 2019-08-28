@@ -78,6 +78,9 @@
 <tr><td>headers</td><td>object</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>emitter [deprecated]</td><td>EventEmitter</td><td>Overrides the emitter set via the <a href="/docs/en/plugin_emitter">'emitter' plugin</a>.</td></tr>
 <tr><td>emitterPrefix</td><td>string = ''</td><td>Scope emitted events by prepending <code>emitterPrefix</code> to the event name.</td></tr>
+<tr><td>author</td><td>Object</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
+<tr><td>committer</td><td>Object</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
+<tr><td>signingKey</td><td>string</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when pull operation completes</td></tr>
 </tbody>
 </table>

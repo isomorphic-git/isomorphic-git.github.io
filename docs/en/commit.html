@@ -75,6 +75,10 @@
 <tr><td>author.timezoneOffset</td><td>string</td><td>Set the author timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
 <tr><td>committer</td><td>Object = author</td><td>The details about the commit committer, in the same format as the author parameter. If not specified, the author details are used.</td></tr>
 <tr><td>signingKey</td><td>string</td><td>Sign the tag object using this private PGP key.</td></tr>
+<tr><td>noUpdateBranch</td><td>boolean = false</td><td>If true, does not update the branch pointer after creating the commit.</td></tr>
+<tr><td>ref</td><td>string</td><td>The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)</td></tr>
+<tr><td>parent</td><td>Array&lt;string&gt;</td><td>The SHA-1 object ids of the commits to use as parents. If not specified, the commit pointed to by <code>ref</code> is used.</td></tr>
+<tr><td>tree</td><td>string</td><td>The SHA-1 object id of the tree to use. If not specified, a new tree object is created from the current git index.</td></tr>
 <tr><td>return</td><td>Promise&lt;string&gt;</td><td>Resolves successfully with the SHA-1 object id of the newly created commit.</td></tr>
 </tbody>
 </table>
