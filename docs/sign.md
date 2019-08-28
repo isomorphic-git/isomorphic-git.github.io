@@ -22,7 +22,7 @@ Create a signed commit
 | return          | Promise\<void\>            | Resolves successfully when filesystem operations are completed                                            |
 
 <aside>
-OpenPGP.js is unfortunately licensed under the LGPL-3.0 and thus cannot be included in a minified bundle with
+OpenPGP.js is unfortunately licensed under an incompatible license and thus cannot be included in a minified bundle with
 isomorphic-git which is an MIT/BSD style library, because that would violate the "dynamically linked" stipulation.
 To use this feature you include openpgp with a separate script tag and pass it in as an argument.
 </aside>

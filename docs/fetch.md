@@ -38,6 +38,7 @@ The object returned has the following schema:
 type FetchResponse = {
   defaultBranch: string | null; // The branch that is cloned if no branch is specified (typically "master")
   fetchHead: string | null; // The SHA-1 object id of the fetched head commit
+  fetchHeadDescription: string | null; // a textual description of the branch that was fetched
   headers?: object; // The HTTP response headers returned by the git server
   pruned?: Array<string>; // A list of branches that were pruned, if you provided the `prune` parameter
 }

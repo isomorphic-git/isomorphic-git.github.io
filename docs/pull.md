@@ -23,6 +23,9 @@ Fetch and merge commits from a remote repository *(Currently, only fast-forward 
 | headers              | object                    | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                      |
 | emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                 |
 | emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name.                                      |
+| author               | Object                    | passed to [commit](commit.md) when creating a merge commit                                                 |
+| committer            | Object                    | passed to [commit](commit.md) when creating a merge commit                                                 |
+| signingKey           | string                    | passed to [commit](commit.md) when creating a merge commit                                                 |
 | return               | Promise\<void\>           | Resolves successfully when pull operation completes                                                        |
 
 To monitor progress events, see the documentation for the [`'emitter'` plugin](./plugin_emitter.md).
