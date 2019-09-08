@@ -7,7 +7,7 @@ sidebar_label: Bring Your Own FS
 The "isomorphic" in isomorphic-git means it works equally well on the server or the browser.
 This is hard to do since git uses the file system, and browsers do not have access to the file system.
 So rather than relying on a particular filesystem module, isomorphic-git is BYOFS (Bring Your Own File System).
-When running commands that need a "file system", you pass in an `fs` module as an argument.
+You use isomorphic-git's plugin system to bring your filesystem to it. 
 
 ## Node's fs
 
