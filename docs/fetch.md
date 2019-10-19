@@ -28,6 +28,7 @@ Fetch commits from a remote repository
 | oauth2format         | string                    | See the [Authentication](./authentication.html) documentation                                                 |
 | headers              | object                    | Additional headers to include in HTTP requests, similar to git's `extraHeader` config                         |
 | prune                | boolean                   | Delete local remote-tracking branches that are not present on the remote                                      |
+| pruneTags            | boolean                   | Prune local tags that don’t exist on the remote, and force-update those tags that differ                      |
 | emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md).                                    |
 | emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name.                                         |
 | return               | Promise\<FetchResponse\>  | Resolves successfully when fetch completes                                                                    |

@@ -5,14 +5,14 @@ sidebar_label: walkBeta1
 
 A powerful recursive tree-walking utility.
 
-| param     | type [= default] | description                                                      |
-| --------- | ---------------- | ---------------------------------------------------------------- |
-| **trees** | Array\<Walker\>  | The trees you want to traverse                                   |
-| filter    | function         | Filter which `WalkerEntry`s to process                           |
-| map       | function         | Transform `WalkerEntry`s into a result form                      |
-| reduce    | function         | Control how mapped entries are combined with their parent result |
-| iterate   | function         | Fine-tune how entries within a tree are iterated over            |
-| return    | Promise\<any\>   | The finished tree-walking result                                 |
+| param     | type [= default]                                                                                         | description                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **trees** | Array\<Walker\>                                                                                          | The trees you want to traverse                                   |
+| filter    | function(WalkerEntry[]): Promise\<boolean\>                                                              | Filter which `WalkerEntry`s to process                           |
+| map       | function(WalkerEntry[]): Promise\<any\>                                                                  | Transform `WalkerEntry`s into a result form                      |
+| reduce    | function(any, any[]): Promise\<any\>                                                                     | Control how mapped entries are combined with their parent result |
+| iterate   | function(function(WalkerEntry[]): Promise\<any[]\>, IterableIterator\<WalkerEntry[]\>): Promise\<any[]\> | Fine-tune how entries within a tree are iterated over            |
+| return    | Promise\<any\>                                                                                           | The finished tree-walking result                                 |
 
 The `WalkerEntry` is an interface that abstracts computing many common tree / blob stats.
 

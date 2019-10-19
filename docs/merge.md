@@ -3,7 +3,7 @@ title: merge
 sidebar_label: merge
 ---
 
-Merge one or more branches *(Currently, only very simple cases are handled.)*
+Merge two branches
 
 | param           | type [= default]          | description                                                                                               |
 | --------------- | ------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -15,6 +15,7 @@ Merge one or more branches *(Currently, only very simple cases are handled.)*
 | **theirs**      | string                    | The branch to be merged                                                                                   |
 | fastForwardOnly | boolean = false           | If true, then non-fast-forward merges will throw an Error instead of performing a merge.                  |
 | dryRun          | boolean = false           | If true, simulates a merge so you can test whether it would succeed.                                      |
+| noUpdateBranch  | boolean = false           | If true, does not update the branch pointer after creating the commit.                                    |
 | message         | string                    | Overrides the default auto-generated merge commit message                                                 |
 | author          | Object                    | passed to [commit](commit.md) when creating a merge commit                                                |
 | committer       | Object                    | passed to [commit](commit.md) when creating a merge commit                                                |
@@ -32,6 +33,15 @@ type MergeReport = {
   tree?: string; // The SHA-1 object id of the tree resulting from a merge commit
 }
 ```
+
+## Limitations
+
+Currently it does not support incomplete merges. That is, if there are merge conflicts it cannot solve
+with the built in diff3 algorithm it will not modify the working dir, and will throw a [`MergeNotSupportedFail`](./errors.md#mergenotsupportedfail) error.
+
+Currently it will fail if multiple candidate merge bases are found. (It doesn't yet implement the recursive merge strategy.)
+
+Currently it does not support selecting alternative merge strategies.
 
 Example Code:
 

@@ -17,3 +17,12 @@ Example Code:
 ```js live
 console.log(git.version())
 ```
+
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/version.js';
+  }
+})();
+</script>

@@ -117,6 +117,10 @@
         "title": "WebWorker Guide",
         "sidebar_label": "WebWorker Guide"
       },
+      "hashBlob": {
+        "title": "hashBlob",
+        "sidebar_label": "hashBlob"
+      },
       "in-the-news": {
         "title": "In The News"
       },
@@ -251,6 +255,10 @@
       "walkBeta1": {
         "title": "walkBeta1",
         "sidebar_label": "walkBeta1"
+      },
+      "walkBeta2": {
+        "title": "walkBeta2",
+        "sidebar_label": "walkBeta2"
       },
       "WORKDIR": {
         "title": "WORKDIR",

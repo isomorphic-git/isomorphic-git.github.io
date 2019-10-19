@@ -48,7 +48,7 @@ sidebar_label: Alphabetical Index
 - [utils.oauth2](utils_oauth2.md) [deprecated]
 - [verify](verify.md)
 - [version](version.md)
-- [walkBeta1](walkBeta1.md)
+- [walkBeta2](walkBeta2.md)
 - [WORKDIR](./WORKDIR.md)
 - [writeObject](writeObject.md)
 - [writeRef](writeRef.md)
