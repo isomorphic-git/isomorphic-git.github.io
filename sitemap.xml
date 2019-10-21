@@ -29,6 +29,7 @@
 <url> <loc>https://isomorphic-git.org/docs/en/expandOid</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/expandOid" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/expandRef</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/expandRef" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/faq</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/faq" /> </url>
+<url> <loc>https://isomorphic-git.org/docs/en/fastCheckout</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/fastCheckout" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/fetch</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/fetch" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/findRoot</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/findRoot" /> </url>
 <url> <loc>https://isomorphic-git.org/docs/en/getRemoteInfo</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://isomorphic-git.org/docs/en/getRemoteInfo" /> </url>
