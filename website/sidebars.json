@@ -12,6 +12,7 @@
       "config",
       "fetch",
       "checkout",
+      "fastCheckout",
       "push",
       "pull",
       "merge",

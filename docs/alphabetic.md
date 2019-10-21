@@ -18,6 +18,7 @@ sidebar_label: Alphabetical Index
 - [deleteTag](deleteTag.md)
 - [expandOid](expandOid.md)
 - [expandRef](expandRef.md)
+- [fastCheckout](fastCheckout.md)
 - [fetch](fetch.md)
 - [findRoot](findRoot.md)
 - [getRemoteInfo](getRemoteInfo.md)

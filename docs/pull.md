@@ -26,6 +26,7 @@ Fetch and merge commits from a remote repository *(Currently, only fast-forward 
 | author               | Object                    | passed to [commit](commit.md) when creating a merge commit                                                 |
 | committer            | Object                    | passed to [commit](commit.md) when creating a merge commit                                                 |
 | signingKey           | string                    | passed to [commit](commit.md) when creating a merge commit                                                 |
+| fast                 | boolean = false           | use fastCheckout instead of regular checkout                                                               |
 | return               | Promise\<void\>           | Resolves successfully when pull operation completes                                                        |
 
 To monitor progress events, see the documentation for the [`'emitter'` plugin](./plugin_emitter.md).
