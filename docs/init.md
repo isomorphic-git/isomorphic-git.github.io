@@ -12,6 +12,7 @@ Initialize a new repository
 | dir             | string                    | The [working tree](dir-vs-gitdir.md) directory path                                                       |
 | **gitdir**      | string = join(dir,'.git') | The [git directory](dir-vs-gitdir.md) path                                                                |
 | bare            | boolean = false           | Initialize a bare repository                                                                              |
+| noOverwrite     | boolean = false           | Detect if this is already a git repo and do not re-write `.git/config`                                    |
 | return          | Promise\<void\>           | Resolves successfully when filesystem operations are complete                                             |
 
 Example Code:

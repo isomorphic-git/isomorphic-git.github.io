@@ -5,22 +5,22 @@ sidebar_label: fastCheckout
 
 Checkout a branch
 
-| param                | type [= default]          | description                                                                                               |
-| -------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| core                 | string = 'default'        | The plugin core identifier to use for plugin injection                                                    |
-| fs [deprecated]      | FileSystem                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md). |
-| **dir**              | string                    | The [working tree](dir-vs-gitdir.md) directory path                                                       |
-| **gitdir**           | string = join(dir,'.git') | The [git directory](dir-vs-gitdir.md) path                                                                |
-| emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md)                                 |
-| emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name                                      |
-| ref                  | string = 'HEAD'           | Source to checkout files from                                                                             |
-| filepaths            | Array\<string\> = ['.']   | Limit the checkout to the given files and directories                                                     |
-| remote               | string = 'origin'         | Which remote repository to use                                                                            |
-| noCheckout           | boolean = false           | If true, will update HEAD but won't update the working directory                                          |
-| noUpdateHead         | boolean = false           | If true, will update the working directory but won't update HEAD                                          |
-| dryRun               | boolean = false           | If true, simulates a checkout so you can test whether it would succeed.                                   |
-| force                | boolean = false           | If true, conflicts will be ignored and files will be overwritten regardless of local changes.             |
-| return               | Promise\<void\>           | Resolves successfully when filesystem operations are complete                                             |
+| param                | type [= default]          | description                                                                                                                                        |
+| -------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| core                 | string = 'default'        | The plugin core identifier to use for plugin injection                                                                                             |
+| fs [deprecated]      | FileSystem                | The filesystem containing the git repo. Overrides the fs provided by the [plugin system](./plugin_fs.md).                                          |
+| **dir**              | string                    | The [working tree](dir-vs-gitdir.md) directory path                                                                                                |
+| **gitdir**           | string = join(dir,'.git') | The [git directory](dir-vs-gitdir.md) path                                                                                                         |
+| emitter [deprecated] | EventEmitter              | Overrides the emitter set via the ['emitter' plugin](./plugin_emitter.md)                                                                          |
+| emitterPrefix        | string = ''               | Scope emitted events by prepending `emitterPrefix` to the event name                                                                               |
+| ref                  | string = 'HEAD'           | Source to checkout files from                                                                                                                      |
+| filepaths            | Array\<string\> = ['.']   | Limit the checkout to the given files and directories                                                                                              |
+| remote               | string = 'origin'         | Which remote repository to use                                                                                                                     |
+| noCheckout           | boolean = false           | If true, will update HEAD but won't update the working directory                                                                                   |
+| noUpdateHead         | boolean                   | If true, will update the working directory but won't update HEAD. Defaults to `false` when `ref` is provided, and `true` if `ref` is not provided. |
+| dryRun               | boolean = false           | If true, simulates a checkout so you can test whether it would succeed.                                                                            |
+| force                | boolean = false           | If true, conflicts will be ignored and files will be overwritten regardless of local changes.                                                      |
+| return               | Promise\<void\>           | Resolves successfully when filesystem operations are complete                                                                                      |
 
 If the branch already exists it will check out that branch. Otherwise, it will create a new remote tracking branch set to track the remote branch of that name.
 
