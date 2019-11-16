@@ -194,7 +194,7 @@ Remote does not support shallow fetches by date.
 Remote does not support shallow fetches.
 
 ### RemoteDoesNotSupportSmartHTTP
-Remote does not support the "smart" HTTP protocol, and isomorphic-git does not support the "dumb" HTTP protocol, so they are incompatible.
+Remote did not reply using the "smart" HTTP protocol. Expected "001e# service=git-upload-pack" but received: { preview }
 
 ### RemoteUrlParseError
 Cannot parse remote URL: "{ url }"
