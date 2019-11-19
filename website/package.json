@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "alex": "^7.1.0",
-    "docusaurus": "1.11.0",
+    "docusaurus": "1.14.0",
     "isomorphic-git": "0.51.0",
     "react-icons": "2.2.7"
   }
