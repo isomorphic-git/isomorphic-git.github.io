@@ -275,6 +275,277 @@
       "writeRef": {
         "title": "writeRef",
         "sidebar_label": "writeRef"
+      },
+      "version-0.70.7/version-0.70.7-add": {
+        "title": "add",
+        "sidebar_label": "add"
+      },
+      "version-0.70.7/version-0.70.7-addRemote": {
+        "title": "addRemote",
+        "sidebar_label": "addRemote"
+      },
+      "version-0.70.7/version-0.70.7-alphabetic": {
+        "title": "All Commands",
+        "sidebar_label": "Alphabetical Index"
+      },
+      "version-0.70.7/version-0.70.7-annotatedTag": {
+        "title": "annotatedTag",
+        "sidebar_label": "annotatedTag"
+      },
+      "version-0.70.7/version-0.70.7-authentication": {
+        "title": "Authentication",
+        "sidebar_label": "Authentication"
+      },
+      "version-0.70.7/version-0.70.7-branch": {
+        "title": "branch",
+        "sidebar_label": "branch"
+      },
+      "version-0.70.7/version-0.70.7-checkout": {
+        "title": "checkout",
+        "sidebar_label": "checkout"
+      },
+      "version-0.70.7/version-0.70.7-clone": {
+        "title": "clone",
+        "sidebar_label": "clone"
+      },
+      "version-0.70.7/version-0.70.7-commit": {
+        "title": "commit",
+        "sidebar_label": "commit"
+      },
+      "version-0.70.7/version-0.70.7-config": {
+        "title": "config",
+        "sidebar_label": "config"
+      },
+      "version-0.70.7/version-0.70.7-currentBranch": {
+        "title": "currentBranch",
+        "sidebar_label": "currentBranch"
+      },
+      "version-0.70.7/version-0.70.7-deleteBranch": {
+        "title": "deleteBranch",
+        "sidebar_label": "deleteBranch"
+      },
+      "version-0.70.7/version-0.70.7-deleteRef": {
+        "title": "deleteRef",
+        "sidebar_label": "deleteRef"
+      },
+      "version-0.70.7/version-0.70.7-deleteRemote": {
+        "title": "deleteRemote",
+        "sidebar_label": "deleteRemote"
+      },
+      "version-0.70.7/version-0.70.7-deleteTag": {
+        "title": "deleteTag",
+        "sidebar_label": "deleteTag"
+      },
+      "version-0.70.7/version-0.70.7-dir-vs-gitdir": {
+        "title": "`dir` vs `gitdir`",
+        "sidebar_label": "dir vs gitdir"
+      },
+      "version-0.70.7/version-0.70.7-errors": {
+        "title": "Error Codes",
+        "sidebar_label": "Error Code Index"
+      },
+      "version-0.70.7/version-0.70.7-expandOid": {
+        "title": "expandOid",
+        "sidebar_label": "expandOid"
+      },
+      "version-0.70.7/version-0.70.7-expandRef": {
+        "title": "expandRef",
+        "sidebar_label": "expandRef"
+      },
+      "version-0.70.7/version-0.70.7-faq": {
+        "title": "Frequently Asked Questions",
+        "sidebar_label": "FAQ"
+      },
+      "version-0.70.7/version-0.70.7-fastCheckout": {
+        "title": "fastCheckout",
+        "sidebar_label": "fastCheckout"
+      },
+      "version-0.70.7/version-0.70.7-fetch": {
+        "title": "fetch",
+        "sidebar_label": "fetch"
+      },
+      "version-0.70.7/version-0.70.7-findRoot": {
+        "title": "findRoot",
+        "sidebar_label": "findRoot"
+      },
+      "version-0.70.7/version-0.70.7-getRemoteInfo": {
+        "title": "getRemoteInfo",
+        "sidebar_label": "getRemoteInfo"
+      },
+      "version-0.70.7/version-0.70.7-browser": {
+        "title": "Browser Quick Start",
+        "sidebar_label": "Browser Quick Start"
+      },
+      "version-0.70.7/version-0.70.7-cli": {
+        "title": "isogit CLI",
+        "sidebar_label": "isogit CLI"
+      },
+      "version-0.70.7/version-0.70.7-fs": {
+        "title": "Bring Your Own FS",
+        "sidebar_label": "Bring Your Own FS"
+      },
+      "version-0.70.7/version-0.70.7-quickstart": {
+        "title": "Quick Start",
+        "sidebar_label": "Quick Start"
+      },
+      "version-0.70.7/version-0.70.7-webworker": {
+        "title": "WebWorker Guide",
+        "sidebar_label": "WebWorker Guide"
+      },
+      "version-0.70.7/version-0.70.7-hashBlob": {
+        "title": "hashBlob",
+        "sidebar_label": "hashBlob"
+      },
+      "version-0.70.7/version-0.70.7-in-the-news": {
+        "title": "In The News"
+      },
+      "version-0.70.7/version-0.70.7-indexPack": {
+        "title": "indexPack",
+        "sidebar_label": "indexPack"
+      },
+      "version-0.70.7/version-0.70.7-init": {
+        "title": "init",
+        "sidebar_label": "init"
+      },
+      "version-0.70.7/version-0.70.7-isDescendent": {
+        "title": "isDescendent",
+        "sidebar_label": "isDescendent"
+      },
+      "version-0.70.7/version-0.70.7-listBranches": {
+        "title": "listBranches",
+        "sidebar_label": "listBranches"
+      },
+      "version-0.70.7/version-0.70.7-listFiles": {
+        "title": "listFiles",
+        "sidebar_label": "listFiles"
+      },
+      "version-0.70.7/version-0.70.7-listRemotes": {
+        "title": "listRemotes",
+        "sidebar_label": "listRemotes"
+      },
+      "version-0.70.7/version-0.70.7-listTags": {
+        "title": "listTags",
+        "sidebar_label": "listTags"
+      },
+      "version-0.70.7/version-0.70.7-log": {
+        "title": "log",
+        "sidebar_label": "log"
+      },
+      "version-0.70.7/version-0.70.7-merge": {
+        "title": "merge",
+        "sidebar_label": "merge"
+      },
+      "version-0.70.7/version-0.70.7-packObjects": {
+        "title": "packObjects",
+        "sidebar_label": "packObjects"
+      },
+      "version-0.70.7/version-0.70.7-plugin_credentialManager": {
+        "title": "'credentialManager' plugin",
+        "sidebar_label": "credentialManager"
+      },
+      "version-0.70.7/version-0.70.7-plugin_emitter": {
+        "title": "'emitter' plugin",
+        "sidebar_label": "emitter"
+      },
+      "version-0.70.7/version-0.70.7-plugin_fs": {
+        "title": "'fs' plugin",
+        "sidebar_label": "fs"
+      },
+      "version-0.70.7/version-0.70.7-plugin_http": {
+        "title": "'http' plugin",
+        "sidebar_label": "http"
+      },
+      "version-0.70.7/version-0.70.7-plugin_pgp": {
+        "title": "'pgp' plugin",
+        "sidebar_label": "pgp"
+      },
+      "version-0.70.7/version-0.70.7-pull": {
+        "title": "pull",
+        "sidebar_label": "pull"
+      },
+      "version-0.70.7/version-0.70.7-push": {
+        "title": "push",
+        "sidebar_label": "push"
+      },
+      "version-0.70.7/version-0.70.7-readObject": {
+        "title": "readObject",
+        "sidebar_label": "readObject"
+      },
+      "version-0.70.7/version-0.70.7-remove": {
+        "title": "remove",
+        "sidebar_label": "remove"
+      },
+      "version-0.70.7/version-0.70.7-resetIndex": {
+        "title": "resetIndex",
+        "sidebar_label": "resetIndex"
+      },
+      "version-0.70.7/version-0.70.7-resolveRef": {
+        "title": "resolveRef",
+        "sidebar_label": "resolveRef"
+      },
+      "version-0.70.7/version-0.70.7-sign": {
+        "title": "sign",
+        "sidebar_label": "sign"
+      },
+      "version-0.70.7/version-0.70.7-snippets": {
+        "title": "Useful Code Snippets",
+        "sidebar_label": "Useful Snippets"
+      },
+      "version-0.70.7/version-0.70.7-STAGE": {
+        "title": "STAGE",
+        "sidebar_label": "STAGE"
+      },
+      "version-0.70.7/version-0.70.7-status": {
+        "title": "status",
+        "sidebar_label": "status"
+      },
+      "version-0.70.7/version-0.70.7-statusMatrix": {
+        "title": "statusMatrix",
+        "sidebar_label": "statusMatrix"
+      },
+      "version-0.70.7/version-0.70.7-tag": {
+        "title": "tag",
+        "sidebar_label": "tag"
+      },
+      "version-0.70.7/version-0.70.7-TREE": {
+        "title": "TREE",
+        "sidebar_label": "TREE"
+      },
+      "version-0.70.7/version-0.70.7-utils_auth": {
+        "title": "auth",
+        "sidebar_label": "utils.auth"
+      },
+      "version-0.70.7/version-0.70.7-utils_oauth2": {
+        "title": "oauth2",
+        "sidebar_label": "utils.oauth2"
+      },
+      "version-0.70.7/version-0.70.7-verify": {
+        "title": "verify",
+        "sidebar_label": "verify"
+      },
+      "version-0.70.7/version-0.70.7-version": {
+        "title": "version",
+        "sidebar_label": "version"
+      },
+      "version-0.70.7/version-0.70.7-walkBeta1": {
+        "title": "walkBeta1",
+        "sidebar_label": "walkBeta1"
+      },
+      "version-0.70.7/version-0.70.7-walkBeta2": {
+        "title": "walkBeta2",
+        "sidebar_label": "walkBeta2"
+      },
+      "version-0.70.7/version-0.70.7-WORKDIR": {
+        "title": "WORKDIR",
+        "sidebar_label": "WORKDIR"
+      },
+      "version-0.70.7/version-0.70.7-writeObject": {
+        "title": "writeObject",
+        "sidebar_label": "writeObject"
+      },
+      "version-0.70.7/version-0.70.7-writeRef": {
+        "title": "writeRef",
+        "sidebar_label": "writeRef"
       }
     },
     "links": {
