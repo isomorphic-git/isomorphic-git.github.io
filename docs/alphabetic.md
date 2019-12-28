@@ -4,6 +4,7 @@ sidebar_label: Alphabetical Index
 ---
 
 - [add](add.md)
+- [addNote](addNote.md)
 - [addRemote](addRemote.md)
 - [annotatedTag](annotatedTag.md)
 - [branch](branch.md)
@@ -28,6 +29,7 @@ sidebar_label: Alphabetical Index
 - [isDescendent](isDescendent.md)
 - [listBranches](listBranches.md)
 - [listFiles](listFiles.md)
+- [listNotes](listNotes.md)
 - [listTags](listTags.md)
 - [listRemotes](listRemotes.md)
 - [log](log.md)
@@ -37,8 +39,10 @@ sidebar_label: Alphabetical Index
 - [push](push.md)
 - [readObject](readObject.md)
 - [remove](remove.md)
+- [removeNote](removeNote.md)
 - [resetIndex](resetIndex.md)
 - [resolveRef](resolveRef.md)
+- [showNote](showNote.md)
 - [sign](sign.md) [deprecated]
 - [STAGE](./STAGE.md)
 - [status](status.md)
