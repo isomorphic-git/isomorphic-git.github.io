@@ -36,6 +36,12 @@
       "deleteTag",
       "listTags"
     ],
+    "Notes": [
+      "addNote",
+      "listNotes",
+      "removeNote",
+      "showNote"
+    ],
     "Remotes": [
       "getRemoteInfo",
       "addRemote",
