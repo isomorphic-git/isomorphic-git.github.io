@@ -1,6 +1,8 @@
 ---
 title: clone
 sidebar_label: clone
+id: version-0.74.0-clone
+original_id: clone
 ---
 
 Clone a repository

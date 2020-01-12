@@ -196,9 +196,25 @@
         "title": "push",
         "sidebar_label": "push"
       },
+      "readBlob": {
+        "title": "readBlob",
+        "sidebar_label": "readBlob"
+      },
+      "readCommit": {
+        "title": "readCommit",
+        "sidebar_label": "readCommit"
+      },
       "readObject": {
         "title": "readObject",
         "sidebar_label": "readObject"
+      },
+      "readTag": {
+        "title": "readTag",
+        "sidebar_label": "readTag"
+      },
+      "readTree": {
+        "title": "readTree",
+        "sidebar_label": "readTree"
       },
       "remove": {
         "title": "remove",
@@ -268,6 +284,14 @@
         "title": "WORKDIR",
         "sidebar_label": "WORKDIR"
       },
+      "writeBlob": {
+        "title": "writeBlob",
+        "sidebar_label": "writeBlob"
+      },
+      "writeCommit": {
+        "title": "writeCommit",
+        "sidebar_label": "writeCommit"
+      },
       "writeObject": {
         "title": "writeObject",
         "sidebar_label": "writeObject"
@@ -275,6 +299,14 @@
       "writeRef": {
         "title": "writeRef",
         "sidebar_label": "writeRef"
+      },
+      "writeTag": {
+        "title": "writeTag",
+        "sidebar_label": "writeTag"
+      },
+      "writeTree": {
+        "title": "writeTree",
+        "sidebar_label": "writeTree"
       },
       "version-0.70.7/version-0.70.7-add": {
         "title": "add",
@@ -546,6 +578,66 @@
       "version-0.70.7/version-0.70.7-writeRef": {
         "title": "writeRef",
         "sidebar_label": "writeRef"
+      },
+      "version-0.74.0/version-0.74.0-checkout": {
+        "title": "checkout",
+        "sidebar_label": "checkout"
+      },
+      "version-0.74.0/version-0.74.0-clone": {
+        "title": "clone",
+        "sidebar_label": "clone"
+      },
+      "version-0.74.0/version-0.74.0-fetch": {
+        "title": "fetch",
+        "sidebar_label": "fetch"
+      },
+      "version-0.74.0/version-0.74.0-pull": {
+        "title": "pull",
+        "sidebar_label": "pull"
+      },
+      "version-0.74.0/version-0.74.0-push": {
+        "title": "push",
+        "sidebar_label": "push"
+      },
+      "version-0.74.0/version-0.74.0-readBlob": {
+        "title": "readBlob",
+        "sidebar_label": "readBlob"
+      },
+      "version-0.74.0/version-0.74.0-readCommit": {
+        "title": "readCommit",
+        "sidebar_label": "readCommit"
+      },
+      "version-0.74.0/version-0.74.0-readObject": {
+        "title": "readObject",
+        "sidebar_label": "readObject"
+      },
+      "version-0.74.0/version-0.74.0-readTag": {
+        "title": "readTag",
+        "sidebar_label": "readTag"
+      },
+      "version-0.74.0/version-0.74.0-readTree": {
+        "title": "readTree",
+        "sidebar_label": "readTree"
+      },
+      "version-0.74.0/version-0.74.0-writeBlob": {
+        "title": "writeBlob",
+        "sidebar_label": "writeBlob"
+      },
+      "version-0.74.0/version-0.74.0-writeCommit": {
+        "title": "writeCommit",
+        "sidebar_label": "writeCommit"
+      },
+      "version-0.74.0/version-0.74.0-writeObject": {
+        "title": "writeObject",
+        "sidebar_label": "writeObject"
+      },
+      "version-0.74.0/version-0.74.0-writeTag": {
+        "title": "writeTag",
+        "sidebar_label": "writeTag"
+      },
+      "version-0.74.0/version-0.74.0-writeTree": {
+        "title": "writeTree",
+        "sidebar_label": "writeTree"
       }
     },
     "links": {
@@ -564,6 +656,7 @@
       "Remotes": "Remotes",
       "Walking": "Walking",
       "Plugins": "Plugins",
+      "Raw Objects": "Raw Objects",
       "Plumbing Commands": "Plumbing Commands",
       "Misc Commands": "Misc Commands",
       "Deprecated Commands": "Deprecated Commands",

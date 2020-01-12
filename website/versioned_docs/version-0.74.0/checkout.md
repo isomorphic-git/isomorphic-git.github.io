@@ -1,6 +1,8 @@
 ---
 title: checkout
 sidebar_label: checkout
+id: version-0.74.0-checkout
+original_id: checkout
 ---
 
 Checkout a branch

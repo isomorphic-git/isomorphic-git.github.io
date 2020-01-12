@@ -1,6 +1,8 @@
 ---
 title: readObject
 sidebar_label: readObject
+id: version-0.74.0-readObject
+original_id: readObject
 ---
 
 > **Deprecated**

@@ -1,6 +1,8 @@
 ---
 title: fetch
 sidebar_label: fetch
+id: version-0.74.0-fetch
+original_id: fetch
 ---
 
 Fetch commits from a remote repository

@@ -1,6 +1,8 @@
 ---
 title: writeObject
 sidebar_label: writeObject
+id: version-0.74.0-writeObject
+original_id: writeObject
 ---
 
 > **Deprecated**

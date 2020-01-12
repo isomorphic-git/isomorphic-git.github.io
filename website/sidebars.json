@@ -55,6 +55,16 @@
       "plugin_http",
       "plugin_pgp"
     ],
+    "Raw Objects": [
+      "readBlob",
+      "readCommit",
+      "readTag",
+      "readTree",
+      "writeBlob",
+      "writeCommit",
+      "writeTag",
+      "writeTree"
+    ],
     "Plumbing Commands": [
       "findRoot",
       "expandRef",
@@ -63,8 +73,6 @@
       "resolveRef",
       "writeRef",
       "deleteRef",
-      "readObject",
-      "writeObject",
       "hashBlob",
       "statusMatrix",
       "isDescendent",
@@ -77,7 +85,9 @@
     "Deprecated Commands": [
       "utils_auth",
       "utils_oauth2",
-      "sign"
+      "sign",
+      "readObject",
+      "writeObject"
     ]
   },
   "guide": {

@@ -1,6 +1,8 @@
 ---
 title: pull
 sidebar_label: pull
+id: version-0.74.0-pull
+original_id: pull
 ---
 
 Fetch and merge commits from a remote repository *(Currently, only fast-forward merges are implemented.)*
