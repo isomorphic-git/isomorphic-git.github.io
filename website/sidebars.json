@@ -42,6 +42,12 @@
       "deleteRemote",
       "listRemotes"
     ],
+    "Notes": [
+      "addNote",
+      "readNote",
+      "removeNote",
+      "listNotes"
+    ],
     "Walking": [
       "walkBeta2",
       "WORKDIR",

@@ -1,6 +1,8 @@
 ---
 title: All Commands
 sidebar_label: Alphabetical Index
+id: version-0.75.0-alphabetic
+original_id: alphabetic
 ---
 
 - [add](add.md)
