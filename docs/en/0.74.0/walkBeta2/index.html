@@ -1,0 +1,258 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>walkBeta2 · isomorphic-git</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="A powerful recursive tree-walking utility."/><meta name="docsearch:version" content="0.74.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="walkBeta2 · isomorphic-git"/><meta property="og:type" content="website"/><meta property="og:url" content="https://isomorphic-git.org/"/><meta property="og:description" content="A powerful recursive tree-walking utility."/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://isomorphic-git.org/img/favicon/android-chrome-192x192.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://isomorphic-git.org/blog/atom.xml" title="isomorphic-git Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://isomorphic-git.org/blog/feed.xml" title="isomorphic-git Blog RSS Feed"/><script type="text/javascript" src="/js/announcement.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/en"><img class="logo" src="/img/isomorphic-git-logo.svg" alt="isomorphic-git"/><h2 class="headerTitleWithLogo">isomorphic-git</h2></a><a href="/en/versions"><h3>0.74.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/en/0.74.0/alphabetic" target="_self">API Docs</a></li><li class=""><a href="/docs/en/0.74.0/quickstart" target="_self">Guide</a></li><li class=""><a href="/blog/" target="_self">Blog</a></li><li class=""><a href="https://github.com/isomorphic-git/isomorphic-git" target="_self">GitHub</a></li><li class=""><a href="https://npmjs.com/package/isomorphic-git" target="_self">npm</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Walking</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">All Commands</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/alphabetic">Alphabetical Index</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/errors">Error Code Index</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Repository</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/init">init</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/clone">clone</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/commit">commit</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/log">log</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/config">config</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/fetch">fetch</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/checkout">checkout</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/fastCheckout">fastCheckout</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/push">push</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/pull">pull</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/merge">merge</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/verify">verify</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Files</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/add">add</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/remove">remove</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/listFiles">listFiles</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/status">status</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Branches</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/currentBranch">currentBranch</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/branch">branch</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/deleteBranch">deleteBranch</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/listBranches">listBranches</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Tags</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/tag">tag</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/annotatedTag">annotatedTag</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/deleteTag">deleteTag</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/listTags">listTags</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Remotes</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/getRemoteInfo">getRemoteInfo</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/addRemote">addRemote</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/deleteRemote">deleteRemote</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/listRemotes">listRemotes</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Walking</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/en/0.74.0/walkBeta2">walkBeta2</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/WORKDIR">WORKDIR</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/STAGE">STAGE</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/TREE">TREE</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Plugins</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/plugin_credentialManager">credentialManager</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/plugin_emitter">emitter</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/plugin_fs">fs</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/plugin_http">http</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/plugin_pgp">pgp</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Raw Objects</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/readBlob">readBlob</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/readCommit">readCommit</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/readTag">readTag</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/readTree">readTree</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeBlob">writeBlob</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeCommit">writeCommit</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeTag">writeTag</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeTree">writeTree</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Plumbing Commands</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/findRoot">findRoot</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/expandRef">expandRef</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/expandOid">expandOid</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/resetIndex">resetIndex</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/resolveRef">resolveRef</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeRef">writeRef</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/deleteRef">deleteRef</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/hashBlob">hashBlob</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/statusMatrix">statusMatrix</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/isDescendent">isDescendent</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/indexPack">indexPack</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/packObjects">packObjects</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Misc Commands</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/version">version</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Deprecated Commands</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/utils_auth">utils.auth</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/utils_oauth2">utils.oauth2</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/sign">sign</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/readObject">readObject</a></li><li class="navListItem"><a class="navItem" href="/docs/en/0.74.0/writeObject">writeObject</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/isomorphic-git/isomorphic-git.github.io/edit/source/docs/walkBeta2.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">walkBeta2</h1></header><article><div><span><p>A powerful recursive tree-walking utility.</p>
+<table>
+<thead>
+<tr><th>param</th><th>type [= default]</th><th>description</th></tr>
+</thead>
+<tbody>
+<tr><td>core</td><td>string = 'default'</td><td>The plugin core identifier to use for plugin injection</td></tr>
+<tr><td>fs [deprecated]</td><td>FileSystem</td><td>The filesystem containing the git repo. Overrides the fs provided by the <a href="/docs/en/0.74.0/plugin_fs">plugin system</a>.</td></tr>
+<tr><td>dir</td><td>string</td><td>The <a href="/docs/en/0.74.0/dir-vs-gitdir">working tree</a> directory path</td></tr>
+<tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/0.74.0/dir-vs-gitdir">git directory</a> path</td></tr>
+<tr><td><strong>trees</strong></td><td>Array&lt;Walker&gt;</td><td>The trees you want to traverse</td></tr>
+<tr><td>map</td><td>function(string, ?WalkerEntry[]): Promise&lt;any&gt;</td><td>Transform <code>WalkerEntry</code>s into a result form</td></tr>
+<tr><td>reduce</td><td>function(any, any[]): Promise&lt;any&gt;</td><td>Control how mapped entries are combined with their parent result</td></tr>
+<tr><td>iterate</td><td>function(function(WalkerEntry[]): Promise&lt;any[]&gt;, IterableIterator&lt;WalkerEntry[]&gt;): Promise&lt;any[]&gt;</td><td>Fine-tune how entries within a tree are iterated over</td></tr>
+<tr><td>return</td><td>Promise&lt;any&gt;</td><td>The finished tree-walking result</td></tr>
+</tbody>
+</table>
+<p>The <code>walk</code> API (tentatively named <code>walkBeta2</code>) simplifies gathering detailed information about a tree or comparing all the filepaths in two or more trees.
+Trees can be git commits, the working directory, or the or git index (staging area).
+As long as a file or directory is present in at least one of the trees, it will be traversed.
+Entries are traversed in alphabetical order.</p>
+<p>The arguments to <code>walk</code> are the <code>trees</code> you want to traverse, and 3 optional transform functions:
+<code>map</code>, <code>reduce</code>, and <code>iterate</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="tree-workdir-and-stage"></a><a href="#tree-workdir-and-stage" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>TREE</code>, <code>WORKDIR</code>, and <code>STAGE</code></h2>
+<p>Tree walkers are represented by three separate functions that can be imported:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">import</span> { TREE, WORKDIR, STAGE } <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git'</span>
+</code></pre>
+<p>These functions return opaque handles called <code>Walker</code>s.
+The only thing that <code>Walker</code> objects are good for is passing into <code>walkBeta2</code>.
+Here are the three <code>Walker</code>s passed into <code>walkBeta2</code> by the <code>statusMatrix</code> command for example:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">let</span> ref = <span class="hljs-string">'HEAD'</span>
+
+<span class="hljs-keyword">let</span> trees = [TREE({ ref }), WORKDIR(), STAGE()]
+</code></pre>
+<p>For the arguments, see the doc pages for <a href="/docs/en/0.74.0/TREE">TREE</a>, <a href="/docs/en/0.74.0/WORKDIR">WORKDIR</a>, and <a href="/docs/en/0.74.0/STAGE">STAGE</a>.</p>
+<p><code>map</code>, <code>reduce</code>, and <code>iterate</code> allow you control the recursive walk by pruning and transforming <code>WalkerEntry</code>s into the desired result.</p>
+<h2><a class="anchor" aria-hidden="true" id="walkerentry"></a><a href="#walkerentry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry</h2>
+<p>The <code>WalkerEntry</code> is an interface that abstracts computing many common tree / blob stats.</p>
+<pre><code class="hljs css language-ts"><span class="hljs-keyword">type</span> WalkerEntry = {
+  <span class="hljs-keyword">type</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>): <span class="hljs-title">Promise</span>&lt;'<span class="hljs-title">tree</span>'|'<span class="hljs-title">blob</span>'|'<span class="hljs-title">special</span>'|'<span class="hljs-title">commit</span>'&gt;</span>;
+  mode: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>): <span class="hljs-title">Promise</span>&lt;<span class="hljs-title">number</span>&gt;</span>;
+  oid: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>): <span class="hljs-title">Promise</span>&lt;<span class="hljs-title">string</span>&gt;</span>;
+  content: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>): <span class="hljs-title">Promise</span>&lt;<span class="hljs-title">Buffer</span>&gt;</span>;
+  stat: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>): <span class="hljs-title">Promise</span>&lt;<span class="hljs-title">Stat</span>&gt;</span>;
+}
+</code></pre>
+<p><code>map</code> receives an array of <code>WalkerEntry[]</code> as its main argument, one <code>WalkerEntry</code> for each <code>Walker</code> in the <code>trees</code> argument.
+The methods are memoized per <code>WalkerEntry</code> so calling them multiple times in a <code>map</code> function does not adversely impact performance.
+By only computing these values if needed, you build can build lean, mean, efficient walking machines.</p>
+<h3><a class="anchor" aria-hidden="true" id="walkerentry-type"></a><a href="#walkerentry-type" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry#type()</h3>
+<p>Returns the kind as a string. This is normally either <code>tree</code> or <code>blob</code>.</p>
+<p><code>TREE</code>, <code>STAGE</code>, and <code>WORKDIR</code> walkers all return a string.</p>
+<p>Possible values:</p>
+<ul>
+<li><code>'tree'</code> directory</li>
+<li><code>'blob'</code> file</li>
+<li><code>'special'</code> used by <code>WORKDIR</code> to represent irregular files like sockets and FIFOs</li>
+<li><code>'commit'</code> used by <code>TREE</code> to represent submodules</li>
+</ul>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.type()
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="walkerentry-mode"></a><a href="#walkerentry-mode" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry#mode()</h3>
+<p>Returns the file mode as a number. Use this to distinguish between regular files, symlinks, and executable files.</p>
+<p><code>TREE</code>, <code>STAGE</code>, and <code>WORKDIR</code> walkers all return a number for all <code>type</code>s of entries.</p>
+<p>It has been normalized to one of the 4 values that are allowed in git commits:</p>
+<ul>
+<li><code>0o40000</code> directory</li>
+<li><code>0o100644</code> file</li>
+<li><code>0o100755</code> file (executable)</li>
+<li><code>0o120000</code> symlink</li>
+</ul>
+<p>Tip: to make modes more readable, you can print them to octal using <code>.toString(8)</code>.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.mode()
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="walkerentry-oid"></a><a href="#walkerentry-oid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry#oid()</h3>
+<p>Returns the SHA-1 object id for blobs and trees.</p>
+<p><code>TREE</code> walkers return a string for <code>blob</code> and <code>tree</code> entries.</p>
+<p><code>STAGE</code> and <code>WORKDIR</code> walkers return a string for <code>blob</code> entries and <code>undefined</code> for <code>tree</code> entries.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.oid()
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="walkerentry-content"></a><a href="#walkerentry-content" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry#content()</h3>
+<p>Returns the file contents as a Buffer.</p>
+<p><code>TREE</code> and <code>WORKDIR</code> walkers return a Buffer for <code>blob</code> entries and <code>undefined</code> for <code>tree</code> entries.</p>
+<p><code>STAGE</code> walkers always return <code>undefined</code> since the file contents are never stored in the stage.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.content()
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="walkerentry-stat"></a><a href="#walkerentry-stat" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry#stat()</h3>
+<p>Returns a normalized subset of filesystem Stat data.</p>
+<p><code>WORKDIR</code> walkers return a <code>Stat</code> for <code>blob</code> and <code>tree</code> entries.</p>
+<p><code>STAGE</code> walkers return a <code>Stat</code> for <code>blob</code> entries and <code>undefined</code> for <code>tree</code> entries.</p>
+<p><code>TREE</code> walkers return <code>undefined</code> for all entry types.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.stat()
+</code></pre>
+<p>Normalized subset of filesystem <code>stat</code> data:</p>
+<pre><code class="hljs css language-ts"><span class="hljs-keyword">type</span> Stat = {
+  ctimeSeconds: <span class="hljs-built_in">number</span>;
+  ctimeNanoseconds: <span class="hljs-built_in">number</span>;
+  mtimeSeconds: <span class="hljs-built_in">number</span>;
+  mtimeNanoseconds: <span class="hljs-built_in">number</span>;
+  dev: <span class="hljs-built_in">number</span>;
+  ino: <span class="hljs-built_in">number</span>;
+  mode: <span class="hljs-built_in">number</span>;
+  uid: <span class="hljs-built_in">number</span>;
+  gid: <span class="hljs-built_in">number</span>;
+  size: <span class="hljs-built_in">number</span>;
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="mapstring-array-walkerentry-null-promise-any"></a><a href="#mapstring-array-walkerentry-null-promise-any" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>map(string, Array&lt;WalkerEntry|null&gt;) =&gt; Promise<any></h2>
+<p>This is the function that is called once per entry BEFORE visiting the children of that node.</p>
+<p>If you return <code>null</code> for a <code>tree</code> entry, then none of the children of that <code>tree</code> entry will be walked.</p>
+<p>This is a good place for query logic, such as examining the contents of a file.
+Ultimately, compare all the entries and return any values you are interested in.
+If you do not return a value (or return undefined) that entry will be filtered from the results.</p>
+<p>Example 1: Find all the files containing the word 'foo'.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span>(<span class="hljs-params">filepath, [head, workdir]</span>) </span>{
+  <span class="hljs-keyword">let</span> content = (<span class="hljs-keyword">await</span> workdir.content()).toString(<span class="hljs-string">'utf8'</span>)
+  <span class="hljs-keyword">if</span> (content.contains(<span class="hljs-string">'foo'</span>)) {
+    <span class="hljs-keyword">return</span> {
+      filepath,
+      content
+    }
+  }
+}
+</code></pre>
+<p>Example 2: Return the difference between the working directory and the HEAD commit</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> diff = <span class="hljs-built_in">require</span>(<span class="hljs-string">'diff-lines'</span>)
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span>(<span class="hljs-params">filepath, [head, workdir]</span>) </span>{
+  <span class="hljs-keyword">return</span> {
+    filepath,
+    <span class="hljs-attr">oid</span>: <span class="hljs-keyword">await</span> head.oid(),
+    <span class="hljs-attr">diff</span>: diff((<span class="hljs-keyword">await</span> head.content()).toString(<span class="hljs-string">'utf8'</span>), (<span class="hljs-keyword">await</span> workdir.content()).toString(<span class="hljs-string">'utf8'</span>))
+  }
+}
+</code></pre>
+<p>Example 3:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">let</span> path = <span class="hljs-built_in">require</span>(<span class="hljs-string">'path'</span>)
+<span class="hljs-comment">// Only examine files in the directory `cwd`</span>
+<span class="hljs-keyword">let</span> cwd = <span class="hljs-string">'src/app'</span>
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span> (<span class="hljs-params">filepath, [head, workdir, stage]</span>) </span>{
+  <span class="hljs-keyword">if</span> (
+    <span class="hljs-comment">// don't skip the root directory</span>
+    head.fullpath !== <span class="hljs-string">'.'</span> &amp;&amp;
+    <span class="hljs-comment">// return true for 'src' and 'src/app'</span>
+    !cwd.startsWith(filepath) &amp;&amp;
+    <span class="hljs-comment">// return true for 'src/app/*'</span>
+    path.dirname(filepath) !== cwd
+  ) {
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">return</span> filepath
+  }
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="reduceparent-children"></a><a href="#reduceparent-children" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>reduce(parent, children)</h2>
+<p>This is the function that is called once per entry AFTER visiting the children of that node.</p>
+<p>Default: <code>async (parent, children) =&gt; parent === undefined ? children.flat() : [parent, children].flat()</code></p>
+<p>The default implementation of this function returns all directories and children in a giant flat array.
+You can define a different accumulation method though.</p>
+<p>Example: Return a hierarchical structure</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">reduce</span> (<span class="hljs-params">parent, children</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.assign(parent, { children })
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="iteratewalk-children"></a><a href="#iteratewalk-children" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>iterate(walk, children)</h2>
+<p>Default: <code>(walk, children) =&gt; Promise.all([...children].map(walk))</code></p>
+<p>The default implementation recurses all children concurrently using Promise.all.
+However you could use a custom function to traverse children serially or use a global queue to throttle recursion.</p>
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/walkBeta2.js';
+  }
+})();
+</script></span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/en/0.74.0/listRemotes"><span class="arrow-prev">← </span><span class="function-name-prevnext">listRemotes</span></a><a class="docs-next button" href="/docs/en/0.74.0/WORKDIR"><span>WORKDIR</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
+void async function() {
+  const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
+    headers: { accept: 'application/vnd.github.v3+json' }
+  })
+  const data = await response.json()
+  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
+}()
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div></section><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: 'ac63b0df4513e31143eef156f520056c',
+                indexName: 'isomorphic_git',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {"typoTolerance":"min"}
+              });
+            </script></body></html>
