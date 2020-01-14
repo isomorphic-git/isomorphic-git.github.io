@@ -9,6 +9,10 @@
         "title": "add",
         "sidebar_label": "add"
       },
+      "addNote": {
+        "title": "addNote",
+        "sidebar_label": "addNote"
+      },
       "addRemote": {
         "title": "addRemote",
         "sidebar_label": "addRemote"
@@ -148,6 +152,10 @@
         "title": "listFiles",
         "sidebar_label": "listFiles"
       },
+      "listNotes": {
+        "title": "listNotes",
+        "sidebar_label": "listNotes"
+      },
       "listRemotes": {
         "title": "listRemotes",
         "sidebar_label": "listRemotes"
@@ -204,6 +212,10 @@
         "title": "readCommit",
         "sidebar_label": "readCommit"
       },
+      "readNote": {
+        "title": "readNote",
+        "sidebar_label": "readNote"
+      },
       "readObject": {
         "title": "readObject",
         "sidebar_label": "readObject"
@@ -219,6 +231,10 @@
       "remove": {
         "title": "remove",
         "sidebar_label": "remove"
+      },
+      "removeNote": {
+        "title": "removeNote",
+        "sidebar_label": "removeNote"
       },
       "resetIndex": {
         "title": "resetIndex",
@@ -638,6 +654,30 @@
       "version-0.74.0/version-0.74.0-writeTree": {
         "title": "writeTree",
         "sidebar_label": "writeTree"
+      },
+      "version-0.75.0/version-0.75.0-addNote": {
+        "title": "addNote",
+        "sidebar_label": "addNote"
+      },
+      "version-0.75.0/version-0.75.0-alphabetic": {
+        "title": "All Commands",
+        "sidebar_label": "Alphabetical Index"
+      },
+      "version-0.75.0/version-0.75.0-errors": {
+        "title": "Error Codes",
+        "sidebar_label": "Error Code Index"
+      },
+      "version-0.75.0/version-0.75.0-listNotes": {
+        "title": "listNotes",
+        "sidebar_label": "listNotes"
+      },
+      "version-0.75.0/version-0.75.0-readNote": {
+        "title": "readNote",
+        "sidebar_label": "readNote"
+      },
+      "version-0.75.0/version-0.75.0-removeNote": {
+        "title": "removeNote",
+        "sidebar_label": "removeNote"
       }
     },
     "links": {
@@ -654,6 +694,7 @@
       "Branches": "Branches",
       "Tags": "Tags",
       "Remotes": "Remotes",
+      "Notes": "Notes",
       "Walking": "Walking",
       "Plugins": "Plugins",
       "Raw Objects": "Raw Objects",
