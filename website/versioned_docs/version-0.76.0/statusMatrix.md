@@ -1,6 +1,8 @@
 ---
 title: statusMatrix
 sidebar_label: statusMatrix
+id: version-0.76.0-statusMatrix
+original_id: statusMatrix
 ---
 
 Efficiently get the status of multiple files at once.
