@@ -1,6 +1,8 @@
 ---
 title: push
 sidebar_label: push
+id: version-0.77.0-push
+original_id: push
 ---
 
 Push a branch or tag
