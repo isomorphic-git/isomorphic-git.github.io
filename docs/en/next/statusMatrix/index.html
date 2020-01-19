@@ -67,6 +67,7 @@
 <tr><td>ref</td><td>string = 'HEAD'</td><td>Optionally specify a different commit to compare against the workdir and stage instead of the HEAD</td></tr>
 <tr><td>filepaths</td><td>Array&lt;string&gt; = ['.']</td><td>Limit the query to the given files and directories</td></tr>
 <tr><td>pattern</td><td>string = null</td><td>Filter the results to only those whose filepath matches a glob pattern. (Pattern is relative to <code>filepaths</code> if <code>filepaths</code> is provided.)</td></tr>
+<tr><td>noSubmodules</td><td>boolean = false</td><td>If true, will skip over submodules completely</td></tr>
 <tr><td>return</td><td>Promise&lt;Array&lt;Array&lt;number&gt;&gt;&gt;</td><td>Resolves with a status matrix, described below.</td></tr>
 </tbody>
 </table>
