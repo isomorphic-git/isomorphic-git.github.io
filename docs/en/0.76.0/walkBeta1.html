@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>walkBeta1 · isomorphic-git</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="A powerful recursive tree-walking utility."/><meta name="docsearch:version" content="0.76.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="walkBeta1 · isomorphic-git"/><meta property="og:type" content="website"/><meta property="og:url" content="https://isomorphic-git.org/"/><meta property="og:description" content="A powerful recursive tree-walking utility."/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://isomorphic-git.org/img/favicon/android-chrome-192x192.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://isomorphic-git.org/blog/atom.xml" title="isomorphic-git Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://isomorphic-git.org/blog/feed.xml" title="isomorphic-git Blog RSS Feed"/><script type="text/javascript" src="/js/announcement.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/en"><img class="logo" src="/img/isomorphic-git-logo.svg" alt="isomorphic-git"/><h2 class="headerTitleWithLogo">isomorphic-git</h2></a><a href="/en/versions"><h3>0.76.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/en/0.76.0/alphabetic" target="_self">API Docs</a></li><li class=""><a href="/docs/en/0.76.0/quickstart" target="_self">Guide</a></li><li class=""><a href="/blog/" target="_self">Blog</a></li><li class=""><a href="https://github.com/isomorphic-git/isomorphic-git" target="_self">GitHub</a></li><li class=""><a href="https://npmjs.com/package/isomorphic-git" target="_self">npm</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/isomorphic-git/isomorphic-git.github.io/edit/source/docs/walkBeta1.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">walkBeta1</h1></header><article><div><span><p>A powerful recursive tree-walking utility.</p>
+<table>
+<thead>
+<tr><th>param</th><th>type [= default]</th><th>description</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>trees</strong></td><td>Array&lt;Walker&gt;</td><td>The trees you want to traverse</td></tr>
+<tr><td>filter</td><td>function(WalkerEntry[]): Promise&lt;boolean&gt;</td><td>Filter which <code>WalkerEntry</code>s to process</td></tr>
+<tr><td>map</td><td>function(WalkerEntry[]): Promise&lt;any&gt;</td><td>Transform <code>WalkerEntry</code>s into a result form</td></tr>
+<tr><td>reduce</td><td>function(any, any[]): Promise&lt;any&gt;</td><td>Control how mapped entries are combined with their parent result</td></tr>
+<tr><td>iterate</td><td>function(function(WalkerEntry[]): Promise&lt;any[]&gt;, IterableIterator&lt;WalkerEntry[]&gt;): Promise&lt;any[]&gt;</td><td>Fine-tune how entries within a tree are iterated over</td></tr>
+<tr><td>return</td><td>Promise&lt;any&gt;</td><td>The finished tree-walking result</td></tr>
+</tbody>
+</table>
+<p>The <code>WalkerEntry</code> is an interface that abstracts computing many common tree / blob stats.</p>
+<pre><code class="hljs css language-ts"><span class="hljs-keyword">type</span> WalkerEntry = {
+  fullpath: <span class="hljs-built_in">string</span>;
+  basename: <span class="hljs-built_in">string</span>;
+  exists: <span class="hljs-built_in">boolean</span>;
+  populateStat: <span class="hljs-function"><span class="hljs-keyword">function</span></span>;
+  <span class="hljs-keyword">type</span>?: <span class="hljs-string">'tree'</span> | <span class="hljs-string">'blob'</span> | <span class="hljs-string">'special'</span> | <span class="hljs-string">'commit'</span>;
+  ctimeSeconds?: <span class="hljs-built_in">number</span>;
+  ctimeNanoseconds?: <span class="hljs-built_in">number</span>;
+  mtimeSeconds?: <span class="hljs-built_in">number</span>;
+  mtimeNanoseconds?: <span class="hljs-built_in">number</span>;
+  dev?: <span class="hljs-built_in">number</span>;
+  ino?: <span class="hljs-built_in">number</span>;
+  mode?: <span class="hljs-built_in">number</span> | <span class="hljs-built_in">string</span>; <span class="hljs-comment">// WORKDIR and STAGE return numbers, TREE returns a string... I'll fix this in walkBeta2</span>
+  uid?: <span class="hljs-built_in">number</span>;
+  gid?: <span class="hljs-built_in">number</span>;
+  size?: <span class="hljs-built_in">number</span>;
+  populateContent: <span class="hljs-function"><span class="hljs-keyword">function</span></span>;
+  content?: Buffer;
+  populateHash: <span class="hljs-function"><span class="hljs-keyword">function</span></span>;
+  oid?: <span class="hljs-built_in">string</span>;
+}
+</code></pre>
+<p>The <code>walk</code> API (tentatively named <code>walkBeta1</code>) simplifies gathering detailed information about a tree or comparing all the filepaths in two or more trees.
+Trees can be file directories, git commits, or git indexes (aka staging areas).
+So you can compare two file directories, or 10 commits, or the stage of one repo with the working directory of another repo... etc.
+As long as a file or directory is present in at least one of the trees, it will be traversed.
+Entries are traversed in alphabetical order.</p>
+<p>The arguments to <code>walk</code> are the <code>trees</code> you want to traverse, and 4 optional transform functions:
+<code>filter</code>, <code>map</code>, <code>reduce</code>, and <code>iterate</code>.</p>
+<p>The trees are represented by three magic functions that can be imported:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">import</span> { TREE, WORKDIR, STAGE } <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git'</span>
+</code></pre>
+<p>These functions return objects that implement the <code>Walker</code> interface.
+The only thing they are good for is passing into <code>walkBeta1</code>'s <code>trees</code> argument.
+Here are the three <code>Walker</code>s passed into <code>walkBeta1</code> by the <code>statusMatrix</code> command for example:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">let</span> gitdir = <span class="hljs-string">'.git'</span>
+<span class="hljs-keyword">let</span> dir = <span class="hljs-string">'.'</span>
+<span class="hljs-keyword">let</span> ref = <span class="hljs-string">'HEAD'</span>
+
+<span class="hljs-keyword">let</span> trees = [
+  TREE({fs, gitdir, ref}),
+  WORKDIR({fs, dir, gitdir}),
+  STAGE({fs, gitdir})
+]
+</code></pre>
+<p>See the doc pages for <a href="/docs/en/0.76.0/TREE">TREE</a>, <a href="/docs/en/0.76.0/WORKDIR">WORKDIR</a>, and <a href="/docs/en/0.76.0/STAGE">STAGE</a>.</p>
+<p><code>filter</code>, <code>map</code>, <code>reduce</code>, and <code>iterate</code> allow you control the recursive walk by pruning and transforming <code>WalkerTree</code>s into the desired result.</p>
+<h2><a class="anchor" aria-hidden="true" id="walkerentry"></a><a href="#walkerentry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>WalkerEntry</h2>
+<p>The <code>WalkerEntry</code> is an interface that abstracts computing many common tree / blob stats.
+<code>filter</code> and <code>map</code> each receive an array of <code>WalkerEntry[]</code> as their main argument, one <code>WalkerEntry</code> for each <code>Walker</code> in the <code>trees</code> argument.</p>
+<p>By default, <code>WalkerEntry</code>s only have three properties:</p>
+<pre><code class="hljs css language-js">{
+  <span class="hljs-attr">fullpath</span>: string;
+  basename: string;
+  exists: boolean;
+}
+</code></pre>
+<p>Additional properties can be computed only when needed. This lets you build lean, mean, efficient walking machines.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.populateStat()
+<span class="hljs-comment">// populates</span>
+entry.type <span class="hljs-comment">// 'tree', 'blob'</span>
+<span class="hljs-comment">// and where applicable, these properties:</span>
+entry.ctimeSeconds <span class="hljs-comment">// number;</span>
+entry.ctimeNanoseconds <span class="hljs-comment">// number;</span>
+entry.mtimeSeconds <span class="hljs-comment">// number;</span>
+entry.mtimeNanoseconds <span class="hljs-comment">// number;</span>
+entry.dev <span class="hljs-comment">// number;</span>
+entry.ino <span class="hljs-comment">// number;</span>
+entry.mode <span class="hljs-comment">// number;</span>
+entry.uid <span class="hljs-comment">// number;</span>
+entry.gid <span class="hljs-comment">// number;</span>
+entry.size <span class="hljs-comment">// number;</span>
+</code></pre>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.populateContent()
+<span class="hljs-comment">// populates</span>
+entry.content <span class="hljs-comment">// Buffer</span>
+<span class="hljs-comment">// except for STAGE which does not currently provide content</span>
+</code></pre>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> entry.populateHash()
+<span class="hljs-comment">// populates</span>
+entry.oid <span class="hljs-comment">// SHA1 string</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="filterwalkerentry-boolean"></a><a href="#filterwalkerentry-boolean" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>filter(WalkerEntry[]) =&gt; boolean</h2>
+<p>Default: <code>async () =&gt; true</code>.</p>
+<p>This is a good place to put limiting logic such as skipping entries with certain filenames.
+If you return false for directories, then none of the children of that directory will be walked.</p>
+<p>Example:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">let</span> path = <span class="hljs-built_in">require</span>(<span class="hljs-string">'path'</span>)
+<span class="hljs-keyword">let</span> cwd = <span class="hljs-string">'src/app'</span>
+<span class="hljs-comment">// Only examine files in the directory `cwd`</span>
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">filter</span> (<span class="hljs-params">[head, workdir, stage]</span>) </span>{
+  <span class="hljs-comment">// It doesn't matter which tree (head, workdir, or stage) you use here.</span>
+  <span class="hljs-keyword">return</span> (
+    <span class="hljs-comment">// return true for the root directory</span>
+    head.fullpath === <span class="hljs-string">'.'</span> ||
+    <span class="hljs-comment">// return true for 'src' and 'src/app'</span>
+    cwd.startsWith(head.fullpath) ||
+    <span class="hljs-comment">// return true for 'src/app/*'</span>
+    path.dirname(head.fullpath) === cwd
+  )
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="mapwalkerentry-any"></a><a href="#mapwalkerentry-any" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>map(WalkerEntry[]) =&gt; any</h2>
+<p>Default: <code>async entry =&gt; entry</code></p>
+<p>This is a good place for query logic, such as examining the contents of a file.
+Ultimately, compare all the entries and return any values you are interested in.
+If you do not return a value (or return undefined) that entry will be filtered from the results.</p>
+<p>Example 1: Find all the files containing the word 'foo'.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span>(<span class="hljs-params">[head, workdir]</span>) </span>{
+  <span class="hljs-keyword">await</span> workdir.populateContent()
+  <span class="hljs-keyword">let</span> content = workdir.content.toString(<span class="hljs-string">'utf8'</span>)
+  <span class="hljs-keyword">if</span> (content.contains(<span class="hljs-string">'foo'</span>)) {
+    <span class="hljs-keyword">return</span> {
+      <span class="hljs-attr">fullpath</span>: workdir.fullpath,
+      content
+    }
+  }
+}
+
+</code></pre>
+<p>Example 2: Return the difference between the working directory and the HEAD commit</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> diff = <span class="hljs-built_in">require</span>(<span class="hljs-string">'diff-lines'</span>)
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span>(<span class="hljs-params">[head, workdir]</span>) </span>{
+  <span class="hljs-keyword">await</span> head.populateContent()
+  <span class="hljs-keyword">await</span> head.populateHash()
+  <span class="hljs-keyword">await</span> workdir.populateContent()
+  <span class="hljs-keyword">return</span> {
+    <span class="hljs-attr">filename</span>: head.fullpath,
+    <span class="hljs-attr">oid</span>: head.oid,
+    <span class="hljs-attr">diff</span>: diff(head.content.toString(<span class="hljs-string">'utf8'</span>), workdir.content.toString(<span class="hljs-string">'utf8'</span>))
+  }
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="reduceparent-children"></a><a href="#reduceparent-children" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>reduce(parent, children)</h2>
+<p>Default: <code>async (parent, children) =&gt; parent === undefined ? children.flat() : [parent, children].flat()</code></p>
+<p>The default implementation of this function returns all directories and children in a giant flat array.
+You can define a different accumulation method though.</p>
+<p>Example: Return a hierarchical structure</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">reduce</span> (<span class="hljs-params">parent, children</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.assign(parent, { children })
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="iteratewalk-children"></a><a href="#iteratewalk-children" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>iterate(walk, children)</h2>
+<p>Default: <code>(walk, children) =&gt; Promise.all([...children].map(walk))</code></p>
+<p>The default implementation recurses all children concurrently using Promise.all.
+However you could use a custom function to traverse children serially or use a global queue to throttle recursion.</p>
+<blockquote>
+<p>Note: For a complete example, look at the implementation of <code>statusMatrix</code>.</p>
+</blockquote>
+<script>
+(function rewriteEditLink() {
+  const el = document.querySelector('a.edit-page-link.button');
+  if (el) {
+    el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/master/src/commands/walkBeta1.js';
+  }
+})();
+</script></span></div></article></div><div class="docs-prevnext"></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
+void async function() {
+  const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
+    headers: { accept: 'application/vnd.github.v3+json' }
+  })
+  const data = await response.json()
+  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
+}()
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div></section><script type="text/javascript">document.querySelector('.navListItemActive').scrollIntoView({ block: 'nearest' })</script><script type="text/javascript" src="https://platform.twitter.com/widgets.js"></script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs"></script><script type="text/javascript" src="https://unpkg.com/isomorphic-git"></script><script type="text/javascript" src="https://unpkg.com/openpgp@2.6.2/dist/openpgp.min.js"></script><script type="text/javascript" src="/js/fs.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script type="text/javascript" src="/js/tutorial.js"></script><script type="text/javascript" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="//static.getclicky.com/js"></script><script type="text/javascript" src="/js/analytics.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: 'ac63b0df4513e31143eef156f520056c',
+                indexName: 'isomorphic_git',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {"typoTolerance":"min"}
+              });
+            </script></body></html>
