@@ -72,6 +72,7 @@
 <tr><td>remote</td><td>string = 'origin'</td><td>Which remote repository to use</td></tr>
 <tr><td>noCheckout</td><td>boolean = false</td><td>If true, will update HEAD but won't update the working directory</td></tr>
 <tr><td>noSubmodules</td><td>boolean = false</td><td>If true, will not print out an error about missing submodules support. TODO: Skip checkout out submodules when supported instead.</td></tr>
+<tr><td>newSubmoduleBehavior</td><td>boolean = false</td><td>If true, will opt into a newer behavior that improves submodule non-support by at least not accidentally deleting them.</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when filesystem operations are complete</td></tr>
 </tbody>
 </table>
