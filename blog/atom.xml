@@ -14,7 +14,7 @@
         <link href="https://isomorphic-git.org/blog/2020/02/25/version-1-0-0.html">
         </link>
         <updated>2020-02-25T06:00:00Z</updated>
-        <summary type="html"><![CDATA[<p>Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate.</p> <ul> <li><a href="#better-ide-integration">Better IDE Integration</a></li> <li><a href="#better-typescript-integration">Better TypeScript Integration</a></li> <li><a href="#more-good-defaults-fewer-bad-defaults">More Good Defaults, Fewer Bad Defaults</a></li> <li><a href="#embrace-callbacks">Embrace Callbacks</a></li> <li><a href="#future-proof-api">Future-proof API</a></li> <li><a href="#10-breaking-changes">1.0 Breaking Ch...</a></li></ul>]]></summary>
+        <summary type="html"><![CDATA[<p>Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate.</p> <ul> <li><a href="#better-ide-integration">Better IDE Integration</a></li> <li><a href="#better-typescript-integration">Better TypeScript Integration</a></li> <li><a href="#more-good-defaults-fewer-bad-defaults">More Good Defaults, Fewer Bad Defaults</a></li> <li><a href="#embrace-callbacks">Embrace Callbacks</a></li> <li><a href="#future-proof-api">Future-proof API</a></li> <li><a href="#acknowledgments">Acknowledgments...</a></li></ul>]]></summary>
         <author>
             <name>William Hilton</name>
             <uri>https://twitter.com/wmhilton</uri>
