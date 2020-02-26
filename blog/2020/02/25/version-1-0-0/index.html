@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>What is New in Version 1.0 · isomorphic-git</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate. "/><meta name="docsearch:language" content="en"/><meta property="og:title" content="What is New in Version 1.0 · isomorphic-git"/><meta property="og:type" content="website"/><meta property="og:url" content="https://isomorphic-git.org/blog/2020/02/25/version-1-0-0"/><meta property="og:description" content="Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate. "/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://isomorphic-git.org/img/favicon/android-chrome-192x192.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://isomorphic-git.org/blog/atom.xml" title="isomorphic-git Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://isomorphic-git.org/blog/feed.xml" title="isomorphic-git Blog RSS Feed"/><script type="text/javascript" src="/js/announcement.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/en"><img class="logo" src="/img/isomorphic-git-logo.svg" alt="isomorphic-git"/><h2 class="headerTitleWithLogo">isomorphic-git</h2></a><a href="/en/versions"><h3>0.78.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/en/alphabetic" target="_self">API Docs</a></li><li class=""><a href="/docs/en/quickstart" target="_self">Guide</a></li><li class="siteNavGroupActive"><a href="/blog/" target="_self">Blog</a></li><li class=""><a href="https://github.com/isomorphic-git/isomorphic-git" target="_self">GitHub</a></li><li class=""><a href="https://npmjs.com/package/isomorphic-git" target="_self">npm</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Recent Posts</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Recent Posts</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/blog/2020/02/25/version-1-0-0">What is New in Version 1.0</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy">isomorphic-git.org, corporate sponsors, and a new CORS proxy!</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/07/08/cors-proxy-origin-limited">CORS proxy origin limited</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/07/05/cors-proxy-disabled">CORS proxy temporarily disabled</a></li><li class="navListItem"><a class="navItem" href="/blog/2018/04/07/gogs-adds-cors-headers-for-isomorphic-git">Gogs adds CORS headers for isomorphic-git</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer postContainer blogContainer"><div class="wrapper"><div class="lonePost"><div class="post"><header class="postHeader"><h1 class="postHeaderTitle"><a href="/blog/2020/02/25/version-1-0-0">What is New in Version 1.0</a></h1><p class="post-meta">February 25, 2020</p><div class="authorBlock"><p class="post-authorName"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener">William Hilton</a></p><div class="authorPhoto"><a href="https://twitter.com/wmhilton" target="_blank" rel="noreferrer noopener"><img src="https://graph.facebook.com/551965935/picture/?height=200&amp;width=200" alt="William Hilton"/></a></div></div></header><div><span><p>Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate.</p>
+<ul>
+<li><a href="#better-ide-integration">Better IDE Integration</a></li>
+<li><a href="#better-typescript-integration">Better TypeScript Integration</a></li>
+<li><a href="#more-good-defaults-fewer-bad-defaults">More Good Defaults, Fewer Bad Defaults</a></li>
+<li><a href="#embrace-callbacks">Embrace Callbacks</a></li>
+<li><a href="#future-proof-api">Future-proof API</a></li>
+<li><a href="#10-breaking-changes">1.0 Breaking Changes</a>
+<ul>
+<li><a href="#big-changes">Big changes</a></li>
+<li><a href="#some-functions-have-been-renamed-or-removed">Some functions have been renamed or removed:</a></li>
+<li><a href="#some-function-parameters-have-been-removed-or-replaced">Some function parameters have been removed or replaced:</a></li>
+<li><a href="#the-return-types-of-some-functions-have-changed">The return types of some functions have changed:</a></li>
+<li><a href="#some-function-behaviors-have-changed">Some function behaviors have changed</a></li>
+<li><a href="#docs-and-dx-improvements">Docs and DX improvements</a></li>
+<li><a href="#miscellaneous-stuff">Miscellaneous stuff</a></li>
+</ul></li>
+</ul>
+<h2><a class="anchor" aria-hidden="true" id="better-ide-integration"></a><a href="#better-ide-integration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Better IDE Integration</h2>
+<p>No longer must we maintain the <code>index.d.ts</code> file by hand!
+Thanks to improvements in TS 3.7, we can auto-generate the declaration file using <a href="https://devblogs.microsoft.com/typescript/announcing-typescript-3-7/#user-content---declaration-and--allowjs"><code>tsc --declaration --allowJs</code></a>.
+This has the added benefit that the JSDoc is also included in the <code>index.d.ts</code> which leads to a much richer IDE integration. Sadly, parameter descriptions still aren't shown, but the main description body and the example code are!</p>
+<p>Here's what the Visual Studio Code tooltip for <code>git.log</code> looked like before:</p>
+<p><img src="/blog/assets/2020-02-25/tooltip-before.png" alt="v0.x.x tooltip"></p>
+<p>And here's what it looks like in version 1.0:</p>
+<p><img src="/blog/assets/2020-02-25/tooltip-after.png" alt="v1.x.x tooltip"></p>
+<p>The functions themselves have been tweaked so that the <a href="https://github.com/isomorphic-git/isomorphic-git/blob/master/src/typedefs.js">core object interfaces</a> (<code>CommitObject</code>, <code>TreeEntry</code>, <code>TagObject</code>, etc) are reused wherever possible,
+so that all the functions feel consistant and there are no surprises.
+The result is a cleaner API where the documentation comes to you, right where you are.</p>
+<h2><a class="anchor" aria-hidden="true" id="better-typescript-integration"></a><a href="#better-typescript-integration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Better TypeScript Integration</h2>
+<p>The return types gel with TS better now. For example, <code>readObject</code> returns a &quot;discriminated union&quot; type, so you can take advantage of powerful type inference, like this:</p>
+<p><img src="/blog/assets/2020-02-25/inference.png" alt="readObject type inference"></p>
+<p>Exceptions are also well-typed now, so you can access their <code>.data</code> property with confidence:</p>
+<p><img src="/blog/assets/2020-02-25/exceptions.png" alt="exception types"></p>
+<h2><a class="anchor" aria-hidden="true" id="more-good-defaults-fewer-bad-defaults"></a><a href="#more-good-defaults-fewer-bad-defaults" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>More Good Defaults, Fewer Bad Defaults</h2>
+<p>A number of helpful behaviors that had to be opt-in before to preserve backwards compatibility are now the defaults.</p>
+<ul>
+<li>The <code>init</code> function doesn't overwrite your config file if it already exists.</li>
+<li>The <code>checkout</code> function now warns about conflicts instead of blindly overwriting files.</li>
+<li>The <code>commit</code> function doesn't silently remove submodules.</li>
+</ul>
+<p>:shudder: You live, you learn, amirite?</p>
+<p>A number of &quot;helpful&quot; default behaviors have been removed, because no default is better than a bad default:</p>
+<p>A big one was assuming if you if you used the ESM build you were in the browser and had access to <code>fetch</code> and if you used the CommonJS build you were in node.
+That simply isn't true in today's environment.
+In version 1.0, you are always in control of whether to use <code>http/web</code> or <code>http/node</code>.</p>
+<p>Another one was automatically appending <code>.git</code> to the end of URLs when you clone them. That <em>can</em> be helpful, but it can also completely break cloning for some servers, which led to the awkward addition of the <code>noGitSuffix</code> parameter (cringe).
+In version 1.0, the URL you give is the URL we GET.</p>
+<h2><a class="anchor" aria-hidden="true" id="embrace-callbacks"></a><a href="#embrace-callbacks" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Embrace Callbacks</h2>
+<p>Something I tried to do early-ish in the development of 0.x was to move towards this idea that all function arguments need to be serializable.
+My reasoning was this:</p>
+<ol>
+<li>isomorphic-git can be pretty slow and block the main thread.</li>
+<li>I should encourage everyone to use isomorphic-git in a Worker.</li>
+<li>Therefore, I should make it easy to wrap isomorphic-git in a postMessage / RPC interface.</li>
+</ol>
+<p>This led to the creation of <a href="https://www.npmjs.com/package/magic-portal"><code>magic-portal</code></a> and publishing the WebWorker Guide.
+It also was the main constraint driving the design of the plugin system.
+The idea was all the callbacks could be setup in one place.</p>
+<p>However, since that time I have grown a tad wiser. In building real-world applications with isomorphic-git, I've realized:</p>
+<ol>
+<li><em>All</em> code can be pretty slow and block the main thread.</li>
+<li>Therefore all the code that <em>uses</em> isomorphic-git should be in that Worker too.</li>
+<li>In that case, isomorphic-git doesn't need serializable arguments at all.</li>
+</ol>
+<p>Therefore the plugin system and its awkward global state and funky namespace &quot;cores&quot; are gone, replaced by a vastly simpler collection of callback arguments.
+The new code is safer, has better locality when you're reading it, and enables some cool new behaviors like canceling running functions and infinite retry for interactive authentication.</p>
+<h2><a class="anchor" aria-hidden="true" id="future-proof-api"></a><a href="#future-proof-api" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Future-proof API</h2>
+<p>A number of other changes, such as returning <code>Uint8Array</code> instead of <code>Buffer</code>, were done to pave the way for future refactoring.
+The size of the library can be shrunk significantly if we drop the <code>Buffer</code> polyfill dependency.
+Plus, Webpack 5 reportedly won't provide node polyfills automatically.</p>
+<p>As always, all the functions are <code>async</code> and take named arguments, which makes adding new features without breaking old ones easy! I'm a huge fan of this pattern, and I think it's been very successful.</p>
+<p>It is safe to say that the API for isomorphic-git will remain backwards compatible and have no breaking changes for at least a year, possibly two or three.
+Because I want you to always be able to upgrade to the latest and greatest version of <code>isomorphic-git</code> without having to change any of your code.</p>
+<p>Except for today. Today, we are making breaking changes because it is a major release.</p>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="10-breaking-changes"></a><a href="#10-breaking-changes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>1.0 Breaking Changes</h2>
+<h3><a class="anchor" aria-hidden="true" id="big-changes"></a><a href="#big-changes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Big changes</h3>
+<ul>
+<li>The supported node &amp; browser versions have been bumped. (See beautiful table above.)</li>
+<li>The plugin system has been eliminated and we're back to plain old dependency injection via function arguments! The plugin cores created a mysterious &quot;global state&quot; that makes it easy to trip up (I myself sometimes forgot to unset plugins after running tests). The old style of passing <code>fs</code> as a function argument was less aesthetic and more verbose, but it is a much simpler model than the plugin core model, and much safer because it makes it impossible for dependencies to accidentally share the default plugin core.
+<ul>
+<li>The <code>emitter</code> plugin has been replaced with <code>onMessage</code> and <code>onProgress</code> callbacks.</li>
+<li>The <code>credentialManager</code> plugin has been replaced with <code>onAuth</code>, <code>onAuthFailure</code> and <code>onAuthSuccess</code> callbacks</li>
+<li>The <code>fs</code> plugin has been replaced with an <code>fs</code> parameter.</li>
+<li>The <code>http</code> plugin has been replaced with an <code>http</code> parameter.</li>
+<li>The <code>pgp</code> plugin has been replaced with an <code>onSign</code> callback.</li>
+</ul></li>
+<li>There is an additional setup step to choose which <code>http</code> client to use, and functions that make HTTP requests have a new required <code>http</code> parameter. Previously I used a mix of bundler and runtime magic to try and pick between a build that used <code>fetch</code> and one that used <code>require('http')</code> but that didn't always work. For instance, if you were bundling a node application using Webpack, it would pick the wrong build <a href="https://github.com/isomorphic-git/isomorphic-git/issues/938">(#938)</a>. Another example: in an Electron renderer thread, <em>both</em> options could work (if the window is launched with <code>nodeIntegration: true</code>) but in a Web Worker thread only the fetch option should work (<em>unless</em> you have <code>nodeIntegrationInWorker: true</code> set). See &quot;Getting Started&quot; below to see the extra line of code you need.</li>
+<li>The files in the package have been renamed so the import paths are short and sweet:
+<ul>
+<li><code>dist/bundle.umd.min.js</code> -&gt; <code>index.umd.min.js</code></li>
+<li><code>dist/for-future/isomorphic-git/index.js</code> -&gt; <code>index.js</code> (the future has arrived)</li>
+<li><code>dist/for-node/isomorphic-git/index.js</code> -&gt; <code>index.cjs</code></li>
+</ul></li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="some-functions-have-been-renamed-or-removed"></a><a href="#some-functions-have-been-renamed-or-removed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Some functions have been renamed or removed:</h3>
+<ul>
+<li>The <code>walkBeta2</code> function was renamed to <code>walk</code>.</li>
+<li>The <code>walkBeta1</code> function was removed.</li>
+<li>The <code>fastCheckout</code> function has been renamed <code>checkout</code> and the old <code>checkout</code> has been removed.</li>
+<li>The (previously deprecated) <code>sign</code> function was removed.</li>
+<li>The (previously deprecated) <code>utils.auth</code> function was removed.</li>
+<li>The (previously deprecated) <code>utils.oauth2</code> was removed.</li>
+<li>The <code>config</code> function has been removed and replaced by <code>getConfig</code>, <code>getConfigAll</code>, and <code>setConfig</code>.</li>
+<li>The <code>verify</code> function has been removed, but <code>log</code>, <code>readCommit</code>, and <code>readTag</code> all return the <code>gpgsig</code> and signing <code>payload</code> now. This actually makes verification simpler and more efficient, because it can be done in batch on <code>git.log</code> output and the <code>gpgsig</code> itself can be parsed and used to lookup the public key. See <a href="https://isomorphic-git.org/docs/en/onSign">onSign</a> for complete code examples.</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="some-function-parameters-have-been-removed-or-replaced"></a><a href="#some-function-parameters-have-been-removed-or-replaced" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Some function parameters have been removed or replaced:</h3>
+<ul>
+<li>The undocumented parameter aliases <code>authUsername</code> and <code>authPassword</code> were removed.</li>
+<li>The <code>emitter</code> parameter was removed and replaced with the <code>onMessage</code> and <code>onProgress</code> callbacks. (Note that <code>onMessage</code> emits un-trimmed strings, so you get those <code>\r</code>s.)</li>
+<li>The <code>username</code>, <code>password</code>, <code>token</code>, and <code>oauth2format</code> parameters were removed and replaced with the <code>onAuth</code> callback.</li>
+<li>The <code>fast</code> parameter of <code>pull</code> was removed, since there is no &quot;slow&quot; implementation anymore.</li>
+<li>The <code>signing</code> parameter of <code>log</code> was removed, since <code>log</code> will always return a payload.</li>
+<li>The <code>pattern</code> parameter was removed from <code>statusMatrix</code> and replaced with a new <code>filter</code> function. (This is so we can drop the dependencies on <code>globalyzer</code> and <code>globrex</code>.)</li>
+<li>The <code>newSubmoduleBehavior</code> parameter was removed and is now the default and only behavior, because it makes much more sense to have non-destructive defaults!</li>
+<li>The <code>noSubmodules</code> parameter was removed because with the new submodule behavior it is no longer necessary to print console warnings about how submodules aren't supported. (When submodule support IS added to isomorphic-git, it will be opt-in using <code>recurseSubmodules: true</code> or something like that.)</li>
+<li>The <code>autoTranslateSSH</code> feature was removed, since it is trivial to implement your own version using just the <code>UnknownTransportError.data.suggestion</code></li>
+<li>The <code>writeObject</code> function when used to write a tree now expects a plain array rather than an object with a property called <code>entries</code> which is the array. (This is so that argument to <code>writeObject</code> has the same shape as the arguments to <code>writeBlob</code>/<code>writeCommit</code>/<code>writeTag</code>/<code>writeTree</code>.)</li>
+<li>The <code>noOverwrite</code> parameter was removed from <code>init</code> and is the new behavior.</li>
+<li>The <code>author.date</code>, <code>committer.date</code>, <code>tagger.date</code> parameters were removed in favor of <code>author.timestamp</code>, <code>comitter.timestamp</code>, <code>tagger.timestamp</code> in order to be clear about what is actually written and share the same shape as the return types in <code>readCommit</code>, <code>log</code>, and <code>readTag</code>.</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="the-return-types-of-some-functions-have-changed"></a><a href="#the-return-types-of-some-functions-have-changed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The return types of some functions have changed:</h3>
+<ul>
+<li>Functions that used to return <code>Buffer</code> objects now return <code>Uint8Array</code> objects. (This is so we can eventually remove all internal dependencies on the Buffer browser polyfill, which is quite heavy!)</li>
+<li>The <code>log</code> function now returns an array of the same kind of objects that <code>readCommit</code> returns. (This change simplifies the type signature of <code>log</code> so we don't need function overloading; that function overloading was the one thing preventing me from auto-generating <code>index.d.ts</code>.)</li>
+<li>The <code>readObject</code> function returns a proper discriminated union so TypeScript can infer the type of <code>.object</code> once you establish the value of <code>.format</code> and <code>.type</code>. Also <code>.object</code> has the same shape as as the return value of <code>readBlob</code>/<code>readCommit</code>/<code>readTag</code>/<code>readTree</code>. (Meaning trees are now plain arrays rather than objects with a <code>.entries</code> property that is the array.)</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="some-function-behaviors-have-changed"></a><a href="#some-function-behaviors-have-changed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Some function behaviors have changed</h3>
+<ul>
+<li>The <code>push</code> function now pushes to the remote tracking branch (rather than a branch with the same name) by default.</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="docs-and-dx-improvements"></a><a href="#docs-and-dx-improvements" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Docs and DX improvements</h3>
+<ul>
+<li>The <code>docs/alphabetic.md</code> and function list in <code>README.md</code> are auto-generated from the filenames in <code>src/api</code>.</li>
+<li>Nearly the entire docs website is auto-generated from the JSDoc actually so keeping the docs website and source code in sync is easier.</li>
+<li>All the example code in JSDoc is now type-checked during CI tests.</li>
+<li>The live code examples on the website are displayed in a full-blown mobile-friendly code editor (CodeMirror 6).</li>
+<li>Each page with live code examples includes a code snippet at the bottom to reset the browser file system.</li>
+<li>The Getting Started guide has been updated.</li>
+<li>All the example code in JSDoc has been updated.</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="miscellaneous-stuff"></a><a href="#miscellaneous-stuff" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Miscellaneous stuff</h3>
+<ul>
+<li>Update the README to recommend LightningFS rather than BrowserFS.</li>
+<li>The <code>internal-apis</code> bundle is no longer included in the published package. That was only being built to run the unit tests.</li>
+</ul>
+</span></div></div><div class="blogSocialSection"></div></div><div class="blog-recent"><a class="button" href="/blog">Recent Posts</a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
+void async function() {
+  const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
+    headers: { accept: 'application/vnd.github.v3+json' }
+  })
+  const data = await response.json()
+  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
+}()
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div></section><script type="text/javascript">let el = document.querySelector('.navListItemActive'); if (el) el.scrollIntoView({ block: 'nearest' })</script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="/js/codemirrorify.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs"></script><script type="text/javascript" src="/js/isomorphic-git/index.umd.min.js"></script><script type="module" src="/js/tutorial.js"></script><script type="module" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script data-domain="isomorphic-git.org" src="https://plausible.io/js/plausible.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: 'ac63b0df4513e31143eef156f520056c',
+                indexName: 'isomorphic_git',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {"typoTolerance":"min"}
+              });
+            </script></body></html>

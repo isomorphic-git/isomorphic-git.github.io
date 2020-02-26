@@ -4,7 +4,7 @@
         <title>isomorphic-git Blog</title>
         <link>https://isomorphic-git.org/blog</link>
         <description>The best place to stay up-to-date with the latest isomorphic-git news and events.</description>
-        <lastBuildDate>Mon, 23 Jul 2018 06:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 25 Feb 2020 06:00:00 GMT</lastBuildDate>
         <docs>http://blogs.law.harvard.edu/tech/rss</docs>
         <generator>Feed for Node.js</generator>
         <image>
@@ -13,6 +13,13 @@
             <link>https://isomorphic-git.org/blog</link>
         </image>
         <copyright>Copyright © 2020 Isomorphic-git Contributors</copyright>
+        <item>
+            <title><![CDATA[What is New in Version 1.0]]></title>
+            <link>https://isomorphic-git.org/blog/2020/02/25/version-1-0-0.html</link>
+            <guid>https://isomorphic-git.org/blog/2020/02/25/version-1-0-0.html</guid>
+            <pubDate>Tue, 25 Feb 2020 06:00:00 GMT</pubDate>
+            <description><![CDATA[<p>Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate.</p> <ul> <li><a href="#better-ide-integration">Better IDE Integration</a></li> <li><a href="#better-typescript-integration">Better TypeScript Integration</a></li> <li><a href="#more-good-defaults-fewer-bad-defaults">More Good Defaults, Fewer Bad Defaults</a></li> <li><a href="#embrace-callbacks">Embrace Callbacks</a></li> <li><a href="#future-proof-api">Future-proof API</a></li> <li><a href="#10-breaking-changes">1.0 Breaking Ch...</a></li></ul>]]></description>
+        </item>
         <item>
             <title><![CDATA[isomorphic-git.org, corporate sponsors, and a new CORS proxy!]]></title>
             <link>https://isomorphic-git.org/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html</link>

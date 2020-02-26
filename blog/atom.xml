@@ -2,12 +2,24 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://isomorphic-git.org/blog</id>
     <title>isomorphic-git Blog</title>
-    <updated>2018-07-23T06:00:00Z</updated>
+    <updated>2020-02-25T06:00:00Z</updated>
     <generator>Feed for Node.js</generator>
     <link rel="alternate" href="https://isomorphic-git.org/blog"/>
     <subtitle>The best place to stay up-to-date with the latest isomorphic-git news and events.</subtitle>
     <logo>https://isomorphic-git.org/img/isomorphic-git-logo.svg</logo>
     <rights>Copyright © 2020 Isomorphic-git Contributors</rights>
+    <entry>
+        <title type="html"><![CDATA[What is New in Version 1.0]]></title>
+        <id>https://isomorphic-git.org/blog/2020/02/25/version-1-0-0.html</id>
+        <link href="https://isomorphic-git.org/blog/2020/02/25/version-1-0-0.html">
+        </link>
+        <updated>2020-02-25T06:00:00Z</updated>
+        <summary type="html"><![CDATA[<p>Today marks the release of isomorphic-git version 1.0! 🎉 There are a lot of big improvements to celebrate.</p> <ul> <li><a href="#better-ide-integration">Better IDE Integration</a></li> <li><a href="#better-typescript-integration">Better TypeScript Integration</a></li> <li><a href="#more-good-defaults-fewer-bad-defaults">More Good Defaults, Fewer Bad Defaults</a></li> <li><a href="#embrace-callbacks">Embrace Callbacks</a></li> <li><a href="#future-proof-api">Future-proof API</a></li> <li><a href="#10-breaking-changes">1.0 Breaking Ch...</a></li></ul>]]></summary>
+        <author>
+            <name>William Hilton</name>
+            <uri>https://twitter.com/wmhilton</uri>
+        </author>
+    </entry>
     <entry>
         <title type="html"><![CDATA[isomorphic-git.org, corporate sponsors, and a new CORS proxy!]]></title>
         <id>https://isomorphic-git.org/blog/2018/07/23/isomorphic-git-dot-org-corporate-sponsors-and-a-new-CORS-proxy.html</id>
