@@ -9846,19 +9846,22 @@ async function packObjects({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {HttpClient} args.http - an HTTP client
- * @param {ProgressCallback} [args.onProgress] - optional progress event callback
- * @param {MessageCallback} [args.onMessage] - optional message event callback
- * @param {AuthCallback} [args.onAuth] - optional auth fill callback
- * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
- * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {HttpClient} args.http
+ * @param {ProgressCallback} [args.onProgress]
+ * @param {MessageCallback} [args.onMessage]
+ * @param {AuthCallback} [args.onAuth]
+ * @param {AuthFailureCallback} [args.onAuthFailure]
+ * @param {AuthSuccessCallback} [args.onAuthSuccess]
  * @param {string} args.dir
  * @param {string} args.gitdir
- * @param {string} args.ref - Which branch to fetch. By default this is the currently checked out branch.
- * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {string} args.ref
+ * @param {string} [args.url]
+ * @param {string} [args.remote]
+ * @param {string} [args.remoteRef]
+ * @param {string} [args.corsProxy]
  * @param {boolean} args.singleBranch
  * @param {boolean} args.fastForwardOnly
- * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {Object<string, string>} [args.headers]
  * @param {Object} args.author
  * @param {string} args.author.name
  * @param {string} args.author.email
@@ -9869,7 +9872,7 @@ async function packObjects({
  * @param {string} args.committer.email
  * @param {number} args.committer.timestamp
  * @param {number} args.committer.timezoneOffset
- * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
+ * @param {string} [args.signingKey]
  *
  * @returns {Promise<void>} Resolves successfully when pull operation completes
  *
@@ -9885,6 +9888,9 @@ async function _pull({
   dir,
   gitdir,
   ref,
+  url,
+  remote,
+  remoteRef,
   fastForwardOnly,
   corsProxy,
   singleBranch,
@@ -9903,12 +9909,7 @@ async function _pull({
       }
       ref = head;
     }
-    // Fetch from the correct remote.
-    const remote = await _getConfig({
-      fs,
-      gitdir,
-      path: `branch.${ref}.remote`,
-    });
+
     const { fetchHead, fetchHeadDescription } = await _fetch({
       fs,
       http,
@@ -9920,7 +9921,9 @@ async function _pull({
       gitdir,
       corsProxy,
       ref,
+      url,
       remote,
+      remoteRef,
       singleBranch,
       headers,
     });
@@ -9968,7 +9971,10 @@ async function _pull({
  * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
  * @param {string} args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} [args.ref] - Which branch to fetch. By default this is the currently checked out branch.
+ * @param {string} [args.ref] - Which branch to merge into. By default this is the currently checked out branch.
+ * @param {string} [args.url] - The URL of the remote repository. The default is the value set in the git config for that remote.
+ * @param {string} [args.remote] - If URL is not specified, determines which remote to use.
+ * @param {string} [args.remoteRef] - The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
  * @param {boolean} [args.fastForwardOnly = false] - Only perform simple fast-forward merges. (Don't create merge commits.)
@@ -10009,6 +10015,9 @@ async function pull({
   dir,
   gitdir = join(dir, '.git'),
   ref,
+  url,
+  remote,
+  remoteRef,
   fastForwardOnly = false,
   corsProxy,
   singleBranch,
@@ -10045,6 +10054,9 @@ async function pull({
       dir,
       gitdir,
       ref,
+      url,
+      remote,
+      remoteRef,
       fastForwardOnly,
       corsProxy,
       singleBranch,
