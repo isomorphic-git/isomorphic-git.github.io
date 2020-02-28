@@ -5322,7 +5322,6 @@ const worthWalking = (filepath, root) => {
  * @param {boolean} args.noCheckout
  * @param {boolean} [args.noUpdateHead]
  * @param {boolean} [args.dryRun]
- * @param {boolean} [args.debug]
  * @param {boolean} [args.force]
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
@@ -5339,7 +5338,6 @@ async function _checkout({
   noCheckout,
   noUpdateHead,
   dryRun,
-  debug,
   force,
 }) {
   // Get tree oid
@@ -5413,11 +5411,8 @@ async function _checkout({
 
     if (dryRun) {
       // Since the format of 'ops' is in flux, I really would rather folk besides myself not start relying on it
-      if (debug) {
-        return ops
-      } else {
-        return
-      }
+      // return ops
+      return
     }
 
     // Second pass - execute planned changes
@@ -5924,8 +5919,6 @@ async function checkout({
   noCheckout = false,
   noUpdateHead = _ref === undefined,
   dryRun = false,
-  // @ts-ignore
-  debug = false,
   force = false,
 }) {
   try {
@@ -5945,7 +5938,6 @@ async function checkout({
       noCheckout,
       noUpdateHead,
       dryRun,
-      debug,
       force,
     })
   } catch (err) {

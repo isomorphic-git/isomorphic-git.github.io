@@ -924,7 +924,7 @@ export function branch({ fs, dir, gitdir, ref, checkout, }: {
  * })
  * console.log('done')
  */
-export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, debug, force, }: {
+export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onProgress?: ProgressCallback;
     dir: string;
