@@ -225,6 +225,72 @@ export type WalkerMap = (filename: string, entries: WalkerEntry[] | null) => Pro
 export type WalkerReduce = (parent: any, children: any[]) => Promise<any>;
 export type WalkerIterateCallback = (entries: WalkerEntry[]) => Promise<any[]>;
 export type WalkerIterate = (walk: WalkerIterateCallback, children: IterableIterator<WalkerEntry[]>) => Promise<any[]>;
+export type GitProgressEvent = {
+    phase: string;
+    loaded: number;
+    total: number;
+};
+export type ProgressCallback = (progress: GitProgressEvent) => void | Promise<void>;
+export type GitHttpRequest = {
+    /**
+     * - The URL to request
+     */
+    url: string;
+    /**
+     * - The HTTP method to use
+     */
+    method?: string;
+    /**
+     * - Headers to include in the HTTP request
+     */
+    headers?: {
+        [x: string]: string;
+    };
+    /**
+     * - An async iterator of Uint8Arrays that make up the body of POST requests
+     */
+    body?: AsyncIterableIterator<Uint8Array>;
+    /**
+     * - Reserved for future use (emitting `GitProgressEvent`s)
+     */
+    onProgress?: ProgressCallback;
+    /**
+     * - Reserved for future use (canceling a request)
+     */
+    signal?: AbortSignal;
+};
+export type GitHttpResponse = {
+    /**
+     * - The final URL that was fetched after any redirects
+     */
+    url: string;
+    /**
+     * - The HTTP method that was used
+     */
+    method?: string;
+    /**
+     * - HTTP response headers
+     */
+    headers?: {
+        [x: string]: string;
+    };
+    /**
+     * - An async iterator of Uint8Arrays that make up the body of the response
+     */
+    body?: AsyncIterableIterator<Uint8Array>;
+    /**
+     * - The HTTP status code
+     */
+    statusCode: number;
+    /**
+     * - The HTTP status message
+     */
+    statusMessage: string;
+};
+export type HttpFetch = (request: GitHttpRequest) => Promise<GitHttpResponse>;
+export type HttpClient = {
+    request: HttpFetch;
+};
 /**
  * A git commit object.
  */
@@ -470,12 +536,6 @@ export type PromiseFsClient = {
 };
 export type FsClient = CallbackFsClient | PromiseFsClient;
 export type MessageCallback = (message: string) => void | Promise<void>;
-export type GitProgressEvent = {
-    phase: string;
-    loaded: number;
-    total: number;
-};
-export type ProgressCallback = (progress: GitProgressEvent) => void | Promise<void>;
 export type GitAuth = {
     username?: string;
     password?: string;
@@ -505,70 +565,6 @@ export type SignCallback = (args: SignParams) => {
 } | Promise<{
     signature: string;
 }>;
-export type GitHttpRequest = {
-    /**
-     * - The URL to request
-     */
-    url: string;
-    /**
-     * - The HTTP method to use
-     */
-    method?: string;
-    /**
-     * - Headers to include in the HTTP request
-     */
-    headers?: {
-        [x: string]: string;
-    };
-    /**
-     * - An async iterator of Uint8Arrays that make up the body of POST requests
-     */
-    body?: AsyncIterableIterator<Uint8Array>;
-    /**
-     * - If your `http` plugin needs access to other plugins, it can do so via `git.cores.get(core)`
-     */
-    core?: string;
-    /**
-     * - If your `http` plugin emits events, it can do so via `emitter.emit()`
-     */
-    emitter?: any;
-    /**
-     * - The `emitterPrefix` passed by the user when calling a function. If your plugin emits events, prefix the event name with this.
-     */
-    emitterPrefix?: string;
-};
-export type GitHttpResponse = {
-    /**
-     * - The final URL that was fetched after any redirects
-     */
-    url: string;
-    /**
-     * - The HTTP method that was used
-     */
-    method?: string;
-    /**
-     * - HTTP response headers
-     */
-    headers?: {
-        [x: string]: string;
-    };
-    /**
-     * - An async iterator of Uint8Arrays that make up the body of the response
-     */
-    body?: AsyncIterableIterator<Uint8Array>;
-    /**
-     * - The HTTP status code
-     */
-    statusCode: number;
-    /**
-     * - The HTTP status message
-     */
-    statusMessage: string;
-};
-export type HttpFetch = (request: GitHttpRequest) => Promise<GitHttpResponse>;
-export type HttpClient = {
-    request: HttpFetch;
-};
 export type RefUpdateStatus = {
     ok: boolean;
     error: string;
@@ -1866,9 +1862,9 @@ export function packObjects({ fs, dir, gitdir, oids, write, }: {
  * @param {string} args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - Which branch to merge into. By default this is the currently checked out branch.
- * @param {string} [args.url] - The URL of the remote repository. The default is the value set in the git config for that remote.
- * @param {string} [args.remote] - If URL is not specified, determines which remote to use.
- * @param {string} [args.remoteRef] - The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
+ * @param {string} [args.url] - (Added in 1.1.0) The URL of the remote repository. The default is the value set in the git config for that remote.
+ * @param {string} [args.remote] - (Added in 1.1.0) If URL is not specified, determines which remote to use.
+ * @param {string} [args.remoteRef] - (Added in 1.1.0) The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
  * @param {boolean} [args.fastForwardOnly = false] - Only perform simple fast-forward merges. (Don't create merge commits.)
@@ -3597,6 +3593,44 @@ declare namespace UserCanceledError {
     export { code_25 as code };
 }
 /**
+ * @typedef {Object} GitProgressEvent
+ * @property {string} phase
+ * @property {number} loaded
+ * @property {number} total
+ */
+/**
+ * @callback ProgressCallback
+ * @param {GitProgressEvent} progress
+ * @returns {void | Promise<void>}
+ */
+/**
+ * @typedef {Object} GitHttpRequest
+ * @property {string} url - The URL to request
+ * @property {string} [method='GET'] - The HTTP method to use
+ * @property {Object<string, string>} [headers={}] - Headers to include in the HTTP request
+ * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
+ * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
+ * @property {AbortSignal} [signal] - Reserved for future use (canceling a request)
+ */
+/**
+ * @typedef {Object} GitHttpResponse
+ * @property {string} url - The final URL that was fetched after any redirects
+ * @property {string} [method] - The HTTP method that was used
+ * @property {Object<string, string>} [headers] - HTTP response headers
+ * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of the response
+ * @property {number} statusCode - The HTTP status code
+ * @property {string} statusMessage - The HTTP status message
+ */
+/**
+ * @callback HttpFetch
+ * @param {GitHttpRequest} request
+ * @returns {Promise<GitHttpResponse>}
+ */
+/**
+ * @typedef {Object} HttpClient
+ * @property {HttpFetch} request
+ */
+/**
  * A git commit object.
  *
  * @typedef {Object} CommitObject
@@ -3717,17 +3751,6 @@ declare namespace UserCanceledError {
  * @returns {void | Promise<void>}
  */
 /**
- * @typedef {Object} GitProgressEvent
- * @property {string} phase
- * @property {number} loaded
- * @property {number} total
- */
-/**
- * @callback ProgressCallback
- * @param {GitProgressEvent} progress
- * @returns {void | Promise<void>}
- */
-/**
  * @typedef {Object} GitAuth
  * @property {string} [username]
  * @property {string} [password]
@@ -3761,34 +3784,6 @@ declare namespace UserCanceledError {
  * @callback SignCallback
  * @param {SignParams} args
  * @return {{signature: string} | Promise<{signature: string}>} - an 'ASCII armor' encoded "detached" signature
- */
-/**
- * @typedef {Object} GitHttpRequest
- * @property {string} url - The URL to request
- * @property {string} [method='GET'] - The HTTP method to use
- * @property {Object<string, string>} [headers={}] - Headers to include in the HTTP request
- * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
- * @property {string} [core] - If your `http` plugin needs access to other plugins, it can do so via `git.cores.get(core)`
- * @property {GitEmitterPlugin} [emitter] - If your `http` plugin emits events, it can do so via `emitter.emit()`
- * @property {string} [emitterPrefix] - The `emitterPrefix` passed by the user when calling a function. If your plugin emits events, prefix the event name with this.
- */
-/**
- * @typedef {Object} GitHttpResponse
- * @property {string} url - The final URL that was fetched after any redirects
- * @property {string} [method] - The HTTP method that was used
- * @property {Object<string, string>} [headers] - HTTP response headers
- * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of the response
- * @property {number} statusCode - The HTTP status code
- * @property {string} statusMessage - The HTTP status message
- */
-/**
- * @callback HttpFetch
- * @param {GitHttpRequest} request
- * @returns {Promise<GitHttpResponse>}
- */
-/**
- * @typedef {Object} HttpClient
- * @property {HttpFetch} request
  */
 /**
  * @callback WalkerMap
