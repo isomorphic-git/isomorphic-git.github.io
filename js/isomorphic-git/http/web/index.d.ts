@@ -31,7 +31,7 @@ export type GitHttpRequest = {
     /**
      * - Reserved for future use (canceling a request)
      */
-    signal?: AbortSignal;
+    signal?: any;
 };
 export type GitHttpResponse = {
     /**
