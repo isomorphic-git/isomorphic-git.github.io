@@ -23,7 +23,7 @@ export type GitHttpRequest = {
     /**
      * - An async iterator of Uint8Arrays that make up the body of POST requests
      */
-    body?: AsyncIterableIterator<Uint8Array>;
+    body?: any;
     /**
      * - Reserved for future use (emitting `GitProgressEvent`s)
      */
@@ -51,7 +51,7 @@ export type GitHttpResponse = {
     /**
      * - An async iterator of Uint8Arrays that make up the body of the response
      */
-    body?: AsyncIterableIterator<Uint8Array>;
+    body?: any;
     /**
      * - The HTTP status code
      */
