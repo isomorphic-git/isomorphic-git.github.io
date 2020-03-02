@@ -57,9 +57,10 @@
         </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/isomorphic-git/isomorphic-git.github.io/edit/source/docs/guide-cli.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">isogit CLI</h1></header><article><div><span><p>Isomorphic-git comes with a simple CLI tool, named &quot;isogit&quot; because &quot;isomorphic-git&quot; is a lot to type.
 It is really just a thin shell that translates command line arguments into the equivalent JS API commands,
 so you should be able to run any current <em>or future</em> isomorphic-git commands using the CLI.</p>
-<p>It always assumes two of the arguments:</p>
+<p>It always assumes three of the arguments:</p>
 <ul>
 <li><code>fs</code> is node's native <code>fs</code> module</li>
+<li><code>http</code> is the <code>isomorphic-git/http/node</code> module</li>
 <li><code>dir</code> is the current working directory</li>
 </ul>
 <p>The first argument is the name of the command and then command line option flags to generate the argument object.</p>
@@ -69,12 +70,15 @@ so you should be able to run any current <em>or future</em> isomorphic-git comma
 <p>will run</p>
 <pre><code class="hljs css language-js">git.clone({
   <span class="hljs-attr">fs</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>),
+  <span class="hljs-attr">http</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'isomorphic-git/http/node'</span>),
   <span class="hljs-attr">dir</span>: process.cwd(),
   <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/isomorphic-git/isomorphic-git'</span>,
   <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span>,
   <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>
 })
 </code></pre>
+<p>Note that since authentication is done using the <code>onAuth</code> callback, you can't really do that at the moment.
+I'm not sure there's a good way to provide callbacks to a CLI.</p>
 <p>For commands like <code>git.log</code> which return JSON, it pretty-prints the output.</p>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/en/dir-vs-gitdir"><span class="arrow-prev">← </span><span>dir vs gitdir</span></a><a class="docs-next button" href="/docs/en/faq"><span>FAQ</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
 void async function() {
@@ -101,6 +105,6 @@ void async function() {
                 apiKey: 'ac63b0df4513e31143eef156f520056c',
                 indexName: 'isomorphic_git',
                 inputSelector: '#search_input_react',
-                algoliaOptions: {"typoTolerance":"min"}
+                algoliaOptions: {"typoTolerance":"min","facetFilters":["language:en","version:1.x"]}
               });
             </script></body></html>
