@@ -2673,7 +2673,7 @@ export function status({ fs: _fs, dir, gitdir, filepath, }: {
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
  */
-export function statusMatrix({ fs, dir, gitdir, ref, filepaths, filter, }: {
+export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir: string;
     gitdir?: string;
