@@ -8455,7 +8455,7 @@ async function hashBlob({ object }) {
  * @param {string} args.gitdir
  * @param {string} args.filepath
  *
- * @returns {Promise<void>}
+ * @returns {Promise<{oids: string[]}>}
  */
 async function _indexPack({ fs, onProgress, dir, gitdir, filepath }) {
   try {
@@ -8468,6 +8468,9 @@ async function _indexPack({ fs, onProgress, dir, gitdir, filepath }) {
       onProgress,
     });
     await fs.write(filepath.replace(/\.pack$/, '.idx'), await idx.toBuffer());
+    return {
+      oids: [...idx.hashes],
+    }
   } catch (err) {
     err.caller = 'git.indexPack';
     throw err
@@ -8486,14 +8489,14 @@ async function _indexPack({ fs, onProgress, dir, gitdir, filepath }) {
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the .pack file to index
  *
- * @returns {Promise<void>} Resolves when filesystem operations are complete
+ * @returns {Promise<{oids: string[]}>} Resolves with a list of the SHA-1 object ids contained in the packfile
  *
  * @example
  * let packfiles = await fs.promises.readdir('/tutorial/.git/objects/pack')
  * packfiles = packfiles.filter(name => name.endsWith('.pack'))
  * console.log('packfiles', packfiles)
  *
- * await git.indexPack({
+ * const { oids } = await git.indexPack({
  *   fs,
  *   dir: '/tutorial',
  *   filepath: `.git/objects/pack/${packfiles[0]}`,
@@ -8501,7 +8504,7 @@ async function _indexPack({ fs, onProgress, dir, gitdir, filepath }) {
  *     console.log(`${evt.phase}: ${evt.loaded} / ${evt.total}`)
  *   }
  * })
- * console.log('done')
+ * console.log(oids)
  *
  */
 async function indexPack({

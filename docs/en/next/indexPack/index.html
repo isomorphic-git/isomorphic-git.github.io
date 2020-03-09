@@ -65,7 +65,7 @@
 <tr><td><strong>dir</strong></td><td>string</td><td>The <a href="/docs/en/next/dir-vs-gitdir">working tree</a> directory path</td></tr>
 <tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/next/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td><strong>filepath</strong></td><td>string</td><td>The path to the .pack file to index</td></tr>
-<tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves when filesystem operations are complete</td></tr>
+<tr><td>return</td><td>Promise&lt;{oids: Array&lt;string&gt;}&gt;</td><td>Resolves with a list of the SHA-1 object ids contained in the packfile</td></tr>
 </tbody>
 </table>
 <p>Example Code:</p>
@@ -73,7 +73,7 @@
 packfiles = packfiles.filter(<span class="hljs-function"><span class="hljs-params">name</span> =&gt;</span> name.endsWith(<span class="hljs-string">'.pack'</span>))
 <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'packfiles'</span>, packfiles)
 
-<span class="hljs-keyword">await</span> git.indexPack({
+<span class="hljs-keyword">const</span> { oids } = <span class="hljs-keyword">await</span> git.indexPack({
   fs,
   <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>,
   <span class="hljs-attr">filepath</span>: <span class="hljs-string">`.git/objects/pack/<span class="hljs-subst">${packfiles[<span class="hljs-number">0</span>]}</span>`</span>,
@@ -81,7 +81,7 @@ packfiles = packfiles.filter(<span class="hljs-function"><span class="hljs-param
     <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`<span class="hljs-subst">${evt.phase}</span>: <span class="hljs-subst">${evt.loaded}</span> / <span class="hljs-subst">${evt.total}</span>`</span>)
   }
 })
-<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'done'</span>)
+<span class="hljs-built_in">console</span>.log(oids)
 </code></pre>
 <hr>
 <p><details>

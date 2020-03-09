@@ -1499,14 +1499,14 @@ export function hashBlob({ object }: {
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the .pack file to index
  *
- * @returns {Promise<void>} Resolves when filesystem operations are complete
+ * @returns {Promise<{oids: string[]}>} Resolves with a list of the SHA-1 object ids contained in the packfile
  *
  * @example
  * let packfiles = await fs.promises.readdir('/tutorial/.git/objects/pack')
  * packfiles = packfiles.filter(name => name.endsWith('.pack'))
  * console.log('packfiles', packfiles)
  *
- * await git.indexPack({
+ * const { oids } = await git.indexPack({
  *   fs,
  *   dir: '/tutorial',
  *   filepath: `.git/objects/pack/${packfiles[0]}`,
@@ -1514,7 +1514,7 @@ export function hashBlob({ object }: {
  *     console.log(`${evt.phase}: ${evt.loaded} / ${evt.total}`)
  *   }
  * })
- * console.log('done')
+ * console.log(oids)
  *
  */
 export function indexPack({ fs, onProgress, dir, gitdir, filepath, }: {
@@ -1523,7 +1523,9 @@ export function indexPack({ fs, onProgress, dir, gitdir, filepath, }: {
     dir: string;
     gitdir?: string;
     filepath: string;
-}): Promise<void>;
+}): Promise<{
+    oids: string[];
+}>;
 /**
  * Initialize a new repository
  *
