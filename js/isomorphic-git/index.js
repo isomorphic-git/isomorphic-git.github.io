@@ -7909,6 +7909,686 @@ async function expandRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
 // @ts-check
 
 /**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} args.gitdir
+ * @param {string[]} args.oids
+ *
+ */
+async function _findMergeBase({ fs, gitdir, oids }) {
+  // Note: right now, the tests are geared so that the output should match that of
+  // `git merge-base --all --octopus`
+  // because without the --octopus flag, git's output seems to depend on the ORDER of the oids,
+  // and computing virtual merge bases is just too much for me to fathom right now.
+
+  // If we start N independent walkers, one at each of the given `oids`, and walk backwards
+  // through ancestors, eventually we'll discover a commit where each one of these N walkers
+  // has passed through. So we just need to keep track of which walkers have visited each commit
+  // until we find a commit that N distinct walkers has visited.
+  const visits = {};
+  const passes = oids.length;
+  let heads = oids.map((oid, index) => ({ index, oid }));
+  while (heads.length) {
+    // Count how many times we've passed each commit
+    const result = new Set();
+    for (const { oid, index } of heads) {
+      if (!visits[oid]) visits[oid] = new Set();
+      visits[oid].add(index);
+      if (visits[oid].size === passes) {
+        result.add(oid);
+      }
+    }
+    if (result.size > 0) {
+      return [...result]
+    }
+    // We haven't found a common ancestor yet
+    const newheads = [];
+    for (const { oid, index } of heads) {
+      try {
+        const { object } = await _readObject({ fs, gitdir, oid });
+        const commit = GitCommit.from(object);
+        const { parent } = commit.parseHeaders();
+        for (const oid of parent) {
+          if (!visits[oid] || !visits[oid].has(index)) {
+            newheads.push({ oid, index });
+          }
+        }
+      } catch (err) {
+        // do nothing
+      }
+    }
+    heads = newheads;
+  }
+  return []
+}
+
+const LINEBREAKS = /^.*(\r?\n|$)/gm;
+
+function mergeFile({
+  ourContent,
+  baseContent,
+  theirContent,
+  ourName = 'ours',
+  baseName = 'base',
+  theirName = 'theirs',
+  format = 'diff',
+  markerSize = 7,
+}) {
+  const ours = ourContent.match(LINEBREAKS);
+  const base = baseContent.match(LINEBREAKS);
+  const theirs = theirContent.match(LINEBREAKS);
+
+  // Here we let the diff3 library do the heavy lifting.
+  const result = diff3Merge(ours, base, theirs);
+
+  // Here we note whether there are conflicts and format the results
+  let mergedText = '';
+  let cleanMerge = true;
+  for (const item of result) {
+    if (item.ok) {
+      mergedText += item.ok.join('');
+    }
+    if (item.conflict) {
+      cleanMerge = false;
+      mergedText += `${'<'.repeat(markerSize)} ${ourName}\n`;
+      mergedText += item.conflict.a.join('');
+      if (format === 'diff3') {
+        mergedText += `${'|'.repeat(markerSize)} ${baseName}\n`;
+        mergedText += item.conflict.o.join('');
+      }
+      mergedText += `${'='.repeat(markerSize)}\n`;
+      mergedText += item.conflict.b.join('');
+      mergedText += `${'>'.repeat(markerSize)} ${theirName}\n`;
+    }
+  }
+  return { cleanMerge, mergedText }
+}
+
+// @ts-check
+
+/**
+ * Create a merged tree
+ *
+ * @param {Object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.ourOid - The SHA-1 object id of our tree
+ * @param {string} args.baseOid - The SHA-1 object id of the base tree
+ * @param {string} args.theirOid - The SHA-1 object id of their tree
+ * @param {string} [args.ourName='ours'] - The name to use in conflicted files for our hunks
+ * @param {string} [args.baseName='base'] - The name to use in conflicted files (in diff3 format) for the base hunks
+ * @param {string} [args.theirName='theirs'] - The name to use in conflicted files for their hunks
+ * @param {boolean} [args.dryRun=false]
+ *
+ * @returns {Promise<string>} - The SHA-1 object id of the merged tree
+ *
+ */
+async function mergeTree({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  ourOid,
+  baseOid,
+  theirOid,
+  ourName = 'ours',
+  baseName = 'base',
+  theirName = 'theirs',
+  dryRun = false,
+}) {
+  const ourTree = TREE({ ref: ourOid });
+  const baseTree = TREE({ ref: baseOid });
+  const theirTree = TREE({ ref: theirOid });
+
+  const results = await _walk({
+    fs,
+    dir,
+    gitdir,
+    trees: [ourTree, baseTree, theirTree],
+    map: async function(filepath, [ours, base, theirs]) {
+      const path = basename(filepath);
+      // What we did, what they did
+      const ourChange = await modified(ours, base);
+      const theirChange = await modified(theirs, base);
+      switch (`${ourChange}-${theirChange}`) {
+        case 'false-false': {
+          return {
+            mode: await base.mode(),
+            path,
+            oid: await base.oid(),
+            type: await base.type(),
+          }
+        }
+        case 'false-true': {
+          return theirs
+            ? {
+                mode: await theirs.mode(),
+                path,
+                oid: await theirs.oid(),
+                type: await theirs.type(),
+              }
+            : undefined
+        }
+        case 'true-false': {
+          return ours
+            ? {
+                mode: await ours.mode(),
+                path,
+                oid: await ours.oid(),
+                type: await ours.type(),
+              }
+            : undefined
+        }
+        case 'true-true': {
+          // Modifications
+          if (
+            ours &&
+            base &&
+            theirs &&
+            (await ours.type()) === 'blob' &&
+            (await base.type()) === 'blob' &&
+            (await theirs.type()) === 'blob'
+          ) {
+            return mergeBlobs({
+              fs,
+              gitdir,
+              path,
+              ours,
+              base,
+              theirs,
+              ourName,
+              baseName,
+              theirName,
+            })
+          }
+          // all other types of conflicts fail
+          throw new MergeNotSupportedError()
+        }
+      }
+    },
+    /**
+     * @param {TreeEntry} [parent]
+     * @param {Array<TreeEntry>} children
+     */
+    reduce: async (parent, children) => {
+      const entries = children.filter(Boolean); // remove undefineds
+
+      // automatically delete directories if they have been emptied
+      if (parent && parent.type === 'tree' && entries.length === 0) return
+
+      if (entries.length > 0) {
+        const tree = new GitTree(entries);
+        const object = tree.toObject();
+        const oid = await _writeObject({
+          fs,
+          gitdir,
+          type: 'tree',
+          object,
+          dryRun,
+        });
+        parent.oid = oid;
+      }
+      return parent
+    },
+  });
+  return results.oid
+}
+
+/**
+ *
+ * @param {WalkerEntry} entry
+ * @param {WalkerEntry} base
+ *
+ */
+async function modified(entry, base) {
+  if (!entry && !base) return false
+  if (entry && !base) return true
+  if (!entry && base) return true
+  if ((await entry.type()) === 'tree' && (await base.type()) === 'tree') {
+    return false
+  }
+  if (
+    (await entry.type()) === (await base.type()) &&
+    (await entry.mode()) === (await base.mode()) &&
+    (await entry.oid()) === (await base.oid())
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
+ *
+ * @param {Object} args
+ * @param {import('../models/FileSystem').FileSystem} args.fs
+ * @param {string} args.gitdir
+ * @param {string} args.path
+ * @param {WalkerEntry} args.ours
+ * @param {WalkerEntry} args.base
+ * @param {WalkerEntry} args.theirs
+ * @param {string} [args.ourName]
+ * @param {string} [args.baseName]
+ * @param {string} [args.theirName]
+ * @param {string} [args.format]
+ * @param {number} [args.markerSize]
+ * @param {boolean} [args.dryRun = false]
+ *
+ */
+async function mergeBlobs({
+  fs,
+  gitdir,
+  path,
+  ours,
+  base,
+  theirs,
+  ourName,
+  theirName,
+  baseName,
+  format,
+  markerSize,
+  dryRun,
+}) {
+  const type = 'blob';
+  // Compute the new mode.
+  // Since there are ONLY two valid blob modes ('100755' and '100644') it boils down to this
+  const mode =
+    (await base.mode()) === (await ours.mode())
+      ? await theirs.mode()
+      : await ours.mode();
+  // The trivial case: nothing to merge except maybe mode
+  if ((await ours.oid()) === (await theirs.oid())) {
+    return { mode, path, oid: await ours.oid(), type }
+  }
+  // if only one side made oid changes, return that side's oid
+  if ((await ours.oid()) === (await base.oid())) {
+    return { mode, path, oid: await theirs.oid(), type }
+  }
+  if ((await theirs.oid()) === (await base.oid())) {
+    return { mode, path, oid: await ours.oid(), type }
+  }
+  // if both sides made changes do a merge
+  const { mergedText, cleanMerge } = mergeFile({
+    ourContent: Buffer.from(await ours.content()).toString('utf8'),
+    baseContent: Buffer.from(await base.content()).toString('utf8'),
+    theirContent: Buffer.from(await theirs.content()).toString('utf8'),
+    ourName,
+    theirName,
+    baseName,
+    format,
+    markerSize,
+  });
+  if (!cleanMerge) {
+    // all other types of conflicts fail
+    throw new MergeNotSupportedError()
+  }
+  const oid = await _writeObject({
+    fs,
+    gitdir,
+    type: 'blob',
+    object: Buffer.from(mergedText, 'utf8'),
+    dryRun,
+  });
+  return { mode, path, oid, type }
+}
+
+// @ts-check
+
+// import diff3 from 'node-diff3'
+/**
+ *
+ * @typedef {Object} MergeResult - Returns an object with a schema like this:
+ * @property {string} [oid] - The SHA-1 object id that is now at the head of the branch. Absent only if `dryRun` was specified and `mergeCommit` is true.
+ * @property {boolean} [alreadyMerged] - True if the branch was already merged so no changes were made
+ * @property {boolean} [fastForward] - True if it was a fast-forward merge
+ * @property {boolean} [mergeCommit] - True if merge resulted in a merge commit
+ * @property {string} [tree] - The SHA-1 object id of the tree resulting from a merge commit
+ *
+ */
+
+/**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} args.gitdir
+ * @param {string} [args.ours]
+ * @param {string} args.theirs
+ * @param {boolean} args.fastForwardOnly
+ * @param {boolean} args.dryRun
+ * @param {boolean} args.noUpdateBranch
+ * @param {string} [args.message]
+ * @param {Object} args.author
+ * @param {string} args.author.name
+ * @param {string} args.author.email
+ * @param {number} args.author.timestamp
+ * @param {number} args.author.timezoneOffset
+ * @param {Object} args.committer
+ * @param {string} args.committer.name
+ * @param {string} args.committer.email
+ * @param {number} args.committer.timestamp
+ * @param {number} args.committer.timezoneOffset
+ * @param {string} [args.signingKey]
+ *
+ * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
+ * @see MergeResult
+ *
+ * @example
+ * let m = await git.merge({ dir: '$input((/))', ours: '$input((master))', theirs: '$input((remotes/origin/master))' })
+ * console.log(m)
+ *
+ */
+async function _merge({
+  fs,
+  gitdir,
+  ours,
+  theirs,
+  fastForwardOnly = false,
+  dryRun = false,
+  noUpdateBranch = false,
+  message,
+  author,
+  committer,
+  signingKey,
+}) {
+  if (ours === undefined) {
+    ours = await _currentBranch({ fs, gitdir, fullname: true });
+  }
+  ours = await GitRefManager.expand({
+    fs,
+    gitdir,
+    ref: ours,
+  });
+  theirs = await GitRefManager.expand({
+    fs,
+    gitdir,
+    ref: theirs,
+  });
+  const ourOid = await GitRefManager.resolve({
+    fs,
+    gitdir,
+    ref: ours,
+  });
+  const theirOid = await GitRefManager.resolve({
+    fs,
+    gitdir,
+    ref: theirs,
+  });
+  // find most recent common ancestor of ref a and ref b
+  const baseOids = await _findMergeBase({
+    fs,
+    gitdir,
+    oids: [ourOid, theirOid],
+  });
+  if (baseOids.length !== 1) {
+    throw new MergeNotSupportedError()
+  }
+  const baseOid = baseOids[0];
+  // handle fast-forward case
+  if (baseOid === theirOid) {
+    return {
+      oid: ourOid,
+      alreadyMerged: true,
+    }
+  }
+  if (baseOid === ourOid) {
+    if (!dryRun && !noUpdateBranch) {
+      await GitRefManager.writeRef({ fs, gitdir, ref: ours, value: theirOid });
+    }
+    return {
+      oid: theirOid,
+      fastForward: true,
+    }
+  } else {
+    // not a simple fast-forward
+    if (fastForwardOnly) {
+      throw new FastForwardError()
+    }
+    // try a fancier merge
+    const tree = await mergeTree({
+      fs,
+      gitdir,
+      ourOid,
+      theirOid,
+      baseOid,
+      ourName: ours,
+      baseName: 'base',
+      theirName: theirs,
+      dryRun,
+    });
+    if (!message) {
+      message = `Merge branch '${abbreviateRef(theirs)}' into ${abbreviateRef(
+        ours
+      )}`;
+    }
+    const oid = await _commit({
+      fs,
+      gitdir,
+      message,
+      ref: ours,
+      tree,
+      parent: [ourOid, theirOid],
+      author,
+      committer,
+      signingKey,
+      dryRun,
+      noUpdateBranch,
+    });
+    return {
+      oid,
+      tree,
+      mergeCommit: true,
+    }
+  }
+}
+
+// @ts-check
+
+/**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {HttpClient} args.http
+ * @param {ProgressCallback} [args.onProgress]
+ * @param {MessageCallback} [args.onMessage]
+ * @param {AuthCallback} [args.onAuth]
+ * @param {AuthFailureCallback} [args.onAuthFailure]
+ * @param {AuthSuccessCallback} [args.onAuthSuccess]
+ * @param {string} args.dir
+ * @param {string} args.gitdir
+ * @param {string} args.ref
+ * @param {string} [args.url]
+ * @param {string} [args.remote]
+ * @param {string} [args.remoteRef]
+ * @param {string} [args.corsProxy]
+ * @param {boolean} args.singleBranch
+ * @param {boolean} args.fastForwardOnly
+ * @param {Object<string, string>} [args.headers]
+ * @param {Object} args.author
+ * @param {string} args.author.name
+ * @param {string} args.author.email
+ * @param {number} args.author.timestamp
+ * @param {number} args.author.timezoneOffset
+ * @param {Object} args.committer
+ * @param {string} args.committer.name
+ * @param {string} args.committer.email
+ * @param {number} args.committer.timestamp
+ * @param {number} args.committer.timezoneOffset
+ * @param {string} [args.signingKey]
+ *
+ * @returns {Promise<void>} Resolves successfully when pull operation completes
+ *
+ */
+async function _pull({
+  fs,
+  http,
+  onProgress,
+  onMessage,
+  onAuth,
+  onAuthSuccess,
+  onAuthFailure,
+  dir,
+  gitdir,
+  ref,
+  url,
+  remote,
+  remoteRef,
+  fastForwardOnly,
+  corsProxy,
+  singleBranch,
+  headers,
+  author,
+  committer,
+  signingKey,
+}) {
+  try {
+    // If ref is undefined, use 'HEAD'
+    if (!ref) {
+      const head = await _currentBranch({ fs, gitdir });
+      // TODO: use a better error.
+      if (!head) {
+        throw new MissingParameterError('ref')
+      }
+      ref = head;
+    }
+
+    const { fetchHead, fetchHeadDescription } = await _fetch({
+      fs,
+      http,
+      onProgress,
+      onMessage,
+      onAuth,
+      onAuthSuccess,
+      onAuthFailure,
+      gitdir,
+      corsProxy,
+      ref,
+      url,
+      remote,
+      remoteRef,
+      singleBranch,
+      headers,
+    });
+    // Merge the remote tracking branch into the local one.
+    await _merge({
+      fs,
+      gitdir,
+      ours: ref,
+      theirs: fetchHead,
+      fastForwardOnly,
+      message: `Merge ${fetchHeadDescription}`,
+      author,
+      committer,
+      signingKey,
+      dryRun: false,
+      noUpdateBranch: false,
+    });
+    await _checkout({
+      fs,
+      onProgress,
+      dir,
+      gitdir,
+      ref,
+      remote,
+      noCheckout: false,
+    });
+  } catch (err) {
+    err.caller = 'git.pull';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
+ * Like `pull`, but hard-coded with `fastForward: true` so there is no need for an `author` parameter.
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {HttpClient} args.http - an HTTP client
+ * @param {ProgressCallback} [args.onProgress] - optional progress event callback
+ * @param {MessageCallback} [args.onMessage] - optional message event callback
+ * @param {AuthCallback} [args.onAuth] - optional auth fill callback
+ * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
+ * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {string} args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} [args.ref] - Which branch to merge into. By default this is the currently checked out branch.
+ * @param {string} [args.url] - (Added in 1.1.0) The URL of the remote repository. The default is the value set in the git config for that remote.
+ * @param {string} [args.remote] - (Added in 1.1.0) If URL is not specified, determines which remote to use.
+ * @param {string} [args.remoteRef] - (Added in 1.1.0) The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
+ * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
+ * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ *
+ * @returns {Promise<void>} Resolves successfully when pull operation completes
+ *
+ * @example
+ * await git.fastForward({
+ *   fs,
+ *   http,
+ *   dir: '/tutorial',
+ *   ref: 'master',
+ *   singleBranch: true
+ * })
+ * console.log('done')
+ *
+ */
+async function fastForward({
+  fs,
+  http,
+  onProgress,
+  onMessage,
+  onAuth,
+  onAuthSuccess,
+  onAuthFailure,
+  dir,
+  gitdir = join(dir, '.git'),
+  ref,
+  url,
+  remote,
+  remoteRef,
+  corsProxy,
+  singleBranch,
+  headers = {},
+}) {
+  try {
+    assertParameter('fs', fs);
+    assertParameter('gitdir', gitdir);
+
+    const thisWillNotBeUsed = {
+      name: '',
+      email: '',
+      timestamp: Date.now(),
+      timezoneOffset: 0,
+    };
+
+    return await _pull({
+      fs: new FileSystem(fs),
+      http,
+      onProgress,
+      onMessage,
+      onAuth,
+      onAuthSuccess,
+      onAuthFailure,
+      dir,
+      gitdir,
+      ref,
+      url,
+      remote,
+      remoteRef,
+      fastForwardOnly: true,
+      corsProxy,
+      singleBranch,
+      headers,
+      author: thisWillNotBeUsed,
+      committer: thisWillNotBeUsed,
+    })
+  } catch (err) {
+    err.caller = 'git.fastForward';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
  *
  * @typedef {object} FetchResult - The object returned has the following schema:
  * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified (typically "master")
@@ -8022,62 +8702,6 @@ async function fetch({
     err.caller = 'git.fetch';
     throw err
   }
-}
-
-// @ts-check
-
-/**
- * @param {object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {string} args.gitdir
- * @param {string[]} args.oids
- *
- */
-async function _findMergeBase({ fs, gitdir, oids }) {
-  // Note: right now, the tests are geared so that the output should match that of
-  // `git merge-base --all --octopus`
-  // because without the --octopus flag, git's output seems to depend on the ORDER of the oids,
-  // and computing virtual merge bases is just too much for me to fathom right now.
-
-  // If we start N independent walkers, one at each of the given `oids`, and walk backwards
-  // through ancestors, eventually we'll discover a commit where each one of these N walkers
-  // has passed through. So we just need to keep track of which walkers have visited each commit
-  // until we find a commit that N distinct walkers has visited.
-  const visits = {};
-  const passes = oids.length;
-  let heads = oids.map((oid, index) => ({ index, oid }));
-  while (heads.length) {
-    // Count how many times we've passed each commit
-    const result = new Set();
-    for (const { oid, index } of heads) {
-      if (!visits[oid]) visits[oid] = new Set();
-      visits[oid].add(index);
-      if (visits[oid].size === passes) {
-        result.add(oid);
-      }
-    }
-    if (result.size > 0) {
-      return [...result]
-    }
-    // We haven't found a common ancestor yet
-    const newheads = [];
-    for (const { oid, index } of heads) {
-      try {
-        const { object } = await _readObject({ fs, gitdir, oid });
-        const commit = GitCommit.from(object);
-        const { parent } = commit.parseHeaders();
-        for (const oid of parent) {
-          if (!visits[oid] || !visits[oid].has(index)) {
-            newheads.push({ oid, index });
-          }
-        }
-      } catch (err) {
-        // do nothing
-      }
-    }
-    heads = newheads;
-  }
-  return []
 }
 
 // @ts-check
@@ -9140,423 +9764,6 @@ async function log({
   }
 }
 
-const LINEBREAKS = /^.*(\r?\n|$)/gm;
-
-function mergeFile({
-  ourContent,
-  baseContent,
-  theirContent,
-  ourName = 'ours',
-  baseName = 'base',
-  theirName = 'theirs',
-  format = 'diff',
-  markerSize = 7,
-}) {
-  const ours = ourContent.match(LINEBREAKS);
-  const base = baseContent.match(LINEBREAKS);
-  const theirs = theirContent.match(LINEBREAKS);
-
-  // Here we let the diff3 library do the heavy lifting.
-  const result = diff3Merge(ours, base, theirs);
-
-  // Here we note whether there are conflicts and format the results
-  let mergedText = '';
-  let cleanMerge = true;
-  for (const item of result) {
-    if (item.ok) {
-      mergedText += item.ok.join('');
-    }
-    if (item.conflict) {
-      cleanMerge = false;
-      mergedText += `${'<'.repeat(markerSize)} ${ourName}\n`;
-      mergedText += item.conflict.a.join('');
-      if (format === 'diff3') {
-        mergedText += `${'|'.repeat(markerSize)} ${baseName}\n`;
-        mergedText += item.conflict.o.join('');
-      }
-      mergedText += `${'='.repeat(markerSize)}\n`;
-      mergedText += item.conflict.b.join('');
-      mergedText += `${'>'.repeat(markerSize)} ${theirName}\n`;
-    }
-  }
-  return { cleanMerge, mergedText }
-}
-
-// @ts-check
-
-/**
- * Create a merged tree
- *
- * @param {Object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
- * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} args.ourOid - The SHA-1 object id of our tree
- * @param {string} args.baseOid - The SHA-1 object id of the base tree
- * @param {string} args.theirOid - The SHA-1 object id of their tree
- * @param {string} [args.ourName='ours'] - The name to use in conflicted files for our hunks
- * @param {string} [args.baseName='base'] - The name to use in conflicted files (in diff3 format) for the base hunks
- * @param {string} [args.theirName='theirs'] - The name to use in conflicted files for their hunks
- * @param {boolean} [args.dryRun=false]
- *
- * @returns {Promise<string>} - The SHA-1 object id of the merged tree
- *
- */
-async function mergeTree({
-  fs,
-  dir,
-  gitdir = join(dir, '.git'),
-  ourOid,
-  baseOid,
-  theirOid,
-  ourName = 'ours',
-  baseName = 'base',
-  theirName = 'theirs',
-  dryRun = false,
-}) {
-  const ourTree = TREE({ ref: ourOid });
-  const baseTree = TREE({ ref: baseOid });
-  const theirTree = TREE({ ref: theirOid });
-
-  const results = await _walk({
-    fs,
-    dir,
-    gitdir,
-    trees: [ourTree, baseTree, theirTree],
-    map: async function(filepath, [ours, base, theirs]) {
-      const path = basename(filepath);
-      // What we did, what they did
-      const ourChange = await modified(ours, base);
-      const theirChange = await modified(theirs, base);
-      switch (`${ourChange}-${theirChange}`) {
-        case 'false-false': {
-          return {
-            mode: await base.mode(),
-            path,
-            oid: await base.oid(),
-            type: await base.type(),
-          }
-        }
-        case 'false-true': {
-          return theirs
-            ? {
-                mode: await theirs.mode(),
-                path,
-                oid: await theirs.oid(),
-                type: await theirs.type(),
-              }
-            : undefined
-        }
-        case 'true-false': {
-          return ours
-            ? {
-                mode: await ours.mode(),
-                path,
-                oid: await ours.oid(),
-                type: await ours.type(),
-              }
-            : undefined
-        }
-        case 'true-true': {
-          // Modifications
-          if (
-            ours &&
-            base &&
-            theirs &&
-            (await ours.type()) === 'blob' &&
-            (await base.type()) === 'blob' &&
-            (await theirs.type()) === 'blob'
-          ) {
-            return mergeBlobs({
-              fs,
-              gitdir,
-              path,
-              ours,
-              base,
-              theirs,
-              ourName,
-              baseName,
-              theirName,
-            })
-          }
-          // all other types of conflicts fail
-          throw new MergeNotSupportedError()
-        }
-      }
-    },
-    /**
-     * @param {TreeEntry} [parent]
-     * @param {Array<TreeEntry>} children
-     */
-    reduce: async (parent, children) => {
-      const entries = children.filter(Boolean); // remove undefineds
-
-      // automatically delete directories if they have been emptied
-      if (parent && parent.type === 'tree' && entries.length === 0) return
-
-      if (entries.length > 0) {
-        const tree = new GitTree(entries);
-        const object = tree.toObject();
-        const oid = await _writeObject({
-          fs,
-          gitdir,
-          type: 'tree',
-          object,
-          dryRun,
-        });
-        parent.oid = oid;
-      }
-      return parent
-    },
-  });
-  return results.oid
-}
-
-/**
- *
- * @param {WalkerEntry} entry
- * @param {WalkerEntry} base
- *
- */
-async function modified(entry, base) {
-  if (!entry && !base) return false
-  if (entry && !base) return true
-  if (!entry && base) return true
-  if ((await entry.type()) === 'tree' && (await base.type()) === 'tree') {
-    return false
-  }
-  if (
-    (await entry.type()) === (await base.type()) &&
-    (await entry.mode()) === (await base.mode()) &&
-    (await entry.oid()) === (await base.oid())
-  ) {
-    return false
-  }
-  return true
-}
-
-/**
- *
- * @param {Object} args
- * @param {import('../models/FileSystem').FileSystem} args.fs
- * @param {string} args.gitdir
- * @param {string} args.path
- * @param {WalkerEntry} args.ours
- * @param {WalkerEntry} args.base
- * @param {WalkerEntry} args.theirs
- * @param {string} [args.ourName]
- * @param {string} [args.baseName]
- * @param {string} [args.theirName]
- * @param {string} [args.format]
- * @param {number} [args.markerSize]
- * @param {boolean} [args.dryRun = false]
- *
- */
-async function mergeBlobs({
-  fs,
-  gitdir,
-  path,
-  ours,
-  base,
-  theirs,
-  ourName,
-  theirName,
-  baseName,
-  format,
-  markerSize,
-  dryRun,
-}) {
-  const type = 'blob';
-  // Compute the new mode.
-  // Since there are ONLY two valid blob modes ('100755' and '100644') it boils down to this
-  const mode =
-    (await base.mode()) === (await ours.mode())
-      ? await theirs.mode()
-      : await ours.mode();
-  // The trivial case: nothing to merge except maybe mode
-  if ((await ours.oid()) === (await theirs.oid())) {
-    return { mode, path, oid: await ours.oid(), type }
-  }
-  // if only one side made oid changes, return that side's oid
-  if ((await ours.oid()) === (await base.oid())) {
-    return { mode, path, oid: await theirs.oid(), type }
-  }
-  if ((await theirs.oid()) === (await base.oid())) {
-    return { mode, path, oid: await ours.oid(), type }
-  }
-  // if both sides made changes do a merge
-  const { mergedText, cleanMerge } = mergeFile({
-    ourContent: Buffer.from(await ours.content()).toString('utf8'),
-    baseContent: Buffer.from(await base.content()).toString('utf8'),
-    theirContent: Buffer.from(await theirs.content()).toString('utf8'),
-    ourName,
-    theirName,
-    baseName,
-    format,
-    markerSize,
-  });
-  if (!cleanMerge) {
-    // all other types of conflicts fail
-    throw new MergeNotSupportedError()
-  }
-  const oid = await _writeObject({
-    fs,
-    gitdir,
-    type: 'blob',
-    object: Buffer.from(mergedText, 'utf8'),
-    dryRun,
-  });
-  return { mode, path, oid, type }
-}
-
-// @ts-check
-
-// import diff3 from 'node-diff3'
-/**
- *
- * @typedef {Object} MergeResult - Returns an object with a schema like this:
- * @property {string} [oid] - The SHA-1 object id that is now at the head of the branch. Absent only if `dryRun` was specified and `mergeCommit` is true.
- * @property {boolean} [alreadyMerged] - True if the branch was already merged so no changes were made
- * @property {boolean} [fastForward] - True if it was a fast-forward merge
- * @property {boolean} [mergeCommit] - True if merge resulted in a merge commit
- * @property {string} [tree] - The SHA-1 object id of the tree resulting from a merge commit
- *
- */
-
-/**
- * @param {object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {string} args.gitdir
- * @param {string} [args.ours]
- * @param {string} args.theirs
- * @param {boolean} args.fastForwardOnly
- * @param {boolean} args.dryRun
- * @param {boolean} args.noUpdateBranch
- * @param {string} [args.message]
- * @param {Object} args.author
- * @param {string} args.author.name
- * @param {string} args.author.email
- * @param {number} args.author.timestamp
- * @param {number} args.author.timezoneOffset
- * @param {Object} args.committer
- * @param {string} args.committer.name
- * @param {string} args.committer.email
- * @param {number} args.committer.timestamp
- * @param {number} args.committer.timezoneOffset
- * @param {string} [args.signingKey]
- *
- * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
- * @see MergeResult
- *
- * @example
- * let m = await git.merge({ dir: '$input((/))', ours: '$input((master))', theirs: '$input((remotes/origin/master))' })
- * console.log(m)
- *
- */
-async function _merge({
-  fs,
-  gitdir,
-  ours,
-  theirs,
-  fastForwardOnly = false,
-  dryRun = false,
-  noUpdateBranch = false,
-  message,
-  author,
-  committer,
-  signingKey,
-}) {
-  if (ours === undefined) {
-    ours = await _currentBranch({ fs, gitdir, fullname: true });
-  }
-  ours = await GitRefManager.expand({
-    fs,
-    gitdir,
-    ref: ours,
-  });
-  theirs = await GitRefManager.expand({
-    fs,
-    gitdir,
-    ref: theirs,
-  });
-  const ourOid = await GitRefManager.resolve({
-    fs,
-    gitdir,
-    ref: ours,
-  });
-  const theirOid = await GitRefManager.resolve({
-    fs,
-    gitdir,
-    ref: theirs,
-  });
-  // find most recent common ancestor of ref a and ref b
-  const baseOids = await _findMergeBase({
-    fs,
-    gitdir,
-    oids: [ourOid, theirOid],
-  });
-  if (baseOids.length !== 1) {
-    throw new MergeNotSupportedError()
-  }
-  const baseOid = baseOids[0];
-  // handle fast-forward case
-  if (baseOid === theirOid) {
-    return {
-      oid: ourOid,
-      alreadyMerged: true,
-    }
-  }
-  if (baseOid === ourOid) {
-    if (!dryRun && !noUpdateBranch) {
-      await GitRefManager.writeRef({ fs, gitdir, ref: ours, value: theirOid });
-    }
-    return {
-      oid: theirOid,
-      fastForward: true,
-    }
-  } else {
-    // not a simple fast-forward
-    if (fastForwardOnly) {
-      throw new FastForwardError()
-    }
-    // try a fancier merge
-    const tree = await mergeTree({
-      fs,
-      gitdir,
-      ourOid,
-      theirOid,
-      baseOid,
-      ourName: ours,
-      baseName: 'base',
-      theirName: theirs,
-      dryRun,
-    });
-    if (!message) {
-      message = `Merge branch '${abbreviateRef(theirs)}' into ${abbreviateRef(
-        ours
-      )}`;
-    }
-    const oid = await _commit({
-      fs,
-      gitdir,
-      message,
-      ref: ours,
-      tree,
-      parent: [ourOid, theirOid],
-      author,
-      committer,
-      signingKey,
-      dryRun,
-      noUpdateBranch,
-    });
-    return {
-      oid,
-      tree,
-      mergeCommit: true,
-    }
-  }
-}
-
 // @ts-check
 
 /**
@@ -9825,121 +10032,6 @@ async function packObjects({
     })
   } catch (err) {
     err.caller = 'git.packObjects';
-    throw err
-  }
-}
-
-// @ts-check
-
-/**
- * @param {object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {HttpClient} args.http
- * @param {ProgressCallback} [args.onProgress]
- * @param {MessageCallback} [args.onMessage]
- * @param {AuthCallback} [args.onAuth]
- * @param {AuthFailureCallback} [args.onAuthFailure]
- * @param {AuthSuccessCallback} [args.onAuthSuccess]
- * @param {string} args.dir
- * @param {string} args.gitdir
- * @param {string} args.ref
- * @param {string} [args.url]
- * @param {string} [args.remote]
- * @param {string} [args.remoteRef]
- * @param {string} [args.corsProxy]
- * @param {boolean} args.singleBranch
- * @param {boolean} args.fastForwardOnly
- * @param {Object<string, string>} [args.headers]
- * @param {Object} args.author
- * @param {string} args.author.name
- * @param {string} args.author.email
- * @param {number} args.author.timestamp
- * @param {number} args.author.timezoneOffset
- * @param {Object} args.committer
- * @param {string} args.committer.name
- * @param {string} args.committer.email
- * @param {number} args.committer.timestamp
- * @param {number} args.committer.timezoneOffset
- * @param {string} [args.signingKey]
- *
- * @returns {Promise<void>} Resolves successfully when pull operation completes
- *
- */
-async function _pull({
-  fs,
-  http,
-  onProgress,
-  onMessage,
-  onAuth,
-  onAuthSuccess,
-  onAuthFailure,
-  dir,
-  gitdir,
-  ref,
-  url,
-  remote,
-  remoteRef,
-  fastForwardOnly,
-  corsProxy,
-  singleBranch,
-  headers,
-  author,
-  committer,
-  signingKey,
-}) {
-  try {
-    // If ref is undefined, use 'HEAD'
-    if (!ref) {
-      const head = await _currentBranch({ fs, gitdir });
-      // TODO: use a better error.
-      if (!head) {
-        throw new MissingParameterError('ref')
-      }
-      ref = head;
-    }
-
-    const { fetchHead, fetchHeadDescription } = await _fetch({
-      fs,
-      http,
-      onProgress,
-      onMessage,
-      onAuth,
-      onAuthSuccess,
-      onAuthFailure,
-      gitdir,
-      corsProxy,
-      ref,
-      url,
-      remote,
-      remoteRef,
-      singleBranch,
-      headers,
-    });
-    // Merge the remote tracking branch into the local one.
-    await _merge({
-      fs,
-      gitdir,
-      ours: ref,
-      theirs: fetchHead,
-      fastForwardOnly,
-      message: `Merge ${fetchHeadDescription}`,
-      author,
-      committer,
-      signingKey,
-      dryRun: false,
-      noUpdateBranch: false,
-    });
-    await _checkout({
-      fs,
-      onProgress,
-      dir,
-      gitdir,
-      ref,
-      remote,
-      noCheckout: false,
-    });
-  } catch (err) {
-    err.caller = 'git.pull';
     throw err
   }
 }
@@ -12734,6 +12826,7 @@ var index = {
   deleteTag,
   expandOid,
   expandRef,
+  fastForward,
   fetch,
   findMergeBase,
   findRoot,
@@ -12776,4 +12869,4 @@ var index = {
 };
 
 export default index;
-export { Errors, STAGE, TREE, WORKDIR, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, hashBlob, indexPack, init, isDescendent, listBranches, listFiles, listNotes, listRemotes, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, resetIndex, resolveRef, setConfig, status, statusMatrix, tag, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
+export { Errors, STAGE, TREE, WORKDIR, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, hashBlob, indexPack, init, isDescendent, listBranches, listFiles, listNotes, listRemotes, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, resetIndex, resolveRef, setConfig, status, statusMatrix, tag, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
