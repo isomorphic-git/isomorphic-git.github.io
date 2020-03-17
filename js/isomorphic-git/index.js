@@ -7397,6 +7397,7 @@ async function clone({
 }) {
   try {
     assertParameter('fs', fs);
+    assertParameter('http', http);
     assertParameter('gitdir', gitdir);
     if (!noCheckout) {
       assertParameter('dir', dir);
@@ -8550,6 +8551,7 @@ async function fastForward({
 }) {
   try {
     assertParameter('fs', fs);
+    assertParameter('http', http);
     assertParameter('gitdir', gitdir);
 
     const thisWillNotBeUsed = {
@@ -8672,6 +8674,7 @@ async function fetch({
 }) {
   try {
     assertParameter('fs', fs);
+    assertParameter('http', http);
     assertParameter('gitdir', gitdir);
 
     return await _fetch({
@@ -8949,6 +8952,7 @@ async function getRemoteInfo({
   forPush = false,
 }) {
   try {
+    assertParameter('http', http);
     assertParameter('url', url);
 
     const remote = await GitRemoteHTTP.discover({
@@ -10587,6 +10591,7 @@ async function push({
 }) {
   try {
     assertParameter('fs', fs);
+    assertParameter('http', http);
     assertParameter('gitdir', gitdir);
 
     return await _push({
