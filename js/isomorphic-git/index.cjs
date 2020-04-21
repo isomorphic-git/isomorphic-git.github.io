@@ -771,38 +771,6 @@ class GitIndex {
   }
 }
 
-const deepget = (keys, map) => {
-  for (const key of keys) {
-    if (!map.has(key)) map.set(key, new Map());
-    map = map.get(key);
-  }
-  return map
-};
-
-class DeepMap {
-  constructor() {
-    this._root = new Map();
-  }
-
-  set(keys, value) {
-    const lastKey = keys.pop();
-    const lastMap = deepget(keys, this._root);
-    lastMap.set(lastKey, value);
-  }
-
-  get(keys) {
-    const lastKey = keys.pop();
-    const lastMap = deepget(keys, this._root);
-    return lastMap.get(lastKey)
-  }
-
-  has(keys) {
-    const lastKey = keys.pop();
-    const lastMap = deepget(keys, this._root);
-    return lastMap.has(lastKey)
-  }
-}
-
 function compareStats(entry, stats) {
   // Comparison based on the description in Paragraph 4 of
   // https://www.kernel.org/pub/software/scm/git/docs/technical/racy-git.txt
@@ -823,27 +791,29 @@ function compareStats(entry, stats) {
 
 // import Lock from '../utils.js'
 
-// TODO: replace with an LRU cache?
-const map = new DeepMap();
-const stats = new DeepMap();
 // const lm = new LockManager()
 let lock = null;
 
-async function updateCachedIndexFile(fs, filepath) {
+function createCache() {
+  return {
+    map: new Map(),
+    stats: new Map(),
+  }
+}
+
+async function updateCachedIndexFile(fs, filepath, cache) {
   const stat = await fs.lstat(filepath);
   const rawIndexFile = await fs.read(filepath);
   const index = await GitIndex.from(rawIndexFile);
-  // cache the GitIndex object so we don't need to re-read it
-  // every time.
-  map.set([fs, filepath], index);
-  // Save the stat data for the index so we know whether
-  // the cached file is stale (modified by an outside process).
-  stats.set([fs, filepath], stat);
+  // cache the GitIndex object so we don't need to re-read it every time.
+  cache.map.set(filepath, index);
+  // Save the stat data for the index so we know whether the cached file is stale (modified by an outside process).
+  cache.stats.set(filepath, stat);
 }
 
 // Determine whether our copy of the index file is stale
-async function isIndexStale(fs, filepath) {
-  const savedStats = stats.get([fs, filepath]);
+async function isIndexStale(fs, filepath, cache) {
+  const savedStats = cache.stats.get(filepath);
   if (savedStats === undefined) return true
   const currStats = await fs.lstat(filepath);
   if (savedStats === null) return false
@@ -855,9 +825,14 @@ class GitIndexManager {
   /**
    *
    * @param {object} opts
+   * @param {import('../models/FileSystem.js').FileSystem} opts.fs
+   * @param {string} opts.gitdir
+   * @param {object} opts.cache
    * @param {function(GitIndex): any} closure
    */
-  static async acquire({ fs, gitdir }, closure) {
+  static async acquire({ fs, gitdir, cache }, closure) {
+    if (!cache.index) cache.index = createCache();
+
     const filepath = `${gitdir}/index`;
     if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
     let result;
@@ -866,10 +841,10 @@ class GitIndexManager {
       // to make sure other processes aren't writing to it
       // simultaneously, which could result in a corrupted index.
       // const fileLock = await Lock(filepath)
-      if (await isIndexStale(fs, filepath)) {
-        await updateCachedIndexFile(fs, filepath);
+      if (await isIndexStale(fs, filepath, cache.index)) {
+        await updateCachedIndexFile(fs, filepath, cache.index);
       }
-      const index = map.get([fs, filepath]);
+      const index = cache.index.map.get(filepath);
       result = await closure(index);
       if (index._dirty) {
         // Acquire a file lock while we're writing the index file
@@ -877,7 +852,7 @@ class GitIndexManager {
         const buffer = await index.toObject();
         await fs.write(filepath, buffer);
         // Update cached stat value
-        stats.set([fs, filepath], await fs.lstat(filepath));
+        cache.index.stats.set(filepath, await fs.lstat(filepath));
         index._dirty = false;
       }
     });
@@ -973,12 +948,13 @@ function mode2type(mode) {
 }
 
 class GitWalkerIndex {
-  constructor({ fs, gitdir }) {
-    this.treePromise = GitIndexManager.acquire({ fs, gitdir }, async function(
-      index
-    ) {
-      return flatFileListToDirectoryStructure(index.entries)
-    });
+  constructor({ fs, gitdir, cache }) {
+    this.treePromise = GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function(index) {
+        return flatFileListToDirectoryStructure(index.entries)
+      }
+    );
     const walker = this;
     this.ConstructEntry = class StageEntry {
       constructor(fullpath) {
@@ -1089,8 +1065,8 @@ const GitWalkSymbol = Symbol('GitWalkSymbol');
 function STAGE() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir }) {
-      return new GitWalkerIndex({ fs, gitdir })
+    value: function({ fs, gitdir, cache }) {
+      return new GitWalkerIndex({ fs, gitdir, cache })
     },
   });
   Object.freeze(o);
@@ -3724,8 +3700,9 @@ function TREE({ ref = 'HEAD' }) {
 // @ts-check
 
 class GitWalkerFs {
-  constructor({ fs, dir, gitdir }) {
+  constructor({ fs, dir, gitdir, cache }) {
     this.fs = fs;
+    this.cache = cache;
     this.dir = dir;
     this.gitdir = gitdir;
     const walker = this;
@@ -3828,10 +3805,12 @@ class GitWalkerFs {
 
   async oid(entry) {
     if (entry._oid === false) {
-      const { fs, gitdir } = this;
+      const { fs, gitdir, cache } = this;
       let oid;
       // See if we can use the SHA1 hash in the index.
-      await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+      await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
+        index
+      ) {
         const stage = index.entriesMap.get(entry._fullpath);
         const stats = await entry.stat();
         if (!stage || compareStats(stats, stage)) {
@@ -3869,8 +3848,8 @@ class GitWalkerFs {
 function WORKDIR() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, dir, gitdir }) {
-      return new GitWalkerFs({ fs, dir, gitdir })
+    value: function({ fs, dir, gitdir, cache }) {
+      return new GitWalkerFs({ fs, dir, gitdir, cache })
     },
   });
   Object.freeze(o);
@@ -3931,21 +3910,11 @@ class GitIgnoreManager {
   }
 }
 
-const fsmap = new WeakMap();
 /**
  * This is just a collection of helper functions really. At least that's how it started.
  */
 class FileSystem {
   constructor(fs) {
-    // This is sad... but preserving reference equality is now necessary
-    // to deal with cache invalidation in GitIndexManager.
-    if (fsmap.has(fs)) {
-      return fsmap.get(fs)
-    }
-    if (fsmap.has(fs._original_unwrapped_fs)) {
-      return fsmap.get(fs._original_unwrapped_fs)
-    }
-
     if (typeof fs._original_unwrapped_fs !== 'undefined') return fs
 
     const promises = Object.getOwnPropertyDescriptor(fs, 'promises');
@@ -3973,7 +3942,6 @@ class FileSystem {
       this._symlink = pify(fs.symlink.bind(fs));
     }
     this._original_unwrapped_fs = fs;
-    fsmap.set(fs, this);
   }
 
   /**
@@ -4260,7 +4228,8 @@ async function add({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
-    await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    const cache = {};
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       await addToIndex({ dir, gitdir, fs, filepath, index });
     });
   } catch (err) {
@@ -4302,6 +4271,7 @@ async function addToIndex({ dir, gitdir, fs, filepath, index }) {
  *
  * @param {Object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {SignCallback} [args.onSign]
  * @param {string} args.gitdir
  * @param {string} args.message
@@ -4326,6 +4296,7 @@ async function addToIndex({ dir, gitdir, fs, filepath, index }) {
  */
 async function _commit({
   fs,
+  cache,
   onSign,
   gitdir,
   message,
@@ -4347,7 +4318,7 @@ async function _commit({
     });
   }
 
-  return GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+  return GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
     const inodes = flatFileListToDirectoryStructure(index.entries);
     const inode = inodes.get('.');
     if (!tree) {
@@ -4542,6 +4513,7 @@ async function _writeTree({ fs, gitdir, tree }) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {SignCallback} [args.onSign]
  * @param {string} args.gitdir
  * @param {string} args.ref
@@ -4565,6 +4537,7 @@ async function _writeTree({ fs, gitdir, tree }) {
 
 async function _addNote({
   fs,
+  cache,
   onSign,
   gitdir,
   ref,
@@ -4627,6 +4600,7 @@ async function _addNote({
   // Create the new note commit
   const commitOid = await _commit({
     fs,
+    cache,
     onSign,
     gitdir,
     ref,
@@ -4758,6 +4732,7 @@ async function addNote({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -4772,6 +4747,7 @@ async function addNote({
 
     return await _addNote({
       fs: new FileSystem(fs),
+      cache,
       onSign,
       gitdir,
       ref,
@@ -5235,6 +5211,7 @@ function* unionOfIterators(sets) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {string} [args.dir]
  * @param {string} [args.gitdir=join(dir,'.git')]
  * @param {Walker[]} args.trees
@@ -5249,6 +5226,7 @@ function* unionOfIterators(sets) {
  */
 async function _walk({
   fs,
+  cache,
   dir,
   gitdir,
   trees,
@@ -5263,7 +5241,9 @@ async function _walk({
   // The default iterate function walks all children concurrently
   iterate = (walk, children) => Promise.all([...children].map(walk)),
 }) {
-  const walkers = trees.map(proxy => proxy[GitWalkSymbol]({ fs, dir, gitdir }));
+  const walkers = trees.map(proxy =>
+    proxy[GitWalkSymbol]({ fs, dir, gitdir, cache })
+  );
 
   const root = new Array(walkers.length).fill('.');
   const range = arrayRange(0, walkers.length);
@@ -5313,6 +5293,7 @@ const worthWalking = (filepath, root) => {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {ProgressCallback} [args.onProgress]
  * @param {string} args.dir
  * @param {string} args.gitdir
@@ -5329,6 +5310,7 @@ const worthWalking = (filepath, root) => {
  */
 async function _checkout({
   fs,
+  cache,
   onProgress,
   dir,
   gitdir,
@@ -5377,6 +5359,7 @@ async function _checkout({
     try {
       ops = await analyze({
         fs,
+        cache,
         onProgress,
         dir,
         gitdir,
@@ -5421,7 +5404,7 @@ async function _checkout({
 
     let count = 0;
     const total = ops.length;
-    await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       await Promise.all(
         ops
           .filter(
@@ -5445,7 +5428,7 @@ async function _checkout({
     });
 
     // Note: this is cannot be done naively in parallel
-    await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       for (const [method, fullpath] of ops) {
         if (method === 'rmdir' || method === 'rmdir-index') {
           const filepath = `${dir}/${fullpath}`;
@@ -5490,7 +5473,7 @@ async function _checkout({
         })
     );
 
-    await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       await Promise.all(
         ops
           .filter(
@@ -5575,10 +5558,20 @@ async function _checkout({
   }
 }
 
-async function analyze({ fs, onProgress, dir, gitdir, ref, force, filepaths }) {
+async function analyze({
+  fs,
+  cache,
+  onProgress,
+  dir,
+  gitdir,
+  ref,
+  force,
+  filepaths,
+}) {
   let count = 0;
   return _walk({
     fs,
+    cache,
     dir,
     gitdir,
     trees: [TREE({ ref }), WORKDIR(), STAGE()],
@@ -5929,6 +5922,7 @@ async function checkout({
     const ref = _ref || 'HEAD';
     return await _checkout({
       fs: new FileSystem(fs),
+      cache: {},
       onProgress,
       dir,
       gitdir,
@@ -7247,6 +7241,7 @@ async function _init({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {HttpClient} args.http
  * @param {ProgressCallback} [args.onProgress]
  * @param {MessageCallback} [args.onMessage]
@@ -7273,6 +7268,7 @@ async function _init({
  */
 async function _clone({
   fs,
+  cache,
   http,
   onProgress,
   onMessage,
@@ -7326,6 +7322,7 @@ async function _clone({
   // Checkout that branch
   await _checkout({
     fs,
+    cache,
     onProgress,
     dir,
     gitdir,
@@ -7412,6 +7409,7 @@ async function clone({
 
     return await _clone({
       fs: new FileSystem(fs),
+      cache: {},
       http,
       onProgress,
       onMessage,
@@ -7504,6 +7502,7 @@ async function commit({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -7518,6 +7517,7 @@ async function commit({
 
     return await _commit({
       fs,
+      cache,
       onSign,
       gitdir,
       message,
@@ -8255,6 +8255,7 @@ async function mergeBlobs({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {string} args.gitdir
  * @param {string} [args.ours]
  * @param {string} args.theirs
@@ -8284,6 +8285,7 @@ async function mergeBlobs({
  */
 async function _merge({
   fs,
+  cache,
   gitdir,
   ours,
   theirs,
@@ -8367,6 +8369,7 @@ async function _merge({
     }
     const oid = await _commit({
       fs,
+      cache,
       gitdir,
       message,
       ref: ours,
@@ -8391,6 +8394,7 @@ async function _merge({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {HttpClient} args.http
  * @param {ProgressCallback} [args.onProgress]
  * @param {MessageCallback} [args.onMessage]
@@ -8424,6 +8428,7 @@ async function _merge({
  */
 async function _pull({
   fs,
+  cache,
   http,
   onProgress,
   onMessage,
@@ -8488,6 +8493,7 @@ async function _pull({
     });
     await _checkout({
       fs,
+      cache,
       onProgress,
       dir,
       gitdir,
@@ -8569,6 +8575,7 @@ async function fastForward({
 
     return await _pull({
       fs: new FileSystem(fs),
+      cache: {},
       http,
       onProgress,
       onMessage,
@@ -9373,19 +9380,22 @@ async function listBranches({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {string} args.gitdir
  * @param {string} [args.ref]
  *
  * @returns {Promise<Array<string>>}
  */
-async function _listFiles({ fs, gitdir, ref }) {
+async function _listFiles({ fs, gitdir, ref, cache }) {
   if (ref) {
     const oid = await GitRefManager.resolve({ gitdir, fs, ref });
     const filenames = [];
     await accumulateFilesFromOid({ fs, gitdir, oid, filenames, prefix: '' });
     return filenames
   } else {
-    return GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    return GitIndexManager.acquire({ fs, gitdir, cache }, async function(
+      index
+    ) {
       return index.entries.map(x => x.path)
     })
   }
@@ -9441,6 +9451,7 @@ async function listFiles({ fs, dir, gitdir = join(dir, '.git'), ref }) {
 
     return await _listFiles({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       ref,
     })
@@ -9856,6 +9867,7 @@ async function merge({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author && !fastForwardOnly) throw new MissingNameError('author')
@@ -9872,6 +9884,7 @@ async function merge({
 
     return await _merge({
       fs,
+      cache,
       gitdir,
       ours,
       theirs,
@@ -10135,6 +10148,7 @@ async function pull({
 
     return await _pull({
       fs,
+      cache: {},
       http,
       onProgress,
       onMessage,
@@ -11257,8 +11271,9 @@ async function remove({
     assertParameter('gitdir', gitdir);
     assertParameter('filepath', filepath);
 
+    const cache = {};
     await GitIndexManager.acquire(
-      { fs: new FileSystem(_fs), gitdir },
+      { fs: new FileSystem(_fs), gitdir, cache },
       async function(index) {
         index.delete({ filepath });
       }
@@ -11274,6 +11289,7 @@ async function remove({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {SignCallback} [args.onSign]
  * @param {string} [args.dir]
  * @param {string} [args.gitdir=join(dir,'.git')]
@@ -11296,6 +11312,7 @@ async function remove({
 
 async function _removeNote({
   fs,
+  cache,
   onSign,
   gitdir,
   ref = 'refs/notes/commits',
@@ -11335,6 +11352,7 @@ async function _removeNote({
   // Create the new note commit
   const commitOid = await _commit({
     fs,
+    cache,
     onSign,
     gitdir,
     ref,
@@ -11393,6 +11411,7 @@ async function removeNote({
     assertParameter('oid', oid);
 
     const fs = new FileSystem(_fs);
+    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -11407,6 +11426,7 @@ async function removeNote({
 
     return await _removeNote({
       fs,
+      cache,
       onSign,
       gitdir,
       ref,
@@ -11460,6 +11480,7 @@ async function resetIndex({
     assertParameter('ref', ref);
 
     const fs = new FileSystem(_fs);
+    const cache = {};
     // Resolve commit
     let oid = await GitRefManager.resolve({ fs, gitdir, ref });
     let workdirOid;
@@ -11500,7 +11521,7 @@ async function resetIndex({
         stats = await fs.lstat(join(dir, filepath));
       }
     }
-    await GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       index.delete({ filepath });
       if (oid) {
         index.insert({ filepath, stats, oid });
@@ -11678,6 +11699,7 @@ async function status({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
+    const cache = {};
     const ignored = await GitIgnoreManager.isIgnored({
       fs,
       gitdir,
@@ -11695,7 +11717,7 @@ async function status({
       path: filepath,
     });
     const indexEntry = await GitIndexManager.acquire(
-      { fs, gitdir },
+      { fs, gitdir, cache },
       async function(index) {
         for (const entry of index) {
           if (entry.path === filepath) return entry
@@ -11726,7 +11748,9 @@ async function status({
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
           if (stats.size !== -1) {
             // We don't await this so we can return faster for one-off cases.
-            GitIndexManager.acquire({ fs, gitdir }, async function(index) {
+            GitIndexManager.acquire({ fs, gitdir, cache }, async function(
+              index
+            ) {
               index.insert({ filepath, stats, oid: workdirOid });
             });
           }
@@ -11979,8 +12003,10 @@ async function statusMatrix({
     assertParameter('ref', ref);
 
     const fs = new FileSystem(_fs);
+    const cache = {};
     return await _walk({
       fs,
+      cache,
       dir,
       gitdir,
       trees: [TREE({ ref }), WORKDIR(), STAGE()],
@@ -12383,6 +12409,7 @@ async function walk({
 
     return await _walk({
       fs: new FileSystem(fs),
+      cache: {},
       dir,
       gitdir,
       trees,
