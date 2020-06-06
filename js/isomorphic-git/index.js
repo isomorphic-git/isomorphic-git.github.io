@@ -7961,7 +7961,7 @@ async function _findMergeBase({ fs, gitdir, oids }) {
       return [...result]
     }
     // We haven't found a common ancestor yet
-    const newheads = [];
+    const newheads = new Map();
     for (const { oid, index } of heads) {
       try {
         const { object } = await _readObject({ fs, gitdir, oid });
@@ -7969,14 +7969,14 @@ async function _findMergeBase({ fs, gitdir, oids }) {
         const { parent } = commit.parseHeaders();
         for (const oid of parent) {
           if (!visits[oid] || !visits[oid].has(index)) {
-            newheads.push({ oid, index });
+            newheads.set(oid + ':' + index, { oid, index });
           }
         }
       } catch (err) {
         // do nothing
       }
     }
-    heads = newheads;
+    heads = Array.from(newheads.values());
   }
   return []
 }
@@ -10454,14 +10454,16 @@ async function _push({
   let objects = [];
   if (!_delete) {
     const finish = [...httpRemote.refs.values()];
-    // hack to speed up common force push scenarios
-    // @ts-ignore
-    const mergebase = await _findMergeBase({
-      fs,
-      gitdir,
-      oids: [oid, oldoid],
-    });
-    for (const oid of mergebase) finish.push(oid);
+    // If remote is empty, do not run findMergeBase
+    if (oldoid !== '0000000000000000000000000000000000000000') {
+      // trick to speed up common force push scenarios
+      const mergebase = await _findMergeBase({
+        fs,
+        gitdir,
+        oids: [oid, oldoid],
+      });
+      for (const oid of mergebase) finish.push(oid);
+    }
     // @ts-ignore
     const commits = await listCommitsAndTags({
       fs,
