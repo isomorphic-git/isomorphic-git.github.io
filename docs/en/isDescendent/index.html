@@ -70,7 +70,7 @@
 </tbody>
 </table>
 <p>Example Code:</p>
-<pre><code class="hljs css language-js live"><span class="hljs-keyword">let</span> oid = <span class="hljs-keyword">await</span> git.resolveRef({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span> })
+<pre><code class="hljs css language-js live"><span class="hljs-keyword">let</span> oid = <span class="hljs-keyword">await</span> git.resolveRef({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'main'</span> })
 <span class="hljs-keyword">let</span> ancestor = <span class="hljs-keyword">await</span> git.resolveRef({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'v0.20.0'</span> })
 <span class="hljs-built_in">console</span>.log(oid, ancestor)
 <span class="hljs-keyword">await</span> git.isDescendent({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, oid, ancestor, <span class="hljs-attr">depth</span>: <span class="hljs-number">-1</span> })

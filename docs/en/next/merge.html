@@ -102,8 +102,8 @@ with the built in diff3 algorithm it will not modify the working dir, and will t
 <pre><code class="hljs css language-js live"><span class="hljs-keyword">let</span> m = <span class="hljs-keyword">await</span> git.merge({
   fs,
   <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>,
-  <span class="hljs-attr">ours</span>: <span class="hljs-string">'master'</span>,
-  <span class="hljs-attr">theirs</span>: <span class="hljs-string">'remotes/origin/master'</span>
+  <span class="hljs-attr">ours</span>: <span class="hljs-string">'main'</span>,
+  <span class="hljs-attr">theirs</span>: <span class="hljs-string">'remotes/origin/main'</span>
 })
 <span class="hljs-built_in">console</span>.log(m)
 </code></pre>

@@ -35,7 +35,7 @@ export type ReadTreeResult = {
  */
 export type FetchResult = {
     /**
-     * - The branch that is cloned if no branch is specified (typically "master")
+     * - The branch that is cloned if no branch is specified
      */
     defaultBranch: string | null;
     /**
@@ -894,11 +894,11 @@ export function branch({ fs, dir, gitdir, ref, checkout, }: {
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
  * @example
- * // switch to the master branch
+ * // switch to the main branch
  * await git.checkout({
  *   fs,
  *   dir: '/tutorial',
- *   ref: 'master'
+ *   ref: 'main'
  * })
  * console.log('done')
  *
@@ -1076,8 +1076,8 @@ export function commit({ fs: _fs, onSign, dir, gitdir, message, author: _author,
  * @param {FsClient} args.fs - a file system implementation
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/master") instead of the abbreviated form.
- * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as 'master' right after git init) then return `undefined`.
+ * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/main") instead of the abbreviated form.
+ * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as right after git init) then return `undefined`.
  *
  * @returns {Promise<string|void>} The name of the current branch or undefined if the HEAD is detached.
  *
@@ -1222,7 +1222,7 @@ export function expandOid({ fs, dir, gitdir, oid }: {
  * @returns {Promise<string>} Resolves successfully with a full ref name ("refs/tags/v1.0.0")
  *
  * @example
- * let fullRef = await git.expandRef({ fs, dir: '/tutorial', ref: 'master'})
+ * let fullRef = await git.expandRef({ fs, dir: '/tutorial', ref: 'main'})
  * console.log(fullRef)
  *
  */
@@ -1260,7 +1260,7 @@ export function expandRef({ fs, dir, gitdir, ref }: {
  *   fs,
  *   http,
  *   dir: '/tutorial',
- *   ref: 'master',
+ *   ref: 'main',
  *   singleBranch: true
  * })
  * console.log('done')
@@ -1289,7 +1289,7 @@ export function fastForward({ fs, http, onProgress, onMessage, onAuth, onAuthSuc
 /**
  *
  * @typedef {object} FetchResult - The object returned has the following schema:
- * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified (typically "master")
+ * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified
  * @property {string | null} fetchHead - The SHA-1 object id of the fetched head commit
  * @property {string | null} fetchHeadDescription - a textual description of the branch that was fetched
  * @property {Object<string, string>} [headers] - The HTTP response headers returned by the git server
@@ -1334,7 +1334,7 @@ export function fastForward({ fs, http, onProgress, onMessage, onAuth, onAuthSuc
  *   dir: '/tutorial',
  *   corsProxy: 'https://cors.isomorphic-git.org',
  *   url: 'https://github.com/isomorphic-git/isomorphic-git',
- *   ref: 'master',
+ *   ref: 'main',
  *   depth: 1,
  *   singleBranch: true,
  *   tags: false
@@ -1589,6 +1589,7 @@ export function indexPack({ fs, onProgress, dir, gitdir, filepath, }: {
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {boolean} [args.bare = false] - Initialize a bare repository
+ * @param {string} [args.defaultBranch = 'master'] - The name of the default branch (might be changed to a required argument in 2.0.0)
  * @returns {Promise<void>}  Resolves successfully when filesystem operations are complete
  *
  * @example
@@ -1596,11 +1597,12 @@ export function indexPack({ fs, onProgress, dir, gitdir, filepath, }: {
  * console.log('done')
  *
  */
-export function init({ fs, bare, dir, gitdir, }: {
+export function init({ fs, bare, dir, gitdir, defaultBranch, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir?: string;
     gitdir?: string;
     bare?: boolean;
+    defaultBranch?: string;
 }): Promise<void>;
 /**
  * Check whether a git commit is descended from another
@@ -1616,7 +1618,7 @@ export function init({ fs, bare, dir, gitdir, }: {
  * @returns {Promise<boolean>} Resolves to true if `oid` is a descendent of `ancestor`
  *
  * @example
- * let oid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * let oid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * let ancestor = await git.resolveRef({ fs, dir: '/tutorial', ref: 'v0.20.0' })
  * console.log(oid, ancestor)
  * await git.isDescendent({ fs, dir: '/tutorial', oid, ancestor, depth: -1 })
@@ -1772,7 +1774,7 @@ export function listTags({ fs, dir, gitdir }: {
  *   fs,
  *   dir: '/tutorial',
  *   depth: 5,
- *   ref: 'master'
+ *   ref: 'main'
  * })
  * console.log(commits)
  *
@@ -1837,8 +1839,8 @@ export function log({ fs, dir, gitdir, ref, depth, since, }: {
  * let m = await git.merge({
  *   fs,
  *   dir: '/tutorial',
- *   ours: 'master',
- *   theirs: 'remotes/origin/master'
+ *   ours: 'main',
+ *   theirs: 'remotes/origin/main'
  * })
  * console.log(m)
  *
@@ -1944,7 +1946,7 @@ export function packObjects({ fs, dir, gitdir, oids, write, }: {
  *   fs,
  *   http,
  *   dir: '/tutorial',
- *   ref: 'master',
+ *   ref: 'main',
  *   singleBranch: true
  * })
  * console.log('done')
@@ -2024,7 +2026,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
  *   http,
  *   dir: '/tutorial',
  *   remote: 'origin',
- *   ref: 'master',
+ *   ref: 'main',
  *   onAuth: () => ({ username: process.env.GITHUB_TOKEN }),
  * })
  * console.log(pushResult)
@@ -2072,8 +2074,8 @@ export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, o
  * @see ReadBlobResult
  *
  * @example
- * // Get the contents of 'README.md' in the master branch.
- * let commitOid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * // Get the contents of 'README.md' in the main branch.
+ * let commitOid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * console.log(commitOid)
  * let { blob } = await git.readBlob({
  *   fs,
@@ -2106,7 +2108,7 @@ export function readBlob({ fs, dir, gitdir, oid, filepath, }: {
  *
  * @example
  * // Read a commit object
- * let sha = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * let sha = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * console.log(sha)
  * let commit = await git.readCommit({ fs, dir: '/tutorial', oid: sha })
  * console.log(commit)

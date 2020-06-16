@@ -5874,11 +5874,11 @@ async function analyze({
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
  * @example
- * // switch to the master branch
+ * // switch to the main branch
  * await git.checkout({
  *   fs,
  *   dir: '/tutorial',
- *   ref: 'master'
+ *   ref: 'main'
  * })
  * console.log('done')
  *
@@ -5964,8 +5964,8 @@ function abbreviateRef(ref) {
  * @param {Object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {string} args.gitdir
- * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/master") instead of the abbreviated form.
- * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as 'master' right after git init) then return `undefined`.
+ * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/main") instead of the abbreviated form.
+ * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as right after git init) then return `undefined`.
  *
  * @returns {Promise<string|void>} The name of the current branch or undefined if the HEAD is detached.
  *
@@ -6863,7 +6863,7 @@ function writeUploadPackRequest({
 /**
  *
  * @typedef {object} FetchResult - The object returned has the following schema:
- * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified (typically "master")
+ * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified
  * @property {string | null} fetchHead - The SHA-1 object id of the fetched head commit
  * @property {string | null} fetchHeadDescription - a textual description of the branch that was fetched
  * @property {Object<string, string>} [headers] - The HTTP response headers returned by the git server
@@ -7213,19 +7213,16 @@ async function _fetch({
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {string} [args.dir]
  * @param {string} [args.gitdir]
- * @param {boolean} [args.bare = false] - Initialize a bare repository
- * @returns {Promise<void>}  Resolves successfully when filesystem operations are complete
- *
- * @example
- * await git.init({ dir: '$input((/))' })
- * console.log('done')
- *
+ * @param {boolean} [args.bare = false]
+ * @param {string} [args.defaultBranch = 'master']
+ * @returns {Promise<void>}
  */
 async function _init({
   fs,
   bare = false,
   dir,
   gitdir = bare ? dir : join(dir, '.git'),
+  defaultBranch = 'master',
 }) {
   // Don't overwrite an existing config
   if (await fs.exists(gitdir + '/config')) return
@@ -7253,7 +7250,7 @@ async function _init({
       '\tsymlinks = false\n' +
       '\tignorecase = true\n'
   );
-  await fs.write(gitdir + '/HEAD', 'ref: refs/heads/master\n');
+  await fs.write(gitdir + '/HEAD', `ref: refs/heads/${defaultBranch}\n`);
 }
 
 // @ts-check
@@ -7565,8 +7562,8 @@ async function commit({
  * @param {FsClient} args.fs - a file system implementation
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/master") instead of the abbreviated form.
- * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as 'master' right after git init) then return `undefined`.
+ * @param {boolean} [args.fullname = false] - Return the full path (e.g. "refs/heads/main") instead of the abbreviated form.
+ * @param {boolean} [args.test = false] - If the current branch doesn't actually exist (such as right after git init) then return `undefined`.
  *
  * @returns {Promise<string|void>} The name of the current branch or undefined if the HEAD is detached.
  *
@@ -7913,7 +7910,7 @@ async function expandOid({ fs, dir, gitdir = join(dir, '.git'), oid }) {
  * @returns {Promise<string>} Resolves successfully with a full ref name ("refs/tags/v1.0.0")
  *
  * @example
- * let fullRef = await git.expandRef({ fs, dir: '/tutorial', ref: 'master'})
+ * let fullRef = await git.expandRef({ fs, dir: '/tutorial', ref: 'main'})
  * console.log(fullRef)
  *
  */
@@ -8296,11 +8293,6 @@ async function mergeBlobs({
  * @param {string} [args.signingKey]
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
- * @see MergeResult
- *
- * @example
- * let m = await git.merge({ dir: '$input((/))', ours: '$input((master))', theirs: '$input((remotes/origin/master))' })
- * console.log(m)
  *
  */
 async function _merge({
@@ -8557,7 +8549,7 @@ async function _pull({
  *   fs,
  *   http,
  *   dir: '/tutorial',
- *   ref: 'master',
+ *   ref: 'main',
  *   singleBranch: true
  * })
  * console.log('done')
@@ -8626,7 +8618,7 @@ async function fastForward({
 /**
  *
  * @typedef {object} FetchResult - The object returned has the following schema:
- * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified (typically "master")
+ * @property {string | null} defaultBranch - The branch that is cloned if no branch is specified
  * @property {string | null} fetchHead - The SHA-1 object id of the fetched head commit
  * @property {string | null} fetchHeadDescription - a textual description of the branch that was fetched
  * @property {Object<string, string>} [headers] - The HTTP response headers returned by the git server
@@ -8672,7 +8664,7 @@ async function fastForward({
  *   dir: '/tutorial',
  *   corsProxy: 'https://cors.isomorphic-git.org',
  *   url: 'https://github.com/isomorphic-git/isomorphic-git',
- *   ref: 'master',
+ *   ref: 'main',
  *   depth: 1,
  *   singleBranch: true,
  *   tags: false
@@ -9204,6 +9196,7 @@ async function indexPack({
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {boolean} [args.bare = false] - Initialize a bare repository
+ * @param {string} [args.defaultBranch = 'master'] - The name of the default branch (might be changed to a required argument in 2.0.0)
  * @returns {Promise<void>}  Resolves successfully when filesystem operations are complete
  *
  * @example
@@ -9216,6 +9209,7 @@ async function init({
   bare = false,
   dir,
   gitdir = bare ? dir : join(dir, '.git'),
+  defaultBranch = 'master',
 }) {
   try {
     assertParameter('fs', fs);
@@ -9229,6 +9223,7 @@ async function init({
       bare,
       dir,
       gitdir,
+      defaultBranch,
     })
   } catch (err) {
     err.caller = 'git.init';
@@ -9315,7 +9310,7 @@ async function _isDescendent({ fs, gitdir, oid, ancestor, depth }) {
  * @returns {Promise<boolean>} Resolves to true if `oid` is a descendent of `ancestor`
  *
  * @example
- * let oid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * let oid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * let ancestor = await git.resolveRef({ fs, dir: '/tutorial', ref: 'v0.20.0' })
  * console.log(oid, ancestor)
  * await git.isDescendent({ fs, dir: '/tutorial', oid, ancestor, depth: -1 })
@@ -9694,14 +9689,7 @@ function compareAge(a, b) {
  * @param {number|void} args.depth
  * @param {Date|void} args.since
  *
- * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
- * @see ReadCommitResult
- * @see CommitObject
- *
- * @example
- * let commits = await git.log({ dir: '$input((/))', depth: $input((5)), ref: '$input((master))' })
- * console.log(commits)
- *
+ * @returns {Promise<Array<ReadCommitResult>>}
  */
 async function _log({ fs, gitdir, ref, depth, since }) {
   const sinceTimestamp =
@@ -9774,7 +9762,7 @@ async function _log({ fs, gitdir, ref, depth, since }) {
  *   fs,
  *   dir: '/tutorial',
  *   depth: 5,
- *   ref: 'master'
+ *   ref: 'main'
  * })
  * console.log(commits)
  *
@@ -9860,8 +9848,8 @@ async function log({
  * let m = await git.merge({
  *   fs,
  *   dir: '/tutorial',
- *   ours: 'master',
- *   theirs: 'remotes/origin/master'
+ *   ours: 'main',
+ *   theirs: 'remotes/origin/main'
  * })
  * console.log(m)
  *
@@ -10121,7 +10109,7 @@ async function packObjects({
  *   fs,
  *   http,
  *   dir: '/tutorial',
- *   ref: 'master',
+ *   ref: 'main',
  *   singleBranch: true
  * })
  * console.log('done')
@@ -10665,7 +10653,7 @@ async function _push({
  *   http,
  *   dir: '/tutorial',
  *   remote: 'origin',
- *   ref: 'master',
+ *   ref: 'main',
  *   onAuth: () => ({ username: process.env.GITHUB_TOKEN }),
  * })
  * console.log(pushResult)
@@ -10788,8 +10776,8 @@ async function _readBlob({ fs, gitdir, oid, filepath = undefined }) {
  * @see ReadBlobResult
  *
  * @example
- * // Get the contents of 'README.md' in the master branch.
- * let commitOid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * // Get the contents of 'README.md' in the main branch.
+ * let commitOid = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * console.log(commitOid)
  * let { blob } = await git.readBlob({
  *   fs,
@@ -10841,7 +10829,7 @@ async function readBlob({
  *
  * @example
  * // Read a commit object
- * let sha = await git.resolveRef({ fs, dir: '/tutorial', ref: 'master' })
+ * let sha = await git.resolveRef({ fs, dir: '/tutorial', ref: 'main' })
  * console.log(sha)
  * let commit = await git.readCommit({ fs, dir: '/tutorial', oid: sha })
  * console.log(commit)

@@ -95,7 +95,7 @@
 </code></pre>
 <p>Example Code:</p>
 <pre><code class="hljs css language-js live"><span class="hljs-comment">// Read a commit object</span>
-<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span> })
+<span class="hljs-keyword">let</span> sha = <span class="hljs-keyword">await</span> git.resolveRef({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">ref</span>: <span class="hljs-string">'main'</span> })
 <span class="hljs-built_in">console</span>.log(sha)
 <span class="hljs-keyword">let</span> commit = <span class="hljs-keyword">await</span> git.readCommit({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">oid</span>: sha })
 <span class="hljs-built_in">console</span>.log(commit)

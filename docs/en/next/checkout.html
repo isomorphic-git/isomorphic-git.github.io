@@ -76,11 +76,11 @@
 </table>
 <p>If the branch already exists it will check out that branch. Otherwise, it will create a new remote tracking branch set to track the remote branch of that name.</p>
 <p>Example Code:</p>
-<pre><code class="hljs css language-js live"><span class="hljs-comment">// switch to the master branch</span>
+<pre><code class="hljs css language-js live"><span class="hljs-comment">// switch to the main branch</span>
 <span class="hljs-keyword">await</span> git.checkout({
   fs,
   <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>,
-  <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>
+  <span class="hljs-attr">ref</span>: <span class="hljs-string">'main'</span>
 })
 <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'done'</span>)
 </code></pre>
