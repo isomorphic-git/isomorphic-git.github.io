@@ -112,6 +112,25 @@ export type GetRemoteInfoResult = {
     };
 };
 /**
+ * - This object has the following schema:
+ */
+export type GetRemoteInfo2Result = {
+    /**
+     * - Git protocol version the server supports
+     */
+    protocolVersion: 1 | 2;
+    /**
+     * - An object of capabilities represented as keys and values
+     */
+    capabilities: {
+        [x: string]: string | true;
+    };
+    /**
+     * - Server refs (they get returned by protocol version 1 whether you want them or not)
+     */
+    refs?: ServerRef[];
+};
+/**
  * - The object returned has the following schema:
  */
 export type HashBlobResult = {
@@ -131,6 +150,27 @@ export type HashBlobResult = {
      * - The format of the object
      */
     format: "wrapped";
+};
+/**
+ * - This object has the following schema:
+ */
+export type ServerRef = {
+    /**
+     * - The name of the ref
+     */
+    ref: string;
+    /**
+     * - The SHA-1 object id the ref points to
+     */
+    oid: string;
+    /**
+     * - The target ref pointed to by a symbolic ref
+     */
+    target?: string;
+    /**
+     * - If the oid is the SHA-1 object id of an annotated tag, this is the SHA-1 object id that the annotated tag points to
+     */
+    peeled?: string;
 };
 /**
  * The packObjects command returns an object with two properties:
@@ -611,6 +651,7 @@ declare namespace index {
     export { findMergeBase };
     export { findRoot };
     export { getRemoteInfo };
+    export { getRemoteInfo2 };
     export { hashBlob };
     export { indexPack };
     export { init };
@@ -619,6 +660,7 @@ declare namespace index {
     export { listFiles };
     export { listNotes };
     export { listRemotes };
+    export { listServerRefs };
     export { listTags };
     export { log };
     export { merge };
@@ -633,6 +675,7 @@ declare namespace index {
     export { readTree };
     export { remove };
     export { removeNote };
+    export { renameBranch };
     export { resetIndex };
     export { resolveRef };
     export { status };
@@ -1513,6 +1556,64 @@ export function getRemoteInfo({ http, onAuth, onAuthSuccess, onAuthFailure, cors
     };
 }): Promise<GetRemoteInfoResult>;
 /**
+ * @typedef {Object} GetRemoteInfo2Result - This object has the following schema:
+ * @property {1 | 2} protocolVersion - Git protocol version the server supports
+ * @property {Object<string, string | true>} capabilities - An object of capabilities represented as keys and values
+ * @property {ServerRef[]} [refs] - Server refs (they get returned by protocol version 1 whether you want them or not)
+ */
+/**
+ * List a remote server's capabilities.
+ *
+ * This is a rare command that doesn't require an `fs`, `dir`, or even `gitdir` argument.
+ * It just communicates to a remote git server, determining what protocol version, commands, and features it supports.
+ *
+ * > The successor to [`getRemoteInfo`](./getRemoteInfo.md), this command supports Git Wire Protocol Version 2.
+ * > Therefore its return type is more complicated as either:
+ * >
+ * > - v1 capabilities (and refs) or
+ * > - v2 capabilities (and no refs)
+ * >
+ * > are returned.
+ * > If you just care about refs, use [`listServerRefs`](./listServerRefs.md)
+ *
+ * @param {object} args
+ * @param {HttpClient} args.http - an HTTP client
+ * @param {AuthCallback} [args.onAuth] - optional auth fill callback
+ * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
+ * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {string} args.url - The URL of the remote repository. Will be gotten from gitconfig if absent.
+ * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {boolean} [args.forPush = false] - By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.
+ * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {1 | 2} [args.protocolVersion = 2] - Which version of the Git Protocol to use.
+ *
+ * @returns {Promise<GetRemoteInfo2Result>} Resolves successfully with an object listing the capabilities of the remote.
+ * @see GetRemoteInfo2Result
+ * @see ServerRef
+ *
+ * @example
+ * let info = await git.getRemoteInfo2({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git"
+ * });
+ * console.log(info);
+ *
+ */
+export function getRemoteInfo2({ http, onAuth, onAuthSuccess, onAuthFailure, corsProxy, url, headers, forPush, protocolVersion, }: {
+    http: HttpClient;
+    onAuth?: AuthCallback;
+    onAuthFailure?: AuthFailureCallback;
+    onAuthSuccess?: AuthSuccessCallback;
+    url: string;
+    corsProxy?: string;
+    forPush?: boolean;
+    headers?: {
+        [x: string]: string;
+    };
+    protocolVersion?: 1 | 2;
+}): Promise<GetRemoteInfo2Result>;
+/**
  *
  * @typedef {object} HashBlobResult - The object returned has the following schema:
  * @property {string} oid - The SHA-1 object id
@@ -1734,6 +1835,117 @@ export function listRemotes({ fs, dir, gitdir }: {
     remote: string;
     url: string;
 }[]>;
+/**
+ * Fetch a list of refs (branches, tags, etc) from a server.
+ *
+ * This is a rare command that doesn't require an `fs`, `dir`, or even `gitdir` argument.
+ * It just requires an `http` argument.
+ *
+ * ### About `protocolVersion`
+ *
+ * There's a rather fun trade-off between Git Protocol Version 1 and Git Protocol Version 2.
+ * Version 2 actually requires 2 HTTP requests instead of 1, making it similar to fetch or push in that regard.
+ * However, version 2 supports server-side filtering by prefix, whereas that filtering is done client-side in version 1.
+ * Which protocol is most efficient therefore depends on the number of refs on the remote, the latency of the server, and speed of the network connection.
+ * For an small repos (or fast Internet connections), the requirement to make two trips to the server makes protocol 2 slower.
+ * But for large repos (or slow Internet connections), the decreased payload size of the second request makes up for the additional request.
+ *
+ * Hard numbers vary by situation, but here's some numbers from my machine:
+ *
+ * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://github.com/isomorphic-git/isomorphic-git
+ * - Protocol Version 1 took ~300ms and transfered 84 KB.
+ * - Protocol Version 2 took ~500ms and transfered 4.1 KB.
+ *
+ * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://gitlab.com/gitlab-org/gitlab
+ * - Protocol Version 1 took ~4900ms and transfered 9.41 MB.
+ * - Protocol Version 2 took ~1280ms and transfered 433 KB.
+ *
+ * Finally, there is a fun quirk regarding the `symrefs` parameter.
+ * Protocol Version 1 will generally only return the `HEAD` symref and not others.
+ * Historically, this meant that servers don't use symbolic refs except for `HEAD`, which is used to point at the "default branch".
+ * However Protocol Version 2 can return *all* the symbolic refs on the server.
+ * So if you are running your own git server, you could take advantage of that I guess.
+ *
+ * #### TL;DR
+ * If you are _not_ taking advantage of `prefix` I would recommend `protocolVersion: 1`.
+ * Otherwise, I recommend to use the default which is `protocolVersion: 2`.
+ *
+ * @param {object} args
+ * @param {HttpClient} args.http - an HTTP client
+ * @param {AuthCallback} [args.onAuth] - optional auth fill callback
+ * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
+ * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {string} args.url - The URL of the remote repository. Will be gotten from gitconfig if absent.
+ * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {boolean} [args.forPush = false] - By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.
+ * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {1 | 2} [args.protocolVersion = 2] - Which version of the Git Protocol to use.
+ * @param {string} [args.prefix] - Only list refs that start with this prefix
+ * @param {boolean} [args.symrefs = false] - Include symbolic ref targets
+ * @param {boolean} [args.peelTags = false] - Include annotated tag peeled targets
+ *
+ * @returns {Promise<ServerRef[]>} Resolves successfully with an array of ServerRef objects
+ * @see ServerRef
+ *
+ * @example
+ * // List all the branches on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/heads/",
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // Get the default branch on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "HEAD",
+ *   symrefs: true,
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // List all the tags on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/tags/",
+ *   peelTags: true,
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // List all the pull requests on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/pull/",
+ * });
+ * console.log(refs);
+ *
+ */
+export function listServerRefs({ http, onAuth, onAuthSuccess, onAuthFailure, corsProxy, url, headers, forPush, protocolVersion, prefix, symrefs, peelTags, }: {
+    http: HttpClient;
+    onAuth?: AuthCallback;
+    onAuthFailure?: AuthFailureCallback;
+    onAuthSuccess?: AuthSuccessCallback;
+    url: string;
+    corsProxy?: string;
+    forPush?: boolean;
+    headers?: {
+        [x: string]: string;
+    };
+    protocolVersion?: 1 | 2;
+    prefix?: string;
+    symrefs?: boolean;
+    peelTags?: boolean;
+}): Promise<ServerRef[]>;
 /**
  * List tags
  *
@@ -2451,6 +2663,32 @@ export function removeNote({ fs: _fs, onSign, dir, gitdir, ref, oid, author: _au
     };
     signingKey?: string;
 }): Promise<string>;
+/**
+ * Rename a branch
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system implementation
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.ref - What to name the branch
+ * @param {string} args.oldref - What the name of the branch was
+ * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
+ *
+ * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
+ *
+ * @example
+ * await git.renameBranch({ fs, dir: '/tutorial', ref: 'main', oldref: 'master' })
+ * console.log('done')
+ *
+ */
+export function renameBranch({ fs, dir, gitdir, ref, oldref, checkout, }: {
+    fs: CallbackFsClient | PromiseFsClient;
+    dir?: string;
+    gitdir?: string;
+    ref: string;
+    oldref: string;
+    checkout?: boolean;
+}): Promise<void>;
 /**
  * Reset a file in the git index (aka staging area)
  *
@@ -3743,6 +3981,13 @@ declare namespace UserCanceledError {
  * @property {string} oid - SHA-1 object id of this commit
  * @property {CommitObject} commit - the parsed commit object
  * @property {string} payload - PGP signing payload
+ */
+/**
+ * @typedef {Object} ServerRef - This object has the following schema:
+ * @property {string} ref - The name of the ref
+ * @property {string} oid - The SHA-1 object id the ref points to
+ * @property {string} [target] - The target ref pointed to by a symbolic ref
+ * @property {string} [peeled] - If the oid is the SHA-1 object id of an annotated tag, this is the SHA-1 object id that the annotated tag points to
  */
 /**
  * @typedef Walker

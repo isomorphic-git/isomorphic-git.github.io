@@ -128,8 +128,8 @@
   dir = buildDir
   <span class="hljs-keyword">await</span> git.init({ fs, dir })
   <span class="hljs-keyword">await</span> git.addRemote({ fs, dir, url, <span class="hljs-attr">remote</span>: <span class="hljs-string">'origin'</span> })
-  <span class="hljs-keyword">await</span> git.fetch({ http, fs, dir, <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span> })
-  <span class="hljs-keyword">await</span> git.checkout({ fs, dir, <span class="hljs-attr">ref</span>: <span class="hljs-string">'master'</span>, <span class="hljs-attr">noCheckout</span>: <span class="hljs-literal">true</span> })
+  <span class="hljs-keyword">await</span> git.fetch({ http, fs, dir, <span class="hljs-attr">ref</span>: <span class="hljs-string">'main'</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span> })
+  <span class="hljs-keyword">await</span> git.checkout({ fs, dir, <span class="hljs-attr">ref</span>: <span class="hljs-string">'main'</span>, <span class="hljs-attr">noCheckout</span>: <span class="hljs-literal">true</span> })
   <span class="hljs-keyword">await</span> git.add({ fs, dir, <span class="hljs-attr">filepath</span>: <span class="hljs-string">'.'</span> })
   <span class="hljs-keyword">await</span> git.commit({ fs, dir, <span class="hljs-attr">author</span>: commit.author, <span class="hljs-attr">message</span>: commit.message })
   <span class="hljs-keyword">await</span> git.push({

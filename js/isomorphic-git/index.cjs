@@ -7,7 +7,6 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var AsyncLock = _interopDefault(require('async-lock'));
 var Hash = _interopDefault(require('sha.js/sha1.js'));
 var crc32 = _interopDefault(require('crc-32'));
-var applyDelta = _interopDefault(require('git-apply-delta'));
 var pako = _interopDefault(require('pako'));
 var ignore = _interopDefault(require('ignore'));
 var pify = _interopDefault(require('pify'));
@@ -115,6 +114,14 @@ var diff3Merge = _interopDefault(require('diff3'));
  * @property {string} oid - SHA-1 object id of this commit
  * @property {CommitObject} commit - the parsed commit object
  * @property {string} payload - PGP signing payload
+ */
+
+/**
+ * @typedef {Object} ServerRef - This object has the following schema:
+ * @property {string} ref - The name of the ref
+ * @property {string} oid - The SHA-1 object id the ref points to
+ * @property {string} [target] - The target ref pointed to by a symbolic ref
+ * @property {string} [peeled] - If the oid is the SHA-1 object id of an annotated tag, this is the SHA-1 object id that the annotated tag points to
  */
 
 /**
@@ -371,6 +378,12 @@ class BufferCursor {
   write(value, length, enc) {
     const r = this.buffer.write(value, this._start, length, enc);
     this._start += length;
+    return r
+  }
+
+  copy(source, start, end) {
+    const r = source.copy(this.buffer, this._start, start, end);
+    this._start += r;
     return r
   }
 
@@ -2095,6 +2108,91 @@ async function readObjectLoose({ fs, gitdir, oid }) {
   return { object: file, format: 'deflated', source }
 }
 
+/**
+ * @param {Buffer} delta
+ * @param {Buffer} source
+ * @returns {Buffer}
+ */
+function applyDelta(delta, source) {
+  const reader = new BufferCursor(delta);
+  const sourceSize = readVarIntLE(reader);
+
+  if (sourceSize !== source.byteLength) {
+    throw new InternalError(
+      `applyDelta expected source buffer to be ${sourceSize} bytes but the provided buffer was ${source.length} bytes`
+    )
+  }
+  const targetSize = readVarIntLE(reader);
+  let target;
+
+  const firstOp = readOp(reader, source);
+  // Speed optimization - return raw buffer if it's just single simple copy
+  if (firstOp.byteLength === targetSize) {
+    target = firstOp;
+  } else {
+    // Otherwise, allocate a fresh buffer and slices
+    target = Buffer.alloc(targetSize);
+    const writer = new BufferCursor(target);
+    writer.copy(firstOp);
+
+    while (!reader.eof()) {
+      writer.copy(readOp(reader, source));
+    }
+
+    const tell = writer.tell();
+    if (targetSize !== tell) {
+      throw new InternalError(
+        `applyDelta expected target buffer to be ${targetSize} bytes but the resulting buffer was ${tell} bytes`
+      )
+    }
+  }
+  return target
+}
+
+function readVarIntLE(reader) {
+  let result = 0;
+  let shift = 0;
+  let byte = null;
+  do {
+    byte = reader.readUInt8();
+    result |= (byte & 0b01111111) << shift;
+    shift += 7;
+  } while (byte & 0b10000000)
+  return result
+}
+
+function readCompactLE(reader, flags, size) {
+  let result = 0;
+  let shift = 0;
+  while (size--) {
+    if (flags & 0b00000001) {
+      result |= reader.readUInt8() << shift;
+    }
+    flags >>= 1;
+    shift += 8;
+  }
+  return result
+}
+
+function readOp(reader, source) {
+  /** @type {number} */
+  const byte = reader.readUInt8();
+  const COPY = 0b10000000;
+  const OFFS = 0b00001111;
+  const SIZE = 0b01110000;
+  if (byte & COPY) {
+    // copy consists of 4 byte offset, 3 byte size (in LE order)
+    const offset = readCompactLE(reader, byte & OFFS, 4);
+    let size = readCompactLE(reader, (byte & SIZE) >> 4, 3);
+    // Yup. They really did this optimization.
+    if (size === 0) size = 0x10000;
+    return source.slice(offset, offset + size)
+  } else {
+    // insert
+    return reader.slice(byte)
+  }
+}
+
 // Convert a value to an Async Iterator
 // This will be easier with async generator functions.
 function fromValue(value) {
@@ -2715,8 +2813,6 @@ class GitPackIndex {
   }
 }
 
-const PackfileCache = new Map();
-
 async function loadPackIndex({
   fs,
   filename,
@@ -2730,13 +2826,15 @@ async function loadPackIndex({
 
 function readPackIndex({
   fs,
+  cache,
   filename,
   getExternalRefDelta,
   emitter,
   emitterPrefix,
 }) {
   // Try to get the packfile index from the in-memory cache
-  let p = PackfileCache.get(filename);
+  if (!cache.packfiles) cache.packfiles = new Map();
+  let p = cache.packfiles.get(filename);
   if (!p) {
     p = loadPackIndex({
       fs,
@@ -2745,13 +2843,14 @@ function readPackIndex({
       emitter,
       emitterPrefix,
     });
-    PackfileCache.set(filename, p);
+    cache.packfiles.set(filename, p);
   }
   return p
 }
 
 async function readObjectPacked({
   fs,
+  cache,
   gitdir,
   oid,
   format = 'content',
@@ -2765,6 +2864,7 @@ async function readObjectPacked({
     const indexFile = `${gitdir}/objects/pack/${filename}`;
     const p = await readPackIndex({
       fs,
+      cache,
       filename: indexFile,
       getExternalRefDelta,
     });
@@ -2786,10 +2886,24 @@ async function readObjectPacked({
   return null
 }
 
-async function _readObject({ fs, gitdir, oid, format = 'content' }) {
+/**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
+ * @param {string} args.gitdir
+ * @param {string} args.oid
+ * @param {string} [args.format]
+ */
+async function _readObject({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  format = 'content',
+}) {
   // Curry the current read method so that the packfile un-deltification
   // process can acquire external ref-deltas.
-  const getExternalRefDelta = oid => _readObject({ fs, gitdir, oid });
+  const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
 
   let result;
   // Empty tree - hard-coded so we can use it as a shorthand.
@@ -2804,7 +2918,13 @@ async function _readObject({ fs, gitdir, oid, format = 'content' }) {
   }
   // Check to see if it's in a packfile.
   if (!result) {
-    result = await readObjectPacked({ fs, gitdir, oid, getExternalRefDelta });
+    result = await readObjectPacked({
+      fs,
+      cache,
+      gitdir,
+      oid,
+      getExternalRefDelta,
+    });
   }
   // Finally
   if (!result) {
@@ -3542,21 +3662,21 @@ class GitCommit {
   }
 }
 
-async function resolveTree({ fs, gitdir, oid }) {
+async function resolveTree({ fs, cache, gitdir, oid }) {
   // Empty tree - bypass `readObject`
   if (oid === '4b825dc642cb6eb9a060e54bf8d69288fbee4904') {
     return { tree: GitTree.from([]), oid }
   }
-  const { type, object } = await _readObject({ fs, gitdir, oid });
+  const { type, object } = await _readObject({ fs, cache, gitdir, oid });
   // Resolve annotated tag objects to whatever
   if (type === 'tag') {
     oid = GitAnnotatedTag.from(object).parse().object;
-    return resolveTree({ fs, gitdir, oid })
+    return resolveTree({ fs, cache, gitdir, oid })
   }
   // Resolve commits to trees
   if (type === 'commit') {
     oid = GitCommit.from(object).parse().tree;
-    return resolveTree({ fs, gitdir, oid })
+    return resolveTree({ fs, cache, gitdir, oid })
   }
   if (type !== 'tree') {
     throw new ObjectTypeError(oid, type, 'tree')
@@ -3567,6 +3687,7 @@ async function resolveTree({ fs, gitdir, oid }) {
 class GitWalkerRepo {
   constructor({ fs, gitdir, ref }) {
     this.fs = fs;
+    this.cache = {};
     this.gitdir = gitdir;
     this.mapPromise = (async () => {
       const map = new Map();
@@ -3579,7 +3700,7 @@ class GitWalkerRepo {
           oid = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
         }
       }
-      const tree = await resolveTree({ fs, gitdir, oid });
+      const tree = await resolveTree({ fs, cache: this.cache, gitdir, oid });
       tree.type = 'tree';
       tree.mode = '40000';
       map.set('.', tree);
@@ -3620,7 +3741,7 @@ class GitWalkerRepo {
 
   async readdir(entry) {
     const filepath = entry._fullpath;
-    const { fs, gitdir } = this;
+    const { fs, cache, gitdir } = this;
     const map = await this.mapPromise;
     const obj = map.get(filepath);
     if (!obj) throw new Error(`No obj for ${filepath}`)
@@ -3630,7 +3751,7 @@ class GitWalkerRepo {
       // TODO: support submodules (type === 'commit')
       return null
     }
-    const { type, object } = await _readObject({ fs, gitdir, oid });
+    const { type, object } = await _readObject({ fs, cache, gitdir, oid });
     if (type !== obj.type) {
       throw new ObjectTypeError(oid, type, obj.type)
     }
@@ -3665,10 +3786,10 @@ class GitWalkerRepo {
   async content(entry) {
     if (entry._content === false) {
       const map = await this.mapPromise;
-      const { fs, gitdir } = this;
+      const { fs, cache, gitdir } = this;
       const obj = map.get(entry._fullpath);
       const oid = obj.oid;
-      const { type, object } = await _readObject({ fs, gitdir, oid });
+      const { type, object } = await _readObject({ fs, cache, gitdir, oid });
       if (type !== 'blob') {
         entry._content = undefined;
       } else {
@@ -4405,7 +4526,7 @@ async function constructTree({ fs, gitdir, inode, dryRun }) {
 
 // @ts-check
 
-async function resolveFilepath({ fs, gitdir, oid, filepath }) {
+async function resolveFilepath({ fs, cache, gitdir, oid, filepath }) {
   // Ensure there are no leading or trailing directory separators.
   // I was going to do this automatically, but then found that the Git Terminal for Windows
   // auto-expands --filepath=/src/utils to --filepath=C:/Users/Will/AppData/Local/Programs/Git/src/utils
@@ -4416,7 +4537,7 @@ async function resolveFilepath({ fs, gitdir, oid, filepath }) {
     throw new InvalidFilepathError('trailing-slash')
   }
   const _oid = oid;
-  const result = await resolveTree({ fs, gitdir, oid });
+  const result = await resolveTree({ fs, cache, gitdir, oid });
   const tree = result.tree;
   if (filepath === '') {
     oid = result.oid;
@@ -4424,6 +4545,7 @@ async function resolveFilepath({ fs, gitdir, oid, filepath }) {
     const pathArray = filepath.split('/');
     oid = await _resolveFilepath({
       fs,
+      cache,
       gitdir,
       tree,
       pathArray,
@@ -4436,6 +4558,7 @@ async function resolveFilepath({ fs, gitdir, oid, filepath }) {
 
 async function _resolveFilepath({
   fs,
+  cache,
   gitdir,
   tree,
   pathArray,
@@ -4450,6 +4573,7 @@ async function _resolveFilepath({
       } else {
         const { type, object } = await _readObject({
           fs,
+          cache,
           gitdir,
           oid: entry.oid,
         });
@@ -4457,7 +4581,15 @@ async function _resolveFilepath({
           throw new ObjectTypeError(oid, type, 'blob', filepath)
         }
         tree = GitTree.from(object);
-        return _resolveFilepath({ fs, gitdir, tree, pathArray, oid, filepath })
+        return _resolveFilepath({
+          fs,
+          cache,
+          gitdir,
+          tree,
+          pathArray,
+          oid,
+          filepath,
+        })
       }
     }
   }
@@ -4476,17 +4608,24 @@ async function _resolveFilepath({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.oid
  * @param {string} [args.filepath]
  *
  * @returns {Promise<ReadTreeResult>}
  */
-async function _readTree({ fs, gitdir, oid, filepath = undefined }) {
+async function _readTree({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  filepath = undefined,
+}) {
   if (filepath !== undefined) {
-    oid = await resolveFilepath({ fs, gitdir, oid, filepath });
+    oid = await resolveFilepath({ fs, cache, gitdir, oid, filepath });
   }
-  const { tree, oid: treeOid } = await resolveTree({ fs, gitdir, oid });
+  const { tree, oid: treeOid } = await resolveTree({ fs, cache, gitdir, oid });
   const result = {
     oid: treeOid,
     tree: tree.entries(),
@@ -4570,6 +4709,7 @@ async function _addNote({
   // I'm using the "empty tree" magic number here for brevity
   const result = await _readTree({
     fs,
+    cache,
     gitdir,
     oid: parent || '4b825dc642cb6eb9a060e54bf8d69288fbee4904',
   });
@@ -4868,6 +5008,7 @@ async function addRemote({
  *
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {SignCallback} [args.onSign]
  * @param {string} args.gitdir
  * @param {string} args.ref
@@ -4899,6 +5040,7 @@ async function addRemote({
  */
 async function _annotatedTag({
   fs,
+  cache,
   onSign,
   gitdir,
   ref,
@@ -4922,7 +5064,7 @@ async function _annotatedTag({
     ref: object || 'HEAD',
   });
 
-  const { type } = await _readObject({ fs, gitdir, oid });
+  const { type } = await _readObject({ fs, cache, gitdir, oid });
   let tagObject = GitAnnotatedTag.from({
     object: oid,
     type,
@@ -5010,6 +5152,7 @@ async function annotatedTag({
 
     return await _annotatedTag({
       fs,
+      cache: {},
       onSign,
       gitdir,
       ref,
@@ -5496,7 +5639,7 @@ async function _checkout({
             const filepath = `${dir}/${fullpath}`;
             try {
               if (method !== 'create-index' && method !== 'mkdir-index') {
-                const { object } = await _readObject({ fs, gitdir, oid });
+                const { object } = await _readObject({ fs, cache, gitdir, oid });
                 if (chmod) {
                   // Note: the mode option of fs.write only works when creating files,
                   // not updating them. Since the `fs` plugin doesn't expose `chmod` this
@@ -6122,6 +6265,10 @@ class GitPktLine {
     return Buffer.from('0000', 'utf8')
   }
 
+  static delim() {
+    return Buffer.from('0001', 'utf8')
+  }
+
   static encode(line) {
     if (typeof line === 'string') {
       line = Buffer.from(line);
@@ -6139,6 +6286,7 @@ class GitPktLine {
         if (length == null) return true
         length = parseInt(length.toString('utf8'), 16);
         if (length === 0) return null
+        if (length === 1) return null // delim packets
         const buffer = await reader.read(length - 4);
         if (buffer == null) return true
         return buffer
@@ -6148,6 +6296,33 @@ class GitPktLine {
       }
     }
   }
+}
+
+// @ts-check
+
+/**
+ * @param {function} read
+ */
+async function parseCapabilitiesV2(read) {
+  /** @type {Object<string, string | true>} */
+  const capabilities2 = {};
+
+  let line;
+  while (true) {
+    line = await read();
+    if (line === true) break
+    if (line === null) continue
+    line = line.toString('utf8').replace(/\n$/, '');
+    const i = line.indexOf('=');
+    if (i > -1) {
+      const key = line.slice(0, i);
+      const value = line.slice(i + 1);
+      capabilities2[key] = value;
+    } else {
+      capabilities2[line] = true;
+    }
+  }
+  return { protocolVersion: 2, capabilities2 }
 }
 
 async function parseRefsAdResponse(stream, { service }) {
@@ -6172,11 +6347,12 @@ async function parseRefsAdResponse(stream, { service }) {
   // In the edge case of a brand new repo, zero refs (and zero capabilities)
   // are returned.
   if (lineTwo === true) return { capabilities, refs, symrefs }
-  const [firstRef, capabilitiesLine] = splitAndAssert(
-    lineTwo.toString('utf8'),
-    '\x00',
-    '\\x00'
-  );
+  lineTwo = lineTwo.toString('utf8');
+  // Handle protocol v2 responses
+  if (lineTwo.includes('version 2')) {
+    return parseCapabilitiesV2(read)
+  }
+  const [firstRef, capabilitiesLine] = splitAndAssert(lineTwo, '\x00', '\\x00');
   capabilitiesLine.split(' ').map(x => capabilities.add(x));
   const [ref, name] = splitAndAssert(firstRef, ' ', ' ');
   refs.set(name, ref);
@@ -6197,7 +6373,7 @@ async function parseRefsAdResponse(stream, { service }) {
       }
     }
   }
-  return { capabilities, refs, symrefs }
+  return { protocolVersion: 1, capabilities, refs, symrefs }
 }
 
 function splitAndAssert(line, sep, expected) {
@@ -6264,6 +6440,7 @@ class GitRemoteHTTP {
    * @param {string} args.service
    * @param {string} args.url
    * @param {Object<string, string>} [args.headers]
+   * @param {1 | 2} args.protocolVersion - Git Protocol Version
    */
   static async discover({
     http,
@@ -6275,11 +6452,15 @@ class GitRemoteHTTP {
     service,
     url: _origUrl,
     headers,
+    protocolVersion,
   }) {
     let { url, auth } = extractAuthFromUrl(_origUrl);
     const proxifiedURL = corsProxy ? corsProxify(corsProxy, url) : url;
     if (auth.username || auth.password) {
       headers.Authorization = calculateBasicAuthHeader(auth);
+    }
+    if (protocolVersion === 2) {
+      headers['Git-Protocol'] = 'version=2';
     }
 
     let res;
@@ -6354,6 +6535,17 @@ class GitRemoteHTTP {
     }
   }
 
+  /**
+   * @param {Object} args
+   * @param {HttpClient} args.http
+   * @param {ProgressCallback} [args.onProgress]
+   * @param {string} [args.corsProxy]
+   * @param {string} args.service
+   * @param {string} args.url
+   * @param {Object<string, string>} [args.headers]
+   * @param {any} args.body
+   * @param {any} args.auth
+   */
   static async connect({
     http,
     onProgress,
@@ -6494,6 +6686,7 @@ async function hasObjectLoose({ fs, gitdir, oid }) {
 
 async function hasObjectPacked({
   fs,
+  cache,
   gitdir,
   oid,
   getExternalRefDelta,
@@ -6506,6 +6699,7 @@ async function hasObjectPacked({
     const indexFile = `${gitdir}/objects/pack/${filename}`;
     const p = await readPackIndex({
       fs,
+      cache,
       filename: indexFile,
       getExternalRefDelta,
     });
@@ -6519,16 +6713,28 @@ async function hasObjectPacked({
   return false
 }
 
-async function hasObject({ fs, gitdir, oid, format = 'content' }) {
+async function hasObject({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  format = 'content',
+}) {
   // Curry the current read method so that the packfile un-deltification
   // process can acquire external ref-deltas.
-  const getExternalRefDelta = oid => _readObject({ fs, gitdir, oid });
+  const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
 
   // Look for it in the loose object directory.
   let result = await hasObjectLoose({ fs, gitdir, oid });
   // Check to see if it's in a packfile.
   if (!result) {
-    result = await hasObjectPacked({ fs, gitdir, oid, getExternalRefDelta });
+    result = await hasObjectPacked({
+      fs,
+      cache,
+      gitdir,
+      oid,
+      getExternalRefDelta,
+    });
   }
   // Finally
   return result
@@ -6880,6 +7086,7 @@ function writeUploadPackRequest({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {HttpClient} args.http
  * @param {ProgressCallback} [args.onProgress]
  * @param {MessageCallback} [args.onMessage]
@@ -6907,6 +7114,7 @@ function writeUploadPackRequest({
  */
 async function _fetch({
   fs,
+  cache,
   http,
   onProgress,
   onMessage,
@@ -7034,7 +7242,7 @@ async function _fetch({
     try {
       ref = await GitRefManager.expand({ fs, gitdir, ref });
       const oid = await GitRefManager.resolve({ fs, gitdir, ref });
-      if (await hasObject({ fs, gitdir, oid })) {
+      if (await hasObject({ fs, cache, gitdir, oid })) {
         haves.push(oid);
       }
     } catch (err) {}
@@ -7074,10 +7282,12 @@ async function _fetch({
       // this is in a try/catch mostly because my old test fixtures are missing objects
       try {
         // server says it's shallow, but do we have the parents?
-        const { object } = await _readObject({ fs, gitdir, oid });
+        const { object } = await _readObject({ fs, cache, gitdir, oid });
         const commit = new GitCommit(object);
         const hasParents = await Promise.all(
-          commit.headers().parent.map(oid => hasObject({ fs, gitdir, oid }))
+          commit
+            .headers()
+            .parent.map(oid => hasObject({ fs, cache, gitdir, oid }))
         );
         const haveAllParents =
           hasParents.length === 0 || hasParents.every(has => has);
@@ -7199,7 +7409,7 @@ async function _fetch({
     res.packfile = `objects/pack/pack-${packfileSha}.pack`;
     const fullpath = join(gitdir, res.packfile);
     await fs.write(fullpath, packfile);
-    const getExternalRefDelta = oid => _readObject({ fs, gitdir, oid });
+    const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
       pack: packfile,
       getExternalRefDelta,
@@ -7322,6 +7532,7 @@ async function _clone({
   }
   const { defaultBranch, fetchHead } = await _fetch({
     fs,
+    cache,
     http,
     onProgress,
     onMessage,
@@ -7821,6 +8032,7 @@ async function expandOidLoose({ fs, gitdir, oid: short }) {
 
 async function expandOidPacked({
   fs,
+  cache,
   gitdir,
   oid: short,
   getExternalRefDelta,
@@ -7833,6 +8045,7 @@ async function expandOidPacked({
     const indexFile = `${gitdir}/objects/pack/${filename}`;
     const p = await readPackIndex({
       fs,
+      cache,
       filename: indexFile,
       getExternalRefDelta,
     });
@@ -7845,14 +8058,15 @@ async function expandOidPacked({
   return results
 }
 
-async function _expandOid({ fs, gitdir, oid: short }) {
+async function _expandOid({ fs, cache, gitdir, oid: short }) {
   // Curry the current read method so that the packfile un-deltification
   // process can acquire external ref-deltas.
-  const getExternalRefDelta = oid => _readObject({ fs, gitdir, oid });
+  const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
 
   const results1 = await expandOidLoose({ fs, gitdir, oid: short });
   const results2 = await expandOidPacked({
     fs,
+    cache,
     gitdir,
     oid: short,
     getExternalRefDelta,
@@ -7893,6 +8107,7 @@ async function expandOid({ fs, dir, gitdir = join(dir, '.git'), oid }) {
     assertParameter('oid', oid);
     return await _expandOid({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
     })
@@ -7941,11 +8156,12 @@ async function expandRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string[]} args.oids
  *
  */
-async function _findMergeBase({ fs, gitdir, oids }) {
+async function _findMergeBase({ fs, cache, gitdir, oids }) {
   // Note: right now, the tests are geared so that the output should match that of
   // `git merge-base --all --octopus`
   // because without the --octopus flag, git's output seems to depend on the ORDER of the oids,
@@ -7975,7 +8191,7 @@ async function _findMergeBase({ fs, gitdir, oids }) {
     const newheads = new Map();
     for (const { oid, index } of heads) {
       try {
-        const { object } = await _readObject({ fs, gitdir, oid });
+        const { object } = await _readObject({ fs, cache, gitdir, oid });
         const commit = GitCommit.from(object);
         const { parent } = commit.parseHeaders();
         for (const oid of parent) {
@@ -8341,6 +8557,7 @@ async function _merge({
   // find most recent common ancestor of ref a and ref b
   const baseOids = await _findMergeBase({
     fs,
+    cache,
     gitdir,
     oids: [ourOid, theirOid],
   });
@@ -8480,6 +8697,7 @@ async function _pull({
 
     const { fetchHead, fetchHeadDescription } = await _fetch({
       fs,
+      cache,
       http,
       onProgress,
       onMessage,
@@ -8498,6 +8716,7 @@ async function _pull({
     // Merge the remote tracking branch into the local one.
     await _merge({
       fs,
+      cache,
       gitdir,
       ours: ref,
       theirs: fetchHead,
@@ -8710,6 +8929,7 @@ async function fetch({
 
     return await _fetch({
       fs: new FileSystem(fs),
+      cache: {},
       http,
       onProgress,
       onMessage,
@@ -8763,6 +8983,7 @@ async function findMergeBase({
 
     return await _findMergeBase({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oids,
     })
@@ -8986,6 +9207,7 @@ async function getRemoteInfo({
     assertParameter('http', http);
     assertParameter('url', url);
 
+    const GitRemoteHTTP = GitRemoteManager.getRemoteHelperFor({ url });
     const remote = await GitRemoteHTTP.discover({
       http,
       onAuth,
@@ -8995,6 +9217,7 @@ async function getRemoteInfo({
       service: forPush ? 'git-receive-pack' : 'git-upload-pack',
       url,
       headers,
+      protocolVersion: 1,
     });
 
     // Note: remote.capabilities, remote.refs, and remote.symrefs are Set and Map objects,
@@ -9029,6 +9252,154 @@ async function getRemoteInfo({
     return result
   } catch (err) {
     err.caller = 'git.getRemoteInfo';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
+ * @param {any} remote
+ * @param {string} prefix
+ * @param {boolean} symrefs
+ * @param {boolean} peelTags
+ * @returns {ServerRef[]}
+ */
+function formatInfoRefs(remote, prefix, symrefs, peelTags) {
+  const refs = [];
+  for (const [key, value] of remote.refs) {
+    if (prefix && !key.startsWith(prefix)) continue
+
+    if (key.endsWith('^{}')) {
+      if (peelTags) {
+        const _key = key.replace('^{}', '');
+        // Peeled tags are almost always listed immediately after the original tag
+        const last = refs[refs.length - 1];
+        const r = last.ref === _key ? last : refs.find(x => x.ref === _key);
+        if (r === undefined) {
+          throw new Error('I did not expect this to happen')
+        }
+        r.peeled = value;
+      }
+      continue
+    }
+    /** @type ServerRef */
+    const ref = { ref: key, oid: value };
+    if (symrefs) {
+      if (remote.symrefs.has(key)) {
+        ref.target = remote.symrefs.get(key);
+      }
+    }
+    refs.push(ref);
+  }
+  return refs
+}
+
+// @ts-check
+
+/**
+ * @typedef {Object} GetRemoteInfo2Result - This object has the following schema:
+ * @property {1 | 2} protocolVersion - Git protocol version the server supports
+ * @property {Object<string, string | true>} capabilities - An object of capabilities represented as keys and values
+ * @property {ServerRef[]} [refs] - Server refs (they get returned by protocol version 1 whether you want them or not)
+ */
+
+/**
+ * List a remote server's capabilities.
+ *
+ * This is a rare command that doesn't require an `fs`, `dir`, or even `gitdir` argument.
+ * It just communicates to a remote git server, determining what protocol version, commands, and features it supports.
+ *
+ * > The successor to [`getRemoteInfo`](./getRemoteInfo.md), this command supports Git Wire Protocol Version 2.
+ * > Therefore its return type is more complicated as either:
+ * >
+ * > - v1 capabilities (and refs) or
+ * > - v2 capabilities (and no refs)
+ * >
+ * > are returned.
+ * > If you just care about refs, use [`listServerRefs`](./listServerRefs.md)
+ *
+ * @param {object} args
+ * @param {HttpClient} args.http - an HTTP client
+ * @param {AuthCallback} [args.onAuth] - optional auth fill callback
+ * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
+ * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {string} args.url - The URL of the remote repository. Will be gotten from gitconfig if absent.
+ * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {boolean} [args.forPush = false] - By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.
+ * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {1 | 2} [args.protocolVersion = 2] - Which version of the Git Protocol to use.
+ *
+ * @returns {Promise<GetRemoteInfo2Result>} Resolves successfully with an object listing the capabilities of the remote.
+ * @see GetRemoteInfo2Result
+ * @see ServerRef
+ *
+ * @example
+ * let info = await git.getRemoteInfo2({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git"
+ * });
+ * console.log(info);
+ *
+ */
+async function getRemoteInfo2({
+  http,
+  onAuth,
+  onAuthSuccess,
+  onAuthFailure,
+  corsProxy,
+  url,
+  headers = {},
+  forPush = false,
+  protocolVersion = 2,
+}) {
+  try {
+    assertParameter('http', http);
+    assertParameter('url', url);
+
+    const GitRemoteHTTP = GitRemoteManager.getRemoteHelperFor({ url });
+    const remote = await GitRemoteHTTP.discover({
+      http,
+      onAuth,
+      onAuthSuccess,
+      onAuthFailure,
+      corsProxy,
+      service: forPush ? 'git-receive-pack' : 'git-upload-pack',
+      url,
+      headers,
+      protocolVersion,
+    });
+
+    if (remote.protocolVersion === 2) {
+      /** @type GetRemoteInfo2Result */
+      return {
+        protocolVersion: remote.protocolVersion,
+        capabilities: remote.capabilities2,
+      }
+    }
+
+    // Note: remote.capabilities, remote.refs, and remote.symrefs are Set and Map objects,
+    // but one of the objectives of the public API is to always return JSON-compatible objects
+    // so we must JSONify them.
+    /** @type Object<string, true> */
+    const capabilities = {};
+    for (const cap of remote.capabilities) {
+      const [key, value] = cap.split('=');
+      if (value) {
+        capabilities[key] = value;
+      } else {
+        capabilities[key] = true;
+      }
+    }
+    /** @type GetRemoteInfo2Result */
+    return {
+      protocolVersion: 1,
+      capabilities,
+      refs: formatInfoRefs(remote, undefined, true, true),
+    }
+  } catch (err) {
+    err.caller = 'git.getRemoteInfo2';
     throw err
   }
 }
@@ -9109,6 +9480,7 @@ async function hashBlob({ object }) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {ProgressCallback} [args.onProgress]
  * @param {string} args.dir
  * @param {string} args.gitdir
@@ -9116,11 +9488,18 @@ async function hashBlob({ object }) {
  *
  * @returns {Promise<{oids: string[]}>}
  */
-async function _indexPack({ fs, onProgress, dir, gitdir, filepath }) {
+async function _indexPack({
+  fs,
+  cache,
+  onProgress,
+  dir,
+  gitdir,
+  filepath,
+}) {
   try {
     filepath = join(dir, filepath);
     const pack = await fs.read(filepath);
-    const getExternalRefDelta = oid => _readObject({ fs, gitdir, oid });
+    const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
       pack,
       getExternalRefDelta,
@@ -9181,6 +9560,7 @@ async function indexPack({
 
     return await _indexPack({
       fs: new FileSystem(fs),
+      cache: {},
       onProgress,
       dir,
       gitdir,
@@ -9242,6 +9622,7 @@ async function init({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.oid
  * @param {string} args.ancestor
@@ -9249,7 +9630,14 @@ async function init({
  *
  * @returns {Promise<boolean>}
  */
-async function _isDescendent({ fs, gitdir, oid, ancestor, depth }) {
+async function _isDescendent({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  ancestor,
+  depth,
+}) {
   const shallows = await GitShallowManager.read({ fs, gitdir });
   if (!oid) {
     throw new MissingParameterError('oid')
@@ -9272,6 +9660,7 @@ async function _isDescendent({ fs, gitdir, oid, ancestor, depth }) {
     const oid = queue.shift();
     const { type, object } = await _readObject({
       fs,
+      cache,
       gitdir,
       oid,
     });
@@ -9338,6 +9727,7 @@ async function isDescendent({
 
     return await _isDescendent({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
       ancestor,
@@ -9411,7 +9801,14 @@ async function _listFiles({ fs, gitdir, ref, cache }) {
   if (ref) {
     const oid = await GitRefManager.resolve({ gitdir, fs, ref });
     const filenames = [];
-    await accumulateFilesFromOid({ fs, gitdir, oid, filenames, prefix: '' });
+    await accumulateFilesFromOid({
+      fs,
+      cache,
+      gitdir,
+      oid,
+      filenames,
+      prefix: '',
+    });
     return filenames
   } else {
     return GitIndexManager.acquire({ fs, gitdir, cache }, async function(
@@ -9422,13 +9819,21 @@ async function _listFiles({ fs, gitdir, ref, cache }) {
   }
 }
 
-async function accumulateFilesFromOid({ fs, gitdir, oid, filenames, prefix }) {
-  const { tree } = await _readTree({ fs, gitdir, oid });
+async function accumulateFilesFromOid({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  filenames,
+  prefix,
+}) {
+  const { tree } = await _readTree({ fs, cache, gitdir, oid });
   // TODO: Use `walk` to do this. Should be faster.
   for (const entry of tree) {
     if (entry.type === 'tree') {
       await accumulateFilesFromOid({
         fs,
+        cache,
         gitdir,
         oid: entry.oid,
         filenames,
@@ -9489,13 +9894,14 @@ async function listFiles({ fs, dir, gitdir = join(dir, '.git'), ref }) {
  *
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.ref
  *
  * @returns {Promise<Array<{target: string, note: string}>>}
  */
 
-async function _listNotes({ fs, gitdir, ref }) {
+async function _listNotes({ fs, cache, gitdir, ref }) {
   // Get the current note commit
   let parent;
   try {
@@ -9509,6 +9915,7 @@ async function _listNotes({ fs, gitdir, ref }) {
   // Create the current note tree
   const result = await _readTree({
     fs,
+    cache,
     gitdir,
     oid: parent,
   });
@@ -9548,6 +9955,7 @@ async function listNotes({
 
     return await _listNotes({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       ref,
     })
@@ -9610,6 +10018,218 @@ async function listRemotes({ fs, dir, gitdir = join(dir, '.git') }) {
   }
 }
 
+/**
+ * @typedef {Object} ServerRef - This object has the following schema:
+ * @property {string} ref - The name of the ref
+ * @property {string} oid - The SHA-1 object id the ref points to
+ * @property {string} [target] - The target ref pointed to by a symbolic ref
+ * @property {string} [peeled] - If the oid is the SHA-1 object id of an annotated tag, this is the SHA-1 object id that the annotated tag points to
+ */
+
+async function parseListRefsResponse(stream) {
+  const read = GitPktLine.streamReader(stream);
+
+  // TODO: when we re-write everything to minimize memory usage,
+  // we could make this a generator
+  const refs = [];
+
+  let line;
+  while (true) {
+    line = await read();
+    if (line === true) break
+    if (line === null) continue
+    line = line.toString('utf8').replace(/\n$/, '');
+    const [oid, ref, ...attrs] = line.split(' ');
+    const r = { ref, oid };
+    for (const attr of attrs) {
+      const [name, value] = attr.split(':');
+      if (name === 'symref-target') {
+        r.target = value;
+      } else if (name === 'peeled') {
+        r.peeled = value;
+      }
+    }
+    refs.push(r);
+  }
+
+  return refs
+}
+
+/**
+ * @param {object} args
+ * @param {string} [args.prefix] - Only list refs that start with this prefix
+ * @param {boolean} [args.symrefs = false] - Include symbolic ref targets
+ * @param {boolean} [args.peelTags = false] - Include peeled tags values
+ * @returns {Uint8Array[]}
+ */
+async function writeListRefsRequest({ prefix, symrefs, peelTags }) {
+  const packstream = [];
+  // command
+  packstream.push(GitPktLine.encode('command=ls-refs\n'));
+  // capability-list
+  packstream.push(GitPktLine.encode(`agent=${pkg.agent}\n`));
+  // [command-args]
+  if (peelTags || symrefs || prefix) {
+    packstream.push(GitPktLine.delim());
+  }
+  if (peelTags) packstream.push(GitPktLine.encode('peel'));
+  if (symrefs) packstream.push(GitPktLine.encode('symrefs'));
+  if (prefix) packstream.push(GitPktLine.encode(`ref-prefix ${prefix}`));
+  packstream.push(GitPktLine.flush());
+  return packstream
+}
+
+// @ts-check
+
+/**
+ * Fetch a list of refs (branches, tags, etc) from a server.
+ *
+ * This is a rare command that doesn't require an `fs`, `dir`, or even `gitdir` argument.
+ * It just requires an `http` argument.
+ *
+ * ### About `protocolVersion`
+ *
+ * There's a rather fun trade-off between Git Protocol Version 1 and Git Protocol Version 2.
+ * Version 2 actually requires 2 HTTP requests instead of 1, making it similar to fetch or push in that regard.
+ * However, version 2 supports server-side filtering by prefix, whereas that filtering is done client-side in version 1.
+ * Which protocol is most efficient therefore depends on the number of refs on the remote, the latency of the server, and speed of the network connection.
+ * For an small repos (or fast Internet connections), the requirement to make two trips to the server makes protocol 2 slower.
+ * But for large repos (or slow Internet connections), the decreased payload size of the second request makes up for the additional request.
+ *
+ * Hard numbers vary by situation, but here's some numbers from my machine:
+ *
+ * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://github.com/isomorphic-git/isomorphic-git
+ * - Protocol Version 1 took ~300ms and transfered 84 KB.
+ * - Protocol Version 2 took ~500ms and transfered 4.1 KB.
+ *
+ * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://gitlab.com/gitlab-org/gitlab
+ * - Protocol Version 1 took ~4900ms and transfered 9.41 MB.
+ * - Protocol Version 2 took ~1280ms and transfered 433 KB.
+ *
+ * Finally, there is a fun quirk regarding the `symrefs` parameter.
+ * Protocol Version 1 will generally only return the `HEAD` symref and not others.
+ * Historically, this meant that servers don't use symbolic refs except for `HEAD`, which is used to point at the "default branch".
+ * However Protocol Version 2 can return *all* the symbolic refs on the server.
+ * So if you are running your own git server, you could take advantage of that I guess.
+ *
+ * #### TL;DR
+ * If you are _not_ taking advantage of `prefix` I would recommend `protocolVersion: 1`.
+ * Otherwise, I recommend to use the default which is `protocolVersion: 2`.
+ *
+ * @param {object} args
+ * @param {HttpClient} args.http - an HTTP client
+ * @param {AuthCallback} [args.onAuth] - optional auth fill callback
+ * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
+ * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {string} args.url - The URL of the remote repository. Will be gotten from gitconfig if absent.
+ * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
+ * @param {boolean} [args.forPush = false] - By default, the command queries the 'fetch' capabilities. If true, it will ask for the 'push' capabilities.
+ * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {1 | 2} [args.protocolVersion = 2] - Which version of the Git Protocol to use.
+ * @param {string} [args.prefix] - Only list refs that start with this prefix
+ * @param {boolean} [args.symrefs = false] - Include symbolic ref targets
+ * @param {boolean} [args.peelTags = false] - Include annotated tag peeled targets
+ *
+ * @returns {Promise<ServerRef[]>} Resolves successfully with an array of ServerRef objects
+ * @see ServerRef
+ *
+ * @example
+ * // List all the branches on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/heads/",
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // Get the default branch on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "HEAD",
+ *   symrefs: true,
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // List all the tags on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/tags/",
+ *   peelTags: true,
+ * });
+ * console.log(refs);
+ *
+ * @example
+ * // List all the pull requests on a repo
+ * let refs = await git.listServerRefs({
+ *   http,
+ *   corsProxy: "https://cors.isomorphic-git.org",
+ *   url: "https://github.com/isomorphic-git/isomorphic-git.git",
+ *   prefix: "refs/pull/",
+ * });
+ * console.log(refs);
+ *
+ */
+async function listServerRefs({
+  http,
+  onAuth,
+  onAuthSuccess,
+  onAuthFailure,
+  corsProxy,
+  url,
+  headers = {},
+  forPush = false,
+  protocolVersion = 2,
+  prefix,
+  symrefs,
+  peelTags,
+}) {
+  try {
+    assertParameter('http', http);
+    assertParameter('url', url);
+
+    const remote = await GitRemoteHTTP.discover({
+      http,
+      onAuth,
+      onAuthSuccess,
+      onAuthFailure,
+      corsProxy,
+      service: forPush ? 'git-receive-pack' : 'git-upload-pack',
+      url,
+      headers,
+      protocolVersion,
+    });
+
+    if (remote.protocolVersion === 1) {
+      return formatInfoRefs(remote, prefix, symrefs, peelTags)
+    }
+
+    // Protocol Version 2
+    const body = await writeListRefsRequest({ prefix, symrefs, peelTags });
+
+    const res = await GitRemoteHTTP.connect({
+      http,
+      auth: remote.auth,
+      headers,
+      corsProxy,
+      service: forPush ? 'git-receive-pack' : 'git-upload-pack',
+      url,
+      body,
+    });
+
+    return parseListRefsResponse(res.body)
+  } catch (err) {
+    err.caller = 'git.listServerRefs';
+    throw err
+  }
+}
+
 // @ts-check
 
 /**
@@ -9638,12 +10258,12 @@ async function listTags({ fs, dir, gitdir = join(dir, '.git') }) {
   }
 }
 
-async function resolveCommit({ fs, gitdir, oid }) {
-  const { type, object } = await _readObject({ fs, gitdir, oid });
+async function resolveCommit({ fs, cache, gitdir, oid }) {
+  const { type, object } = await _readObject({ fs, cache, gitdir, oid });
   // Resolve annotated tag objects to whatever
   if (type === 'tag') {
     oid = GitAnnotatedTag.from(object).parse().object;
-    return resolveCommit({ fs, gitdir, oid })
+    return resolveCommit({ fs, cache, gitdir, oid })
   }
   if (type !== 'commit') {
     throw new ObjectTypeError(oid, type, 'commit')
@@ -9656,6 +10276,7 @@ async function resolveCommit({ fs, gitdir, oid }) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.oid
  *
@@ -9664,9 +10285,10 @@ async function resolveCommit({ fs, gitdir, oid }) {
  * @see CommitObject
  *
  */
-async function _readCommit({ fs, gitdir, oid }) {
+async function _readCommit({ fs, cache, gitdir, oid }) {
   const { commit, oid: commitOid } = await resolveCommit({
     fs,
+    cache,
     gitdir,
     oid,
   });
@@ -9690,6 +10312,7 @@ function compareAge(a, b) {
  *
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.ref
  * @param {number|void} args.depth
@@ -9697,7 +10320,7 @@ function compareAge(a, b) {
  *
  * @returns {Promise<Array<ReadCommitResult>>}
  */
-async function _log({ fs, gitdir, ref, depth, since }) {
+async function _log({ fs, cache, gitdir, ref, depth, since }) {
   const sinceTimestamp =
     typeof since === 'undefined'
       ? undefined
@@ -9707,7 +10330,7 @@ async function _log({ fs, gitdir, ref, depth, since }) {
   const commits = [];
   const shallowCommits = await GitShallowManager.read({ fs, gitdir });
   const oid = await GitRefManager.resolve({ fs, gitdir, ref });
-  const tips = [await _readCommit({ fs, gitdir, oid })];
+  const tips = [await _readCommit({ fs, cache, gitdir, oid })];
 
   while (true) {
     const commit = tips.pop();
@@ -9730,7 +10353,7 @@ async function _log({ fs, gitdir, ref, depth, since }) {
       // Add the parents of this commit to the queue
       // Note: for the case of a commit with no parents, it will concat an empty array, having no net effect.
       for (const oid of commit.commit.parent) {
-        const commit = await _readCommit({ fs, gitdir, oid });
+        const commit = await _readCommit({ fs, cache, gitdir, oid });
         if (!tips.map(commit => commit.oid).includes(commit.oid)) {
           tips.push(commit);
         }
@@ -9788,6 +10411,7 @@ async function log({
 
     return await _log({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       ref,
       depth,
@@ -9931,11 +10555,18 @@ const types = {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string[]} args.oids
  */
-async function _pack({ fs, dir, gitdir = join(dir, '.git'), oids }) {
+async function _pack({
+  fs,
+  cache,
+  dir,
+  gitdir = join(dir, '.git'),
+  oids,
+}) {
   const hash = new Hash();
   const outputStream = [];
   function write(chunk, enc) {
@@ -9974,7 +10605,7 @@ async function _pack({ fs, dir, gitdir = join(dir, '.git'), oids }) {
   // Write a 4 byte (32-bit) int
   write(padHex(8, oids.length), 'hex');
   for (const oid of oids) {
-    const { type, object } = await _readObject({ fs, gitdir, oid });
+    const { type, object } = await _readObject({ fs, cache, gitdir, oid });
     await writeObject({ write, object, stype: type });
   }
   // Write SHA1 checksum
@@ -10192,6 +10823,7 @@ async function pull({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} [args.dir]
  * @param {string} args.gitdir
  * @param {Iterable<string>} args.start
@@ -10200,6 +10832,7 @@ async function pull({
  */
 async function listCommitsAndTags({
   fs,
+  cache,
   dir,
   gitdir = join(dir, '.git'),
   start,
@@ -10224,7 +10857,7 @@ async function listCommitsAndTags({
   // setting a default recursion limit.
   async function walk(oid) {
     visited.add(oid);
-    const { type, object } = await _readObject({ fs, gitdir, oid });
+    const { type, object } = await _readObject({ fs, cache, gitdir, oid });
     // Recursively resolve annotated tags
     if (type === 'tag') {
       const tag = GitAnnotatedTag.from(object);
@@ -10254,6 +10887,7 @@ async function listCommitsAndTags({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} [args.dir]
  * @param {string} args.gitdir
  * @param {Iterable<string>} args.oids
@@ -10261,6 +10895,7 @@ async function listCommitsAndTags({
  */
 async function listObjects({
   fs,
+  cache,
   dir,
   gitdir = join(dir, '.git'),
   oids,
@@ -10272,7 +10907,7 @@ async function listObjects({
   async function walk(oid) {
     if (visited.has(oid)) return
     visited.add(oid);
-    const { type, object } = await _readObject({ fs, gitdir, oid });
+    const { type, object } = await _readObject({ fs, cache, gitdir, oid });
     if (type === 'tag') {
       const tag = GitAnnotatedTag.from(object);
       const obj = tag.headers().object;
@@ -10284,8 +10919,9 @@ async function listObjects({
     } else if (type === 'tree') {
       const tree = GitTree.from(object);
       for (const entry of tree) {
-        // add blobs and submodules to the visited set
-        if (entry.type === 'blob' || entry.type === 'commit') {
+        // add blobs to the set
+        // skip over submodules whose type is 'commit'
+        if (entry.type === 'blob') {
           visited.add(entry.oid);
         }
         // recurse for trees
@@ -10363,6 +10999,7 @@ async function writeReceivePackRequest({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {HttpClient} args.http
  * @param {ProgressCallback} [args.onProgress]
  * @param {MessageCallback} [args.onMessage]
@@ -10383,6 +11020,7 @@ async function writeReceivePackRequest({
  */
 async function _push({
   fs,
+  cache,
   http,
   onProgress,
   onMessage,
@@ -10485,12 +11123,13 @@ async function _push({
       // trick to speed up common force push scenarios
       const mergebase = await _findMergeBase({
         fs,
+        cache,
         gitdir,
         oids: [oid, oldoid],
       });
       for (const oid of mergebase) finish.push(oid);
       if (thinPack) {
-        skipObjects = await listObjects({ fs, gitdir, oids: mergebase });
+        skipObjects = await listObjects({ fs, cache, gitdir, oids: mergebase });
       }
     }
 
@@ -10498,11 +11137,12 @@ async function _push({
     if (!finish.includes(oid)) {
       const commits = await listCommitsAndTags({
         fs,
+        cache,
         gitdir,
         start: [oid],
         finish,
       });
-      objects = await listObjects({ fs, gitdir, oids: commits });
+      objects = await listObjects({ fs, cache, gitdir, oids: commits });
     }
 
     if (thinPack) {
@@ -10524,7 +11164,7 @@ async function _push({
           map: httpRemote.refs,
         });
         const oids = [oid];
-        for (const oid of await listObjects({ fs, gitdir, oids })) {
+        for (const oid of await listObjects({ fs, cache, gitdir, oids })) {
           skipObjects.add(oid);
         }
       } catch (e) {}
@@ -10547,7 +11187,14 @@ async function _push({
       if (
         oid !== '0000000000000000000000000000000000000000' &&
         oldoid !== '0000000000000000000000000000000000000000' &&
-        !(await _isDescendent({ fs, gitdir, oid, ancestor: oldoid, depth: -1 }))
+        !(await _isDescendent({
+          fs,
+          cache,
+          gitdir,
+          oid,
+          ancestor: oldoid,
+          depth: -1,
+        }))
       ) {
         throw new PushRejectedError('not-fast-forward')
       }
@@ -10691,6 +11338,7 @@ async function push({
 
     return await _push({
       fs: new FileSystem(fs),
+      cache: {},
       http,
       onProgress,
       onMessage,
@@ -10713,12 +11361,12 @@ async function push({
   }
 }
 
-async function resolveBlob({ fs, gitdir, oid }) {
-  const { type, object } = await _readObject({ fs, gitdir, oid });
+async function resolveBlob({ fs, cache, gitdir, oid }) {
+  const { type, object } = await _readObject({ fs, cache, gitdir, oid });
   // Resolve annotated tag objects to whatever
   if (type === 'tag') {
     oid = GitAnnotatedTag.from(object).parse().object;
-    return resolveBlob({ fs, gitdir, oid })
+    return resolveBlob({ fs, cache, gitdir, oid })
   }
   if (type !== 'blob') {
     throw new ObjectTypeError(oid, type, 'blob')
@@ -10739,6 +11387,7 @@ async function resolveBlob({ fs, gitdir, oid }) {
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.oid
  * @param {string} [args.filepath]
@@ -10746,12 +11395,19 @@ async function resolveBlob({ fs, gitdir, oid }) {
  * @returns {Promise<ReadBlobResult>} Resolves successfully with a blob object description
  * @see ReadBlobResult
  */
-async function _readBlob({ fs, gitdir, oid, filepath = undefined }) {
+async function _readBlob({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  filepath = undefined,
+}) {
   if (filepath !== undefined) {
-    oid = await resolveFilepath({ fs, gitdir, oid, filepath });
+    oid = await resolveFilepath({ fs, cache, gitdir, oid, filepath });
   }
   const blob = await resolveBlob({
     fs,
+    cache,
     gitdir,
     oid,
   });
@@ -10808,6 +11464,7 @@ async function readBlob({
 
     return await _readBlob({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
       filepath,
@@ -10849,6 +11506,7 @@ async function readCommit({ fs, dir, gitdir = join(dir, '.git'), oid }) {
 
     return await _readCommit({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
     })
@@ -10865,6 +11523,7 @@ async function readCommit({ fs, dir, gitdir = join(dir, '.git'), oid }) {
  *
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} [args.ref] - The notes ref to look under
  * @param {string} args.oid
@@ -10874,6 +11533,7 @@ async function readCommit({ fs, dir, gitdir = join(dir, '.git'), oid }) {
 
 async function _readNote({
   fs,
+  cache,
   gitdir,
   ref = 'refs/notes/commits',
   oid,
@@ -10881,6 +11541,7 @@ async function _readNote({
   const parent = await GitRefManager.resolve({ gitdir, fs, ref });
   const { blob } = await _readBlob({
     fs,
+    cache,
     gitdir,
     oid: parent,
     filepath: oid,
@@ -10919,6 +11580,7 @@ async function readNote({
 
     return await _readNote({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       ref,
       oid,
@@ -11132,10 +11794,12 @@ async function readObject({
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
+    const cache = {};
     const fs = new FileSystem(_fs);
     if (filepath !== undefined) {
       oid = await resolveFilepath({
         fs,
+        cache,
         gitdir,
         oid,
         filepath,
@@ -11145,6 +11809,7 @@ async function readObject({
     const _format = format === 'parsed' ? 'content' : format;
     const result = await _readObject({
       fs,
+      cache,
       gitdir,
       oid,
       format: _format,
@@ -11202,14 +11867,16 @@ async function readObject({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string} args.oid
  *
  * @returns {Promise<ReadTagResult>}
  */
-async function _readTag({ fs, gitdir, oid }) {
+async function _readTag({ fs, cache, gitdir, oid }) {
   const { type, object } = await _readObject({
     fs,
+    cache,
     gitdir,
     oid,
     format: 'content',
@@ -11257,6 +11924,7 @@ async function readTag({ fs, dir, gitdir = join(dir, '.git'), oid }) {
 
     return await _readTag({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
     })
@@ -11305,6 +11973,7 @@ async function readTree({
 
     return await _readTree({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oid,
       filepath,
@@ -11516,6 +12185,111 @@ async function removeNote({
   }
 }
 
+// @ts-check
+
+/**
+ * Rename a branch
+ *
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} args.gitdir
+ * @param {string} args.ref - The name of the new branch
+ * @param {string} args.oldref - The name of the old branch
+ * @param {boolean} [args.checkout = false]
+ *
+ * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
+ */
+async function _renameBranch({
+  fs,
+  gitdir,
+  oldref,
+  ref,
+  checkout = false,
+}) {
+  if (ref !== cleanGitRef.clean(ref)) {
+    throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
+  }
+
+  if (oldref !== cleanGitRef.clean(oldref)) {
+    throw new InvalidRefNameError(oldref, cleanGitRef.clean(oldref))
+  }
+
+  const fulloldref = `refs/heads/${oldref}`;
+  const fullnewref = `refs/heads/${ref}`;
+
+  const newexist = await GitRefManager.exists({ fs, gitdir, ref: fullnewref });
+
+  if (newexist) {
+    throw new AlreadyExistsError('branch', ref, false)
+  }
+
+  const value = await GitRefManager.resolve({
+    fs,
+    gitdir,
+    ref: fulloldref,
+    depth: 1,
+  });
+
+  await GitRefManager.writeRef({ fs, gitdir, ref: fullnewref, value });
+  await GitRefManager.deleteRef({ fs, gitdir, ref: fulloldref });
+
+  if (checkout) {
+    // Update HEAD
+    await GitRefManager.writeSymbolicRef({
+      fs,
+      gitdir,
+      ref: 'HEAD',
+      value: fullnewref,
+    });
+  }
+}
+
+// @ts-check
+
+/**
+ * Rename a branch
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system implementation
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.ref - What to name the branch
+ * @param {string} args.oldref - What the name of the branch was
+ * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
+ *
+ * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
+ *
+ * @example
+ * await git.renameBranch({ fs, dir: '/tutorial', ref: 'main', oldref: 'master' })
+ * console.log('done')
+ *
+ */
+async function renameBranch({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  ref,
+  oldref,
+  checkout = false,
+}) {
+  try {
+    assertParameter('fs', fs);
+    assertParameter('gitdir', gitdir);
+    assertParameter('ref', ref);
+    assertParameter('oldref', oldref);
+    return await _renameBranch({
+      fs: new FileSystem(fs),
+      gitdir,
+      ref,
+      oldref,
+      checkout,
+    })
+  } catch (err) {
+    err.caller = 'git.renameBranch';
+    throw err
+  }
+}
+
 async function hashObject$1({ gitdir, type, object }) {
   return shasum(GitObject.wrap({ type, object }))
 }
@@ -11563,6 +12337,7 @@ async function resetIndex({
       // Resolve blob
       oid = await resolveFilepath({
         fs,
+        cache,
         gitdir,
         oid,
         filepath,
@@ -11784,9 +12559,10 @@ async function status({
     if (ignored) {
       return 'ignored'
     }
-    const headTree = await getHeadTree({ fs, gitdir });
+    const headTree = await getHeadTree({ fs, cache, gitdir });
     const treeOid = await getOidAtPath({
       fs,
+      cache,
       gitdir,
       tree: headTree,
       path: filepath,
@@ -11883,7 +12659,7 @@ async function status({
   }
 }
 
-async function getOidAtPath({ fs, gitdir, tree, path }) {
+async function getOidAtPath({ fs, cache, gitdir, tree, path }) {
   if (typeof path === 'string') path = path.split('/');
   const dirname = path.shift();
   for (const entry of tree) {
@@ -11893,12 +12669,13 @@ async function getOidAtPath({ fs, gitdir, tree, path }) {
       }
       const { type, object } = await _readObject({
         fs,
+        cache,
         gitdir,
         oid: entry.oid,
       });
       if (type === 'tree') {
         const tree = GitTree.from(object);
-        return getOidAtPath({ fs, gitdir, tree, path })
+        return getOidAtPath({ fs, cache, gitdir, tree, path })
       }
       if (type === 'blob') {
         throw new ObjectTypeError(entry.oid, type, 'blob', path.join('/'))
@@ -11908,7 +12685,7 @@ async function getOidAtPath({ fs, gitdir, tree, path }) {
   return null
 }
 
-async function getHeadTree({ fs, gitdir }) {
+async function getHeadTree({ fs, cache, gitdir }) {
   // Get the tree from the HEAD commit.
   let oid;
   try {
@@ -11919,7 +12696,7 @@ async function getHeadTree({ fs, gitdir }) {
       return []
     }
   }
-  const { tree } = await _readTree({ fs, gitdir, oid });
+  const { tree } = await _readTree({ fs, cache, gitdir, oid });
   return tree
 }
 
@@ -12944,6 +13721,7 @@ var index = {
   findMergeBase,
   findRoot,
   getRemoteInfo,
+  getRemoteInfo2,
   hashBlob,
   indexPack,
   init,
@@ -12952,6 +13730,7 @@ var index = {
   listFiles,
   listNotes,
   listRemotes,
+  listServerRefs,
   listTags,
   log,
   merge,
@@ -12966,6 +13745,7 @@ var index = {
   readTree,
   remove,
   removeNote,
+  renameBranch,
   resetIndex,
   resolveRef,
   status,
@@ -13008,6 +13788,7 @@ exports.findRoot = findRoot;
 exports.getConfig = getConfig;
 exports.getConfigAll = getConfigAll;
 exports.getRemoteInfo = getRemoteInfo;
+exports.getRemoteInfo2 = getRemoteInfo2;
 exports.hashBlob = hashBlob;
 exports.indexPack = indexPack;
 exports.init = init;
@@ -13016,6 +13797,7 @@ exports.listBranches = listBranches;
 exports.listFiles = listFiles;
 exports.listNotes = listNotes;
 exports.listRemotes = listRemotes;
+exports.listServerRefs = listServerRefs;
 exports.listTags = listTags;
 exports.log = log;
 exports.merge = merge;
@@ -13030,6 +13812,7 @@ exports.readTag = readTag;
 exports.readTree = readTree;
 exports.remove = remove;
 exports.removeNote = removeNote;
+exports.renameBranch = renameBranch;
 exports.resetIndex = resetIndex;
 exports.resolveRef = resolveRef;
 exports.setConfig = setConfig;

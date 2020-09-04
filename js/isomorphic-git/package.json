@@ -55,7 +55,6 @@
     "clean-git-ref": "^2.0.1",
     "crc-32": "^1.2.0",
     "diff3": "0.0.3",
-    "git-apply-delta": "0.0.7",
     "ignore": "^5.1.4",
     "minimisted": "^2.0.0",
     "pako": "^1.0.10",
@@ -69,7 +68,7 @@
     "@babel/plugin-transform-async-to-generator": "7.5.0",
     "@babel/preset-env": "7.5.5",
     "@babel/runtime": "7.5.5",
-    "@isomorphic-git/cors-proxy": "2.6.1",
+    "@isomorphic-git/cors-proxy": "2.7.0",
     "@isomorphic-git/lightning-fs": "^3.3.0",
     "@isomorphic-git/pgp-plugin": "0.0.7",
     "@semantic-release/exec": "3.3.6",
@@ -80,7 +79,7 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "8.0.6",
     "browserfs": "2.0.0",
-    "bundlewatch": "0.2.5",
+    "bundlewatch": "0.2.7",
     "cross-env": "6.0.0",
     "decompress": "^4.2.0",
     "diff-lines": "1.1.1",
@@ -95,7 +94,7 @@
     "eslint-plugin-prettier": "^3.1.2",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "git-http-mock-server": "1.2.1",
+    "git-http-mock-server": "2.0.0",
     "github-comment": "1.0.1",
     "inquirer": "^7.0.0",
     "jasmine-core": "3.4.0",
@@ -141,7 +140,12 @@
         "path": "./index.umd.min.js",
         "maxSize": "100kb"
       }
-    ]
+    ],
+    "ci": {
+      "trackBranches": [
+        "main"
+      ]
+    }
   },
   "collective": {
     "type": "opencollective",
