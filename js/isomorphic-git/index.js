@@ -6433,7 +6433,7 @@ class GitRemoteHTTP {
    * @param {string} [args.corsProxy]
    * @param {string} args.service
    * @param {string} args.url
-   * @param {Object<string, string>} [args.headers]
+   * @param {Object<string, string>} args.headers
    * @param {1 | 2} args.protocolVersion - Git Protocol Version
    */
   static async discover({
@@ -7162,6 +7162,7 @@ async function _fetch({
     service: 'git-upload-pack',
     url,
     headers,
+    protocolVersion: 1,
   });
   const auth = remoteHTTP.auth; // hack to get new credentials from CredentialManager API
   const remoteRefs = remoteHTTP.refs;
@@ -10624,6 +10625,7 @@ async function _pack({
 /**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {any} args.cache
  * @param {string} args.gitdir
  * @param {string[]} args.oids
  * @param {boolean} args.write
@@ -10631,8 +10633,8 @@ async function _pack({
  * @returns {Promise<PackObjectsResult>}
  * @see PackObjectsResult
  */
-async function _packObjects({ fs, gitdir, oids, write }) {
-  const buffers = await _pack({ fs, gitdir, oids });
+async function _packObjects({ fs, cache, gitdir, oids, write }) {
+  const buffers = await _pack({ fs, cache, gitdir, oids });
   const packfile = Buffer.from(await collect(buffers));
   const packfileSha = packfile.slice(-20).toString('hex');
   const filename = `pack-${packfileSha}.pack`;
@@ -10692,6 +10694,7 @@ async function packObjects({
 
     return await _packObjects({
       fs: new FileSystem(fs),
+      cache: {},
       gitdir,
       oids,
       write,
@@ -11081,6 +11084,7 @@ async function _push({
     service: 'git-receive-pack',
     url,
     headers,
+    protocolVersion: 1,
   });
   const auth = httpRemote.auth; // hack to get new credentials from CredentialManager API
   let fullRemoteRef;
@@ -11212,6 +11216,7 @@ async function _push({
     ? []
     : await _pack({
         fs,
+        cache,
         gitdir,
         oids: [...objects],
       });
