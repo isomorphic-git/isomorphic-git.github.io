@@ -81,6 +81,7 @@
 <tr><td>exclude</td><td>Array&lt;string&gt; = []</td><td>A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.</td></tr>
 <tr><td>relative</td><td>boolean = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
 <tr><td><a href="./headers">headers</a></td><td>Object&lt;string, string&gt; = {}</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
+<tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when clone completes</td></tr>
 </tbody>
 </table>

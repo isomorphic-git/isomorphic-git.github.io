@@ -801,6 +801,8 @@ function compareStats(entry, stats) {
 // const lm = new LockManager()
 let lock = null;
 
+const IndexCache = Symbol('IndexCache');
+
 function createCache() {
   return {
     map: new Map(),
@@ -838,7 +840,7 @@ class GitIndexManager {
    * @param {function(GitIndex): any} closure
    */
   static async acquire({ fs, gitdir, cache }, closure) {
-    if (!cache.index) cache.index = createCache();
+    if (!cache[IndexCache]) cache[IndexCache] = createCache();
 
     const filepath = `${gitdir}/index`;
     if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
@@ -848,10 +850,10 @@ class GitIndexManager {
       // to make sure other processes aren't writing to it
       // simultaneously, which could result in a corrupted index.
       // const fileLock = await Lock(filepath)
-      if (await isIndexStale(fs, filepath, cache.index)) {
-        await updateCachedIndexFile(fs, filepath, cache.index);
+      if (await isIndexStale(fs, filepath, cache[IndexCache])) {
+        await updateCachedIndexFile(fs, filepath, cache[IndexCache]);
       }
-      const index = cache.index.map.get(filepath);
+      const index = cache[IndexCache].map.get(filepath);
       result = await closure(index);
       if (index._dirty) {
         // Acquire a file lock while we're writing the index file
@@ -859,7 +861,7 @@ class GitIndexManager {
         const buffer = await index.toObject();
         await fs.write(filepath, buffer);
         // Update cached stat value
-        cache.index.stats.set(filepath, await fs.lstat(filepath));
+        cache[IndexCache].stats.set(filepath, await fs.lstat(filepath));
         index._dirty = false;
       }
     });
@@ -2807,6 +2809,8 @@ class GitPackIndex {
   }
 }
 
+const PackfileCache = Symbol('PackfileCache');
+
 async function loadPackIndex({
   fs,
   filename,
@@ -2827,8 +2831,8 @@ function readPackIndex({
   emitterPrefix,
 }) {
   // Try to get the packfile index from the in-memory cache
-  if (!cache.packfiles) cache.packfiles = new Map();
-  let p = cache.packfiles.get(filename);
+  if (!cache[PackfileCache]) cache[PackfileCache] = new Map();
+  let p = cache[PackfileCache].get(filename);
   if (!p) {
     p = loadPackIndex({
       fs,
@@ -2837,7 +2841,7 @@ function readPackIndex({
       emitter,
       emitterPrefix,
     });
-    cache.packfiles.set(filename, p);
+    cache[PackfileCache].set(filename, p);
   }
   return p
 }
@@ -3679,9 +3683,9 @@ async function resolveTree({ fs, cache, gitdir, oid }) {
 }
 
 class GitWalkerRepo {
-  constructor({ fs, gitdir, ref }) {
+  constructor({ fs, gitdir, ref, cache }) {
     this.fs = fs;
-    this.cache = {};
+    this.cache = cache;
     this.gitdir = gitdir;
     this.mapPromise = (async () => {
       const map = new Map();
@@ -3813,8 +3817,8 @@ class GitWalkerRepo {
 function TREE({ ref = 'HEAD' }) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir }) {
-      return new GitWalkerRepo({ fs, gitdir, ref })
+    value: function({ fs, gitdir, cache }) {
+      return new GitWalkerRepo({ fs, gitdir, ref, cache })
     },
   });
   Object.freeze(o);
@@ -4330,6 +4334,7 @@ function assertParameter(name, value) {
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to add to the index
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -4344,6 +4349,7 @@ async function add({
   dir,
   gitdir = join(dir, '.git'),
   filepath,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -4352,7 +4358,6 @@ async function add({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
-    const cache = {};
     await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
       await addToIndex({ dir, gitdir, fs, filepath, index });
     });
@@ -4849,6 +4854,7 @@ async function normalizeCommitterObject({
  * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - Sign the note commit using this private PGP key.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<string>} Resolves successfully with the SHA-1 object id of the commit object for the added note.
  */
@@ -4865,6 +4871,7 @@ async function addNote({
   author: _author,
   committer: _committer,
   signingKey,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -4875,7 +4882,6 @@ async function addNote({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
-    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -5101,6 +5107,7 @@ async function _annotatedTag({
  * @param {string} [args.gpgsig] - The gpgsig attatched to the tag object. (Mutually exclusive with the `signingKey` option.)
  * @param {string} [args.signingKey] - Sign the tag object using this private PGP key. (Mutually exclusive with the `gpgsig` option.)
  * @param {boolean} [args.force = false] - Instead of throwing an error if a tag named `ref` already exists, overwrite the existing tag. Note that this option does not modify the original tag object itself.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -5130,6 +5137,7 @@ async function annotatedTag({
   object,
   signingKey,
   force = false,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -5146,7 +5154,7 @@ async function annotatedTag({
 
     return await _annotatedTag({
       fs,
-      cache: {},
+      cache,
       onSign,
       gitdir,
       ref,
@@ -6013,6 +6021,7 @@ async function analyze({
  * @param {boolean} [args.noUpdateHead] - If true, will update the working directory but won't update HEAD. Defaults to `false` when `ref` is provided, and `true` if `ref` is not provided.
  * @param {boolean} [args.dryRun = false] - If true, simulates a checkout so you can test whether it would succeed.
  * @param {boolean} [args.force = false] - If true, conflicts will be ignored and files will be overwritten regardless of local changes.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -6059,6 +6068,7 @@ async function checkout({
   noUpdateHead = _ref === undefined,
   dryRun = false,
   force = false,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -6068,7 +6078,7 @@ async function checkout({
     const ref = _ref || 'HEAD';
     return await _checkout({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       onProgress,
       dir,
       gitdir,
@@ -7592,6 +7602,7 @@ async function _clone({
  * @param {string[]} [args.exclude = []] - A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.
  * @param {boolean} [args.relative = false] - Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.
  * @param {Object<string, string>} [args.headers = {}] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully when clone completes
  *
@@ -7630,6 +7641,7 @@ async function clone({
   noCheckout = false,
   noTags = false,
   headers = {},
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -7642,7 +7654,7 @@ async function clone({
 
     return await _clone({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       http,
       onProgress,
       onMessage,
@@ -7697,6 +7709,7 @@ async function clone({
  * @param {string} [args.ref] - The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)
  * @param {string[]} [args.parent] - The SHA-1 object ids of the commits to use as parents. If not specified, the commit pointed to by `ref` is used.
  * @param {string} [args.tree] - The SHA-1 object id of the tree to use. If not specified, a new tree object is created from the current git index.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<string>} Resolves successfully with the SHA-1 object id of the newly created commit.
  *
@@ -7727,6 +7740,7 @@ async function commit({
   ref,
   parent,
   tree,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -7735,7 +7749,6 @@ async function commit({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
-    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -8091,6 +8104,7 @@ async function _expandOid({ fs, cache, gitdir, oid: short }) {
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.oid - The shortened oid prefix to expand (like "0414d2a")
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<string>} Resolves successfully with the full oid (like "0414d2a286d7bbc7a4a326a61c1f9f888a8ab87f")
  *
@@ -8099,14 +8113,20 @@ async function _expandOid({ fs, cache, gitdir, oid: short }) {
  * console.log(oid)
  *
  */
-async function expandOid({ fs, dir, gitdir = join(dir, '.git'), oid }) {
+async function expandOid({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  oid,
+  cache = {},
+}) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
     return await _expandOid({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
     })
@@ -8765,6 +8785,7 @@ async function _pull({
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully when pull operation completes
  *
@@ -8796,6 +8817,7 @@ async function fastForward({
   corsProxy,
   singleBranch,
   headers = {},
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -8811,7 +8833,7 @@ async function fastForward({
 
     return await _pull({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       http,
       onProgress,
       onMessage,
@@ -8877,6 +8899,7 @@ async function fastForward({
  * @param {boolean} [args.pruneTags] - Prune local tags that don’t exist on the remote, and force-update those tags that differ
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<FetchResult>} Resolves successfully when fetch completes
  * @see FetchResult
@@ -8920,6 +8943,7 @@ async function fetch({
   headers = {},
   prune = false,
   pruneTags = false,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -8928,7 +8952,7 @@ async function fetch({
 
     return await _fetch({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       http,
       onProgress,
       onMessage,
@@ -8967,6 +8991,7 @@ async function fetch({
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string[]} args.oids - Which commits
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  */
 async function findMergeBase({
@@ -8974,6 +8999,7 @@ async function findMergeBase({
   dir,
   gitdir = join(dir, '.git'),
   oids,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -8982,7 +9008,7 @@ async function findMergeBase({
 
     return await _findMergeBase({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oids,
     })
@@ -9525,6 +9551,7 @@ async function _indexPack({
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the .pack file to index
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<{oids: string[]}>} Resolves with a list of the SHA-1 object ids contained in the packfile
  *
@@ -9550,6 +9577,7 @@ async function indexPack({
   dir,
   gitdir = join(dir, '.git'),
   filepath,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -9559,7 +9587,7 @@ async function indexPack({
 
     return await _indexPack({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       onProgress,
       dir,
       gitdir,
@@ -9700,6 +9728,7 @@ async function _isDescendent({
  * @param {string} args.oid - The descendent commit
  * @param {string} args.ancestor - The (proposed) ancestor commit
  * @param {number} [args.depth = -1] - Maximum depth to search before giving up. -1 means no maximum depth.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<boolean>} Resolves to true if `oid` is a descendent of `ancestor`
  *
@@ -9717,6 +9746,7 @@ async function isDescendent({
   oid,
   ancestor,
   depth = -1,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -9726,7 +9756,7 @@ async function isDescendent({
 
     return await _isDescendent({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
       ancestor,
@@ -9857,6 +9887,7 @@ async function accumulateFilesFromOid({
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - Return a list of all the files in the commit at `ref` instead of the files currently in the git index (aka staging area)
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<string>>} Resolves successfully with an array of filepaths
  *
@@ -9869,14 +9900,20 @@ async function accumulateFilesFromOid({
  * console.log(files)
  *
  */
-async function listFiles({ fs, dir, gitdir = join(dir, '.git'), ref }) {
+async function listFiles({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  ref,
+  cache = {},
+}) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
 
     return await _listFiles({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       ref,
     })
@@ -9937,6 +9974,7 @@ async function _listNotes({ fs, cache, gitdir, ref }) {
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - The notes ref to look under
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<{target: string, note: string}>>} Resolves successfully with an array of entries containing SHA-1 object ids of the note and the object the note targets
  */
@@ -9946,6 +9984,7 @@ async function listNotes({
   dir,
   gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -9954,7 +9993,7 @@ async function listNotes({
 
     return await _listNotes({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       ref,
     })
@@ -10380,6 +10419,7 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
  * @param {string} [args.ref = 'HEAD'] - The commit to begin walking backwards through the history from
  * @param {number} [args.depth] - Limit the number of commits returned. No limit by default.
  * @param {Date} [args.since] - Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
  * @see ReadCommitResult
@@ -10402,6 +10442,7 @@ async function log({
   ref = 'HEAD',
   depth,
   since, // Date
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -10410,7 +10451,7 @@ async function log({
 
     return await _log({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       ref,
       depth,
@@ -10469,6 +10510,7 @@ async function log({
  * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  * @see MergeResult
@@ -10497,6 +10539,7 @@ async function merge({
   author: _author,
   committer: _committer,
   signingKey,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -10504,7 +10547,6 @@ async function merge({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
-    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author && !fastForwardOnly) throw new MissingNameError('author')
@@ -10666,6 +10708,7 @@ async function _packObjects({ fs, cache, gitdir, oids, write }) {
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string[]} args.oids - An array of SHA-1 object ids to be included in the packfile
  * @param {boolean} [args.write = false] - Whether to save the packfile to disk or not
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<PackObjectsResult>} Resolves successfully when the packfile is ready with the filename and buffer
  * @see PackObjectsResult
@@ -10686,6 +10729,7 @@ async function packObjects({
   gitdir = join(dir, '.git'),
   oids,
   write = false,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -10694,7 +10738,7 @@ async function packObjects({
 
     return await _packObjects({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oids,
       write,
@@ -10739,6 +10783,7 @@ async function packObjects({
  * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully when pull operation completes
  *
@@ -10774,6 +10819,7 @@ async function pull({
   author: _author,
   committer: _committer,
   signingKey,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -10794,7 +10840,7 @@ async function pull({
 
     return await _pull({
       fs,
-      cache: {},
+      cache,
       http,
       onProgress,
       onMessage,
@@ -11298,6 +11344,7 @@ async function _push({
  * @param {boolean} [args.delete = false] - If true, delete the remote ref
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<PushResult>} Resolves successfully when push completes with a detailed description of the operation from the server.
  * @see PushResult
@@ -11333,6 +11380,7 @@ async function push({
   delete: _delete = false,
   corsProxy,
   headers = {},
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -11341,7 +11389,7 @@ async function push({
 
     return await _push({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       http,
       onProgress,
       onMessage,
@@ -11436,6 +11484,7 @@ async function _readBlob({
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.oid - The SHA-1 object id to get. Annotated tags, commits, and trees are peeled.
  * @param {string} [args.filepath] - Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the blob object at that filepath.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<ReadBlobResult>} Resolves successfully with a blob object description
  * @see ReadBlobResult
@@ -11459,6 +11508,7 @@ async function readBlob({
   gitdir = join(dir, '.git'),
   oid,
   filepath,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -11467,7 +11517,7 @@ async function readBlob({
 
     return await _readBlob({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
       filepath,
@@ -11488,6 +11538,7 @@ async function readBlob({
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.oid - The SHA-1 object id to get. Annotated tags are peeled.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<ReadCommitResult>} Resolves successfully with a git commit object
  * @see ReadCommitResult
@@ -11501,7 +11552,13 @@ async function readBlob({
  * console.log(commit)
  *
  */
-async function readCommit({ fs, dir, gitdir = join(dir, '.git'), oid }) {
+async function readCommit({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  oid,
+  cache = {},
+}) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11509,7 +11566,7 @@ async function readCommit({ fs, dir, gitdir = join(dir, '.git'), oid }) {
 
     return await _readCommit({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
     })
@@ -11564,6 +11621,7 @@ async function _readNote({
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - The notes ref to look under
  * @param {string} args.oid - The SHA-1 object id of the object to get the note for.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Uint8Array>} Resolves successfully with note contents as a Buffer.
  */
@@ -11574,6 +11632,7 @@ async function readNote({
   gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -11583,7 +11642,7 @@ async function readNote({
 
     return await _readNote({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       ref,
       oid,
@@ -11752,6 +11811,7 @@ async function readNote({
  * @param {'deflated' | 'wrapped' | 'content' | 'parsed'} [args.format = 'parsed'] - What format to return the object in. The choices are described in more detail below.
  * @param {string} [args.filepath] - Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the object at that filepath. To return the root directory of a tree set filepath to `''`
  * @param {string} [args.encoding] - A convenience argument that only affects blobs. Instead of returning `object` as a buffer, it returns a string parsed using the given encoding.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<ReadObjectResult>} Resolves successfully with a git object description
  * @see ReadObjectResult
@@ -11791,13 +11851,13 @@ async function readObject({
   format = 'parsed',
   filepath = undefined,
   encoding = undefined,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
-    const cache = {};
     const fs = new FileSystem(_fs);
     if (filepath !== undefined) {
       oid = await resolveFilepath({
@@ -11913,13 +11973,20 @@ async function _readTag({ fs, cache, gitdir, oid }) {
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.oid - The SHA-1 object id to get
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<ReadTagResult>} Resolves successfully with a git object description
  * @see ReadTagResult
  * @see TagObject
  *
  */
-async function readTag({ fs, dir, gitdir = join(dir, '.git'), oid }) {
+async function readTag({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  oid,
+  cache = {},
+}) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11927,7 +11994,7 @@ async function readTag({ fs, dir, gitdir = join(dir, '.git'), oid }) {
 
     return await _readTag({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
     })
@@ -11955,6 +12022,7 @@ async function readTag({ fs, dir, gitdir = join(dir, '.git'), oid }) {
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.oid - The SHA-1 object id to get. Annotated tags and commits are peeled.
  * @param {string} [args.filepath] - Don't return the object with `oid` itself, but resolve `oid` to a tree and then return the tree object at that filepath.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<ReadTreeResult>} Resolves successfully with a git tree object
  * @see ReadTreeResult
@@ -11968,6 +12036,7 @@ async function readTree({
   gitdir = join(dir, '.git'),
   oid,
   filepath = undefined,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -11976,7 +12045,7 @@ async function readTree({
 
     return await _readTree({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       gitdir,
       oid,
       filepath,
@@ -11999,6 +12068,7 @@ async function readTree({
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to remove from the index
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -12012,13 +12082,13 @@ async function remove({
   dir,
   gitdir = join(dir, '.git'),
   filepath,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
     assertParameter('gitdir', gitdir);
     assertParameter('filepath', filepath);
 
-    const cache = {};
     await GitIndexManager.acquire(
       { fs: new FileSystem(_fs), gitdir, cache },
       async function(index) {
@@ -12137,6 +12207,7 @@ async function _removeNote({
  * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - Sign the tag object using this private PGP key.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<string>} Resolves successfully with the SHA-1 object id of the commit object for the note removal.
  */
@@ -12151,6 +12222,7 @@ async function removeNote({
   author: _author,
   committer: _committer,
   signingKey,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -12158,7 +12230,6 @@ async function removeNote({
     assertParameter('oid', oid);
 
     const fs = new FileSystem(_fs);
-    const cache = {};
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
     if (!author) throw new MissingNameError('author')
@@ -12310,6 +12381,7 @@ async function hashObject$1({ gitdir, type, object }) {
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to reset in the index
  * @param {string} [args.ref = 'HEAD'] - A ref to the commit to use
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -12324,6 +12396,7 @@ async function resetIndex({
   gitdir = join(dir, '.git'),
   filepath,
   ref = 'HEAD',
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -12332,7 +12405,6 @@ async function resetIndex({
     assertParameter('ref', ref);
 
     const fs = new FileSystem(_fs);
-    const cache = {};
     // Resolve commit
     let oid = await GitRefManager.resolve({ fs, gitdir, ref });
     let workdirOid;
@@ -12532,6 +12604,7 @@ async function setConfig({
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to query
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<'ignored'|'unmodified'|'*modified'|'*deleted'|'*added'|'absent'|'modified'|'deleted'|'added'|'*unmodified'|'*absent'|'*undeleted'|'*undeletemodified'>} Resolves successfully with the file's git status
  *
@@ -12545,6 +12618,7 @@ async function status({
   dir,
   gitdir = join(dir, '.git'),
   filepath,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -12552,7 +12626,6 @@ async function status({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
-    const cache = {};
     const ignored = await GitIgnoreManager.isIgnored({
       fs,
       gitdir,
@@ -12840,6 +12913,7 @@ async function getHeadTree({ fs, cache, gitdir }) {
  * @param {string} [args.ref = 'HEAD'] - Optionally specify a different commit to compare against the workdir and stage instead of the HEAD
  * @param {string[]} [args.filepaths = ['.']] - Limit the query to the given files and directories
  * @param {function(string): boolean} [args.filter] - Filter the results to only those whose filepath matches a function.
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
@@ -12851,6 +12925,7 @@ async function statusMatrix({
   ref = 'HEAD',
   filepaths = ['.'],
   filter,
+  cache = {},
 }) {
   try {
     assertParameter('fs', _fs);
@@ -12858,7 +12933,6 @@ async function statusMatrix({
     assertParameter('ref', ref);
 
     const fs = new FileSystem(_fs);
-    const cache = {};
     return await _walk({
       fs,
       cache,
@@ -13245,6 +13319,7 @@ function version() {
  * @param {WalkerMap} [args.map] - Transform `WalkerEntry`s into a result form
  * @param {WalkerReduce} [args.reduce] - Control how mapped entries are combined with their parent result
  * @param {WalkerIterate} [args.iterate] - Fine-tune how entries within a tree are iterated over
+ * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<any>} The finished tree-walking result
  */
@@ -13256,6 +13331,7 @@ async function walk({
   map,
   reduce,
   iterate,
+  cache = {},
 }) {
   try {
     assertParameter('fs', fs);
@@ -13264,7 +13340,7 @@ async function walk({
 
     return await _walk({
       fs: new FileSystem(fs),
-      cache: {},
+      cache,
       dir,
       gitdir,
       trees,

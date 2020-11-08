@@ -65,6 +65,7 @@
 <tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td><strong>oid</strong></td><td>string</td><td>The SHA-1 object id to get. Annotated tags, commits, and trees are peeled.</td></tr>
 <tr><td>filepath</td><td>string</td><td>Don't return the object with <code>oid</code> itself, but resolve <code>oid</code> to a tree and then return the blob object at that filepath.</td></tr>
+<tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;ReadBlobResult&gt;</td><td>Resolves successfully with a blob object description</td></tr>
 </tbody>
 </table>

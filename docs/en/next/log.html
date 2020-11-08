@@ -66,6 +66,7 @@
 <tr><td>ref</td><td>string = 'HEAD'</td><td>The commit to begin walking backwards through the history from</td></tr>
 <tr><td>depth</td><td>number</td><td>Limit the number of commits returned. No limit by default.</td></tr>
 <tr><td>since</td><td>Date</td><td>Return history newer than the given date. Can be combined with <code>depth</code> to get whichever is shorter.</td></tr>
+<tr><td>cache</td><td>object</td><td>a <a href="/docs/en/next/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;Array&lt;ReadCommitResult&gt;&gt;</td><td>Resolves to an array of ReadCommitResult objects</td></tr>
 </tbody>
 </table>

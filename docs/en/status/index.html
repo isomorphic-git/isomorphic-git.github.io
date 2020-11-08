@@ -64,6 +64,7 @@
 <tr><td><strong>dir</strong></td><td>string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path</td></tr>
 <tr><td><strong>gitdir</strong></td><td>string = join(dir, '.git')</td><td>The <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td><strong>filepath</strong></td><td>string</td><td>The path to the file to query</td></tr>
+<tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;('ignored' | 'unmodified' | '<em>modified' | '</em>deleted' | '<em>added' | 'absent' | 'modified' | 'deleted' | 'added' | '</em>unmodified' | '<em>absent' | '</em>undeleted' | '*undeletemodified')&gt;</td><td>Resolves successfully with the file's git status</td></tr>
 </tbody>
 </table>
