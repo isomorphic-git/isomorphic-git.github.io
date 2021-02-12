@@ -4295,6 +4295,8 @@ async function browserDeflate(buffer) {
 function testCompressionStream() {
   try {
     const cs = new CompressionStream('deflate');
+    // Test if `Blob.stream` is present. React Native does not have the `stream` method
+    new Blob([]).stream();
     if (cs) return true
   } catch (_) {
     // no bother
@@ -8282,6 +8284,7 @@ function mergeFile({
  *
  * @param {Object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.ourOid - The SHA-1 object id of our tree
@@ -8297,6 +8300,7 @@ function mergeFile({
  */
 async function mergeTree({
   fs,
+  cache,
   dir,
   gitdir = join(dir, '.git'),
   ourOid,
@@ -8313,6 +8317,7 @@ async function mergeTree({
 
   const results = await _walk({
     fs,
+    cache,
     dir,
     gitdir,
     trees: [ourTree, baseTree, theirTree],
@@ -8383,6 +8388,9 @@ async function mergeTree({
      */
     reduce: async (parent, children) => {
       const entries = children.filter(Boolean); // remove undefineds
+
+      // if the parent was deleted, the children have to go
+      if (!parent) return
 
       // automatically delete directories if they have been emptied
       if (parent && parent.type === 'tree' && entries.length === 0) return
@@ -8613,6 +8621,7 @@ async function _merge({
     // try a fancier merge
     const tree = await mergeTree({
       fs,
+      cache,
       gitdir,
       ourOid,
       theirOid,
