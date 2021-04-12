@@ -343,6 +343,19 @@ class InternalError extends BaseError {
 /** @type {'InternalError'} */
 InternalError.code = 'InternalError';
 
+class UnsafeFilepathError extends BaseError {
+  /**
+   * @param {string} filepath
+   */
+  constructor(filepath) {
+    super(`The filepath "${filepath}" contains unsafe character sequences`);
+    this.code = this.name = UnsafeFilepathError.code;
+    this.data = { filepath };
+  }
+}
+/** @type {'UnsafeFilepathError'} */
+UnsafeFilepathError.code = 'UnsafeFilepathError';
+
 // Modeled after https://github.com/tjfontaine/node-buffercursor
 // but with the goal of being much lighter weight.
 class BufferCursor {
@@ -658,6 +671,12 @@ class GitIndex {
       }
       // TODO: handle pathnames larger than 12 bits
       entry.path = reader.toString('utf8', pathlength);
+
+      // Prevent malicious paths like "..\foo"
+      if (entry.path.includes('..\\') || entry.path.includes('../')) {
+        throw new UnsafeFilepathError(entry.path)
+      }
+
       // The next bit is awkward. We expect 1 to 8 null characters
       // such that the total size of the entry is a multiple of 8 bits.
       // (Hence subtract 12 bytes for the header.)
@@ -1989,6 +2008,12 @@ function parseBuffer(buffer) {
     if (mode === '40000') mode = '040000'; // makes it line up neater in printed output
     const type = mode2type$1(mode);
     const path = buffer.slice(space + 1, nullchar).toString('utf8');
+
+    // Prevent malicious git repos from writing to "..\foo" on clone etc
+    if (path.includes('\\') || path.includes('/')) {
+      throw new UnsafeFilepathError(path)
+    }
+
     const oid = buffer.slice(nullchar + 1, nullchar + 21).toString('hex');
     cursor = nullchar + 21;
     _entries.push({ mode, path, oid, type });
@@ -3315,6 +3340,7 @@ var Errors = /*#__PURE__*/Object.freeze({
   RemoteCapabilityError: RemoteCapabilityError,
   SmartHttpError: SmartHttpError,
   UnknownTransportError: UnknownTransportError,
+  UnsafeFilepathError: UnsafeFilepathError,
   UrlParseError: UrlParseError,
   UserCanceledError: UserCanceledError
 });

@@ -716,6 +716,7 @@ export var Errors: Readonly<{
     RemoteCapabilityError: typeof RemoteCapabilityError;
     SmartHttpError: typeof SmartHttpError;
     UnknownTransportError: typeof UnknownTransportError;
+    UnsafeFilepathError: typeof UnsafeFilepathError;
     UrlParseError: typeof UrlParseError;
     UserCanceledError: typeof UserCanceledError;
 }>;
@@ -3928,6 +3929,21 @@ declare namespace UnknownTransportError {
     const code_23: 'UnknownTransportError';
     export { code_23 as code };
 }
+declare class UnsafeFilepathError extends BaseError {
+    /**
+     * @param {string} filepath
+     */
+    constructor(filepath: string);
+    code: "UnsafeFilepathError";
+    name: "UnsafeFilepathError";
+    data: {
+        filepath: string;
+    };
+}
+declare namespace UnsafeFilepathError {
+    const code_24: 'UnsafeFilepathError';
+    export { code_24 as code };
+}
 declare class UrlParseError extends BaseError {
     /**
      * @param {string} url
@@ -3940,8 +3956,8 @@ declare class UrlParseError extends BaseError {
     };
 }
 declare namespace UrlParseError {
-    const code_24: 'UrlParseError';
-    export { code_24 as code };
+    const code_25: 'UrlParseError';
+    export { code_25 as code };
 }
 declare class UserCanceledError extends BaseError {
     code: "UserCanceledError";
@@ -3949,8 +3965,8 @@ declare class UserCanceledError extends BaseError {
     data: {};
 }
 declare namespace UserCanceledError {
-    const code_25: 'UserCanceledError';
-    export { code_25 as code };
+    const code_26: 'UserCanceledError';
+    export { code_26 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent
