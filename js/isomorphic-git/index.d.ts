@@ -260,7 +260,7 @@ export type ReadTagResult = {
      */
     payload: string;
 };
-export type WalkerMap = (filename: string, entries: WalkerEntry[] | null) => Promise<any>;
+export type WalkerMap = (filename: string, entries: (WalkerEntry | null)[]) => Promise<any>;
 export type WalkerReduce = (parent: any, children: any[]) => Promise<any>;
 export type WalkerIterateCallback = (entries: WalkerEntry[]) => Promise<any[]>;
 export type WalkerIterate = (walk: WalkerIterateCallback, children: any) => Promise<any[]>;
@@ -3081,7 +3081,7 @@ export function version(): string;
 /**
  * @callback WalkerMap
  * @param {string} filename
- * @param {?WalkerEntry[]} entries
+ * @param {(?WalkerEntry)[]} entries
  * @returns {Promise<any>}
  */
 /**

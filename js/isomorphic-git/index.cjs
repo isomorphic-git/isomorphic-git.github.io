@@ -13124,7 +13124,7 @@ function version() {
 /**
  * @callback WalkerMap
  * @param {string} filename
- * @param {?WalkerEntry[]} entries
+ * @param {(?WalkerEntry)[]} entries
  * @returns {Promise<any>}
  */
 
