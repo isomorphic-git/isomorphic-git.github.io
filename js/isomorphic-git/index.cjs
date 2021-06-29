@@ -7589,6 +7589,7 @@ async function _clone({
     gitdir,
     ref,
     remote,
+    corsProxy,
     depth,
     since,
     exclude,
