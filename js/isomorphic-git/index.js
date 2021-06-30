@@ -7510,6 +7510,37 @@ async function _init({
   await fs.write(gitdir + '/HEAD', `ref: refs/heads/${defaultBranch}\n`);
 }
 
+/**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} args.dirname
+ */
+async function deleteRecursively({ fs, dirname }) {
+  const filesToDelete = [];
+  const directoriesToDelete = [];
+  const pathsToTraverse = [dirname];
+
+  while (pathsToTraverse.length > 0) {
+    const path = pathsToTraverse.pop();
+
+    if ((await fs._stat(path)).isDirectory()) {
+      directoriesToDelete.push(path);
+      pathsToTraverse.push(
+        ...(await fs.readdir(path)).map(subPath => join(path, subPath))
+      );
+    } else {
+      filesToDelete.push(path);
+    }
+  }
+
+  for (const path of filesToDelete) {
+    await fs.rm(path);
+  }
+  for (const path of directoriesToDelete.reverse()) {
+    await fs.rmdir(path);
+  }
+}
+
 // @ts-check
 
 /**
@@ -7564,48 +7595,61 @@ async function _clone({
   noTags,
   headers,
 }) {
-  await _init({ fs, gitdir });
-  await _addRemote({ fs, gitdir, remote, url, force: false });
-  if (corsProxy) {
-    const config = await GitConfigManager.get({ fs, gitdir });
-    await config.set(`http.corsProxy`, corsProxy);
-    await GitConfigManager.save({ fs, gitdir, config });
+  try {
+    await _init({ fs, gitdir });
+    await _addRemote({ fs, gitdir, remote, url, force: false });
+    if (corsProxy) {
+      const config = await GitConfigManager.get({ fs, gitdir });
+      await config.set(`http.corsProxy`, corsProxy);
+      await GitConfigManager.save({ fs, gitdir, config });
+    }
+    const { defaultBranch, fetchHead } = await _fetch({
+      fs,
+      cache,
+      http,
+      onProgress,
+      onMessage,
+      onAuth,
+      onAuthSuccess,
+      onAuthFailure,
+      gitdir,
+      ref,
+      remote,
+      corsProxy,
+      depth,
+      since,
+      exclude,
+      relative,
+      singleBranch,
+      headers,
+      tags: !noTags,
+    });
+    if (fetchHead === null) return
+    ref = ref || defaultBranch;
+    ref = ref.replace('refs/heads/', '');
+    // Checkout that branch
+    await _checkout({
+      fs,
+      cache,
+      onProgress,
+      dir,
+      gitdir,
+      ref,
+      remote,
+      noCheckout,
+    });
+  } catch (err) {
+    // Remove partial local repository, see #1283
+    try {
+      await deleteRecursively({ fs, dirname: gitdir });
+    } catch (err) {
+      // Ignore this error, we are already failing.
+      // This try-catch is necessary so the original error is
+      // not masked by potential errors in deleteRecursively.
+    }
+
+    throw err
   }
-  const { defaultBranch, fetchHead } = await _fetch({
-    fs,
-    cache,
-    http,
-    onProgress,
-    onMessage,
-    onAuth,
-    onAuthSuccess,
-    onAuthFailure,
-    gitdir,
-    ref,
-    remote,
-    corsProxy,
-    depth,
-    since,
-    exclude,
-    relative,
-    singleBranch,
-    headers,
-    tags: !noTags,
-  });
-  if (fetchHead === null) return
-  ref = ref || defaultBranch;
-  ref = ref.replace('refs/heads/', '');
-  // Checkout that branch
-  await _checkout({
-    fs,
-    cache,
-    onProgress,
-    dir,
-    gitdir,
-    ref,
-    remote,
-    noCheckout,
-  });
 }
 
 // @ts-check
