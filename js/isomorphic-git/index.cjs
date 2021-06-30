@@ -10417,7 +10417,7 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
   const oid = await GitRefManager.resolve({ fs, gitdir, ref });
   const tips = [await _readCommit({ fs, cache, gitdir, oid })];
 
-  while (true) {
+  while (tips.length > 0) {
     const commit = tips.pop();
 
     // Stop the log if we've hit the age limit
@@ -10444,9 +10444,6 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
         }
       }
     }
-
-    // Stop the loop if there are no more commit parents
-    if (tips.length === 0) break
 
     // Process tips in order by age
     tips.sort((a, b) => compareAge(a.commit, b.commit));
