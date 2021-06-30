@@ -90,25 +90,28 @@ export type GetRemoteInfoResult = {
      * - The list of capabilities returned by the server (part of the Git protocol)
      */
     capabilities: string[];
-    refs?: {
-        /**
-         * - The branches on the remote
-         */
-        heads?: {
-            [x: string]: string;
-        };
-        /**
-         * - The special branches representing pull requests (non-standard)
-         */
-        pull?: {
-            [x: string]: string;
-        };
-        /**
-         * - The tags on the remote
-         */
-        tags?: {
-            [x: string]: string;
-        };
+    refs?: any;
+    /**
+     * - The default branch of the remote
+     */
+    HEAD?: string;
+    /**
+     * - The branches on the remote
+     */
+    heads?: {
+        [x: string]: string;
+    };
+    /**
+     * - The special branches representing pull requests (non-standard)
+     */
+    pull?: {
+        [x: string]: string;
+    };
+    /**
+     * - The tags on the remote
+     */
+    tags?: {
+        [x: string]: string;
     };
 };
 /**
@@ -1531,6 +1534,7 @@ export function getConfigAll({ fs, dir, gitdir, path, }: {
  * @typedef {Object} GetRemoteInfoResult - The object returned has the following schema:
  * @property {string[]} capabilities - The list of capabilities returned by the server (part of the Git protocol)
  * @property {Object} [refs]
+ * @property {string} [HEAD] - The default branch of the remote
  * @property {Object<string, string>} [refs.heads] - The branches on the remote
  * @property {Object<string, string>} [refs.pull] - The special branches representing pull requests (non-standard)
  * @property {Object<string, string>} [refs.tags] - The tags on the remote

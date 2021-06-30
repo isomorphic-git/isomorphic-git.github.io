@@ -75,10 +75,11 @@
 <pre><code class="hljs css language-ts"><span class="hljs-keyword">type</span> GetRemoteInfoResult = {
   capabilities: <span class="hljs-built_in">Array</span>&lt;<span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The list of capabilities returned by the server (part of the Git protocol)</span>
   refs: {
-    heads: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The branches on the remote</span>
-    pull: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The special branches representing pull requests (non-standard)</span>
-    tags: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The tags on the remote</span>
   };
+  HEAD?: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// The default branch of the remote</span>
+  refs.heads?: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The branches on the remote</span>
+  refs.pull?: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The special branches representing pull requests (non-standard)</span>
+  refs.tags?: <span class="hljs-built_in">Object</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// The tags on the remote</span>
 }
 </code></pre>
 <p>This is a rare command that doesn't require an <code>fs</code>, <code>dir</code>, or even <code>gitdir</code> argument.
