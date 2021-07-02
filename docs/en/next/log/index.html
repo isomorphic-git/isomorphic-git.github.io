@@ -63,9 +63,12 @@
 <tr><td><a href="./fs"><strong>fs</strong></a></td><td>FsClient</td><td>a file system client</td></tr>
 <tr><td>dir</td><td>string</td><td>The <a href="/docs/en/next/dir-vs-gitdir">working tree</a> directory path</td></tr>
 <tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/next/dir-vs-gitdir">git directory</a> path</td></tr>
+<tr><td>filepath</td><td>string</td><td>optional get the commit for the filepath only</td></tr>
 <tr><td>ref</td><td>string = 'HEAD'</td><td>The commit to begin walking backwards through the history from</td></tr>
 <tr><td>depth</td><td>number</td><td>Limit the number of commits returned. No limit by default.</td></tr>
 <tr><td>since</td><td>Date</td><td>Return history newer than the given date. Can be combined with <code>depth</code> to get whichever is shorter.</td></tr>
+<tr><td>force</td><td>boolean = false</td><td>do not throw error if filepath is not exist (works only for a single file). defaults to false</td></tr>
+<tr><td>follow</td><td>boolean = false</td><td>Continue listing the history of a file beyond renames (works only for a single file). defaults to false</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/next/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;Array&lt;ReadCommitResult&gt;&gt;</td><td>Resolves to an array of ReadCommitResult objects</td></tr>
 </tbody>

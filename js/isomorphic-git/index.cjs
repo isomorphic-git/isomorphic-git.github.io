@@ -10431,6 +10431,77 @@ function compareAge(a, b) {
 
 // @ts-check
 
+// the empty file content object id
+const EMPTY_OID = 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391';
+
+async function resolveFileIdInTree({ fs, cache, gitdir, oid, fileId }) {
+  if (fileId === EMPTY_OID) return
+  const _oid = oid;
+  let filepath;
+  const result = await resolveTree({ fs, cache, gitdir, oid });
+  const tree = result.tree;
+  if (fileId === result.oid) {
+    filepath = result.path;
+  } else {
+    filepath = await _resolveFileId({
+      fs,
+      cache,
+      gitdir,
+      tree,
+      fileId,
+      oid: _oid,
+    });
+    if (Array.isArray(filepath)) {
+      if (filepath.length === 0) filepath = undefined;
+      else if (filepath.length === 1) filepath = filepath[0];
+    }
+  }
+  return filepath
+}
+
+async function _resolveFileId({
+  fs,
+  cache,
+  gitdir,
+  tree,
+  fileId,
+  oid,
+  filepaths = [],
+  parentPath = '',
+}) {
+  const walks = tree.entries().map(function(entry) {
+    let result;
+    if (entry.oid === fileId) {
+      result = join(parentPath, entry.path);
+      filepaths.push(result);
+    } else if (entry.type === 'tree') {
+      result = _readObject({
+        fs,
+        cache,
+        gitdir,
+        oid: entry.oid,
+      }).then(function({ object }) {
+        return _resolveFileId({
+          fs,
+          cache,
+          gitdir,
+          tree: GitTree.from(object),
+          fileId,
+          oid,
+          filepaths,
+          parentPath: join(parentPath, entry.path),
+        })
+      });
+    }
+    return result
+  });
+
+  await Promise.all(walks);
+  return filepaths
+}
+
+// @ts-check
+
 /**
  * Get commit descriptions from the git history
  *
@@ -10438,13 +10509,33 @@ function compareAge(a, b) {
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {any} args.cache
  * @param {string} args.gitdir
+ * @param {string=} args.filepath optional get the commit for the filepath only
  * @param {string} args.ref
  * @param {number|void} args.depth
- * @param {Date|void} args.since
+ * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
+ * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
+ * @param {boolean=} args.follow Continue listing the history of a file beyond renames (works only for a single file). defaults to false
  *
- * @returns {Promise<Array<ReadCommitResult>>}
+ * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
+ * @see ReadCommitResult
+ * @see CommitObject
+ *
+ * @example
+ * let commits = await git.log({ dir: '$input((/))', depth: $input((5)), ref: '$input((master))' })
+ * console.log(commits)
+ *
  */
-async function _log({ fs, cache, gitdir, ref, depth, since }) {
+async function _log({
+  fs,
+  cache,
+  gitdir,
+  filepath,
+  ref,
+  depth,
+  since,
+  force,
+  follow,
+}) {
   const sinceTimestamp =
     typeof since === 'undefined'
       ? undefined
@@ -10455,6 +10546,9 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
   const shallowCommits = await GitShallowManager.read({ fs, gitdir });
   const oid = await GitRefManager.resolve({ fs, gitdir, ref });
   const tips = [await _readCommit({ fs, cache, gitdir, oid })];
+  let lastFileOid;
+  let lastCommit;
+  let isOk;
 
   while (tips.length > 0) {
     const commit = tips.pop();
@@ -10467,10 +10561,82 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
       break
     }
 
-    commits.push(commit);
+    if (filepath) {
+      let vFileOid;
+      try {
+        vFileOid = await resolveFilepath({
+          fs,
+          cache,
+          gitdir,
+          oid: commit.commit.tree,
+          filepath,
+        });
+        if (lastCommit && lastFileOid !== vFileOid) {
+          commits.push(lastCommit);
+        }
+        lastFileOid = vFileOid;
+        lastCommit = commit;
+        isOk = true;
+      } catch (e) {
+        if (e instanceof NotFoundError) {
+          let found = follow && lastFileOid;
+          if (found) {
+            found = await resolveFileIdInTree({
+              fs,
+              cache,
+              gitdir,
+              oid: commit.commit.tree,
+              fileId: lastFileOid,
+            });
+            if (found) {
+              if (Array.isArray(found)) {
+                if (lastCommit) {
+                  const lastFound = await resolveFileIdInTree({
+                    fs,
+                    cache,
+                    gitdir,
+                    oid: lastCommit.commit.tree,
+                    fileId: lastFileOid,
+                  });
+                  if (Array.isArray(lastFound)) {
+                    found = found.filter(p => lastFound.indexOf(p) === -1);
+                    if (found.length === 1) {
+                      found = found[0];
+                      filepath = found;
+                      if (lastCommit) commits.push(lastCommit);
+                    } else {
+                      found = false;
+                      if (lastCommit) commits.push(lastCommit);
+                      break
+                    }
+                  }
+                }
+              } else {
+                filepath = found;
+                if (lastCommit) commits.push(lastCommit);
+              }
+            }
+          }
+          if (!found) {
+            if (!force && !follow) throw e
+            if (isOk && lastFileOid) {
+              commits.push(lastCommit);
+              // break
+            }
+          }
+          lastCommit = commit;
+          isOk = false;
+        } else throw e
+      }
+    } else {
+      commits.push(commit);
+    }
 
     // Stop the loop if we have enough commits now.
-    if (depth !== undefined && commits.length === depth) break
+    if (depth !== undefined && commits.length === depth) {
+      endCommit(commit);
+      break
+    }
 
     // If this is not a shallow commit...
     if (!shallowCommits.has(commit.oid)) {
@@ -10484,10 +10650,19 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
       }
     }
 
+    // Stop the loop if there are no more commit parents
+    if (tips.length === 0) {
+      endCommit(commit);
+    }
+
     // Process tips in order by age
     tips.sort((a, b) => compareAge(a.commit, b.commit));
   }
   return commits
+
+  function endCommit(commit) {
+    if (isOk && filepath) commits.push(commit);
+  }
 }
 
 // @ts-check
@@ -10499,9 +10674,12 @@ async function _log({ fs, cache, gitdir, ref, depth, since }) {
  * @param {FsClient} args.fs - a file system client
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string=} args.filepath optional get the commit for the filepath only
  * @param {string} [args.ref = 'HEAD'] - The commit to begin walking backwards through the history from
- * @param {number} [args.depth] - Limit the number of commits returned. No limit by default.
+ * @param {number=} [args.depth] - Limit the number of commits returned. No limit by default.
  * @param {Date} [args.since] - Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.
+ * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
+ * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
  * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
@@ -10522,9 +10700,12 @@ async function log({
   fs,
   dir,
   gitdir = join(dir, '.git'),
+  filepath,
   ref = 'HEAD',
   depth,
   since, // Date
+  force,
+  follow,
   cache = {},
 }) {
   try {
@@ -10536,9 +10717,12 @@ async function log({
       fs: new FileSystem(fs),
       cache,
       gitdir,
+      filepath,
       ref,
       depth,
       since,
+      force,
+      follow,
     })
   } catch (err) {
     err.caller = 'git.log';
