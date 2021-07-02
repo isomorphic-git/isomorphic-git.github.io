@@ -4267,7 +4267,8 @@ class FileSystem {
     // Note: FileSystem.readlink returns a buffer by default
     // so we can dump it into GitObject.write just like any other file.
     try {
-      return this._readlink(filename, opts)
+      const link = await this._readlink(filename, opts);
+      return Buffer.isBuffer(link) ? link : Buffer.from(link)
     } catch (err) {
       if (err.code === 'ENOENT') {
         return null
@@ -4357,6 +4358,12 @@ function assertParameter(name, value) {
   }
 }
 
+function posixifyPathBuffer(buffer) {
+  let idx;
+  while (~(idx = buffer.indexOf(92))) buffer[idx] = 47;
+  return buffer
+}
+
 // @ts-check
 
 /**
@@ -4419,7 +4426,7 @@ async function addToIndex({ dir, gitdir, fs, filepath, index }) {
     await Promise.all(promises);
   } else {
     const object = stats.isSymbolicLink()
-      ? await fs.readlink(join(dir, filepath))
+      ? await fs.readlink(join(dir, filepath)).then(posixifyPathBuffer)
       : await fs.read(join(dir, filepath));
     if (object === null) throw new NotFoundError(filepath)
     const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
