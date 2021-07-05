@@ -8617,6 +8617,7 @@ async function mergeBlobs({
  * @param {number} args.committer.timestamp
  * @param {number} args.committer.timezoneOffset
  * @param {string} [args.signingKey]
+ * @param {SignCallback} [args.onSign] - a PGP signing implementation
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  *
@@ -8634,6 +8635,7 @@ async function _merge({
   author,
   committer,
   signingKey,
+  onSign,
 }) {
   if (ours === undefined) {
     ours = await _currentBranch({ fs, gitdir, fullname: true });
@@ -8718,6 +8720,7 @@ async function _merge({
       author,
       committer,
       signingKey,
+      onSign,
       dryRun,
       noUpdateBranch,
     });
@@ -10842,6 +10845,7 @@ async function merge({
       author,
       committer,
       signingKey,
+      onSign,
     })
   } catch (err) {
     err.caller = 'git.merge';
