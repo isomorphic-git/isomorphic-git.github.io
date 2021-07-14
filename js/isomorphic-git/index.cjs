@@ -4070,6 +4070,33 @@ class GitIgnoreManager {
 }
 
 /**
+ * Removes the directory at the specified filepath recursively. Used internally to replicate the behavior of
+ * fs.promises.rm({ recursive: true, force: true }) from Node.js 14 and above when not available. If the provided
+ * filepath resolves to a file, it will be removed.
+ *
+ * @param {import('../models/FileSystem.js').FileSystem} fs
+ * @param {string} filepath - The file or directory to remove.
+ */
+async function rmRecursive(fs, filepath) {
+  const entries = await fs.readdir(filepath);
+  if (entries == null) {
+    await fs.rm(filepath);
+  } else if (entries.length) {
+    await Promise.all(
+      entries.map(entry => {
+        const subpath = join(filepath, entry);
+        return fs.lstat(subpath).then(stat => {
+          if (!stat) return
+          return stat.isDirectory() ? rmRecursive(fs, subpath) : fs.rm(subpath)
+        })
+      })
+    ).then(() => fs.rmdir(filepath));
+  } else {
+    await fs.rmdir(filepath);
+  }
+}
+
+/**
  * This is just a collection of helper functions really. At least that's how it started.
  */
 class FileSystem {
@@ -4081,6 +4108,13 @@ class FileSystem {
       this._readFile = fs.promises.readFile.bind(fs.promises);
       this._writeFile = fs.promises.writeFile.bind(fs.promises);
       this._mkdir = fs.promises.mkdir.bind(fs.promises);
+      if (fs.promises.rm) {
+        this._rm = fs.promises.rm.bind(fs.promises);
+      } else if (fs.promises.rmdir.length > 1) {
+        this._rm = fs.promises.rmdir.bind(fs.promises);
+      } else {
+        this._rm = rmRecursive.bind(null, this);
+      }
       this._rmdir = fs.promises.rmdir.bind(fs.promises);
       this._unlink = fs.promises.unlink.bind(fs.promises);
       this._stat = fs.promises.stat.bind(fs.promises);
@@ -4092,6 +4126,13 @@ class FileSystem {
       this._readFile = pify(fs.readFile.bind(fs));
       this._writeFile = pify(fs.writeFile.bind(fs));
       this._mkdir = pify(fs.mkdir.bind(fs));
+      if (fs.rm) {
+        this._rm = pify(fs.rm.bind(fs));
+      } else if (fs.rmdir.length > 2) {
+        this._rm = pify(fs.rmdir.bind(fs));
+      } else {
+        this._rm = rmRecursive.bind(null, this);
+      }
       this._rmdir = pify(fs.rmdir.bind(fs));
       this._unlink = pify(fs.unlink.bind(fs));
       this._stat = pify(fs.stat.bind(fs));
@@ -4200,9 +4241,13 @@ class FileSystem {
   /**
    * Delete a directory without throwing an error if it is already deleted.
    */
-  async rmdir(filepath) {
+  async rmdir(filepath, opts) {
     try {
-      await this._rmdir(filepath);
+      if (opts && opts.recursive) {
+        await this._rm(filepath, opts);
+      } else {
+        await this._rmdir(filepath);
+      }
     } catch (err) {
       if (err.code !== 'ENOENT') throw err
     }
@@ -7518,37 +7563,6 @@ async function _init({
   await fs.write(gitdir + '/HEAD', `ref: refs/heads/${defaultBranch}\n`);
 }
 
-/**
- * @param {object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {string} args.dirname
- */
-async function deleteRecursively({ fs, dirname }) {
-  const filesToDelete = [];
-  const directoriesToDelete = [];
-  const pathsToTraverse = [dirname];
-
-  while (pathsToTraverse.length > 0) {
-    const path = pathsToTraverse.pop();
-
-    if ((await fs._stat(path)).isDirectory()) {
-      directoriesToDelete.push(path);
-      pathsToTraverse.push(
-        ...(await fs.readdir(path)).map(subPath => join(path, subPath))
-      );
-    } else {
-      filesToDelete.push(path);
-    }
-  }
-
-  for (const path of filesToDelete) {
-    await fs.rm(path);
-  }
-  for (const path of directoriesToDelete.reverse()) {
-    await fs.rmdir(path);
-  }
-}
-
 // @ts-check
 
 /**
@@ -7648,14 +7662,11 @@ async function _clone({
     });
   } catch (err) {
     // Remove partial local repository, see #1283
-    try {
-      await deleteRecursively({ fs, dirname: gitdir });
-    } catch (err) {
-      // Ignore this error, we are already failing.
-      // This try-catch is necessary so the original error is
-      // not masked by potential errors in deleteRecursively.
-    }
-
+    // Ignore any error as we are already failing.
+    // The catch is necessary so the original error is not masked.
+    await fs
+      .rmdir(gitdir, { recursive: true, maxRetries: 10 })
+      .catch(() => undefined);
     throw err
   }
 }
