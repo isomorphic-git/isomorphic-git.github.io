@@ -153,20 +153,29 @@ So I've concluded that <code>default</code> exports are simply a bad pattern, an
 <p>I'll reconsider the matter once Node.js figures out how it is dealing with mixed ES6 imports and CJS requires.
 But for now I think having a <code>default</code> export causes more harm than good - since the only good it does is save typing &quot;<code>* as</code>&quot; as far as I can tell.
 But that is a VERY good question and one I spent a long time trying to figure out when I was researching how to design the module, and I remember being very disappointed at first when I discovered that <code>default</code> exports destroy tree-shaking.</p>
-<h2><a class="anchor" aria-hidden="true" id="how-to-add-all-untracked-files-with-gitadd"></a><a href="#how-to-add-all-untracked-files-with-gitadd" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>How to add all untracked files with git.add?</h2>
+<h2><a class="anchor" aria-hidden="true" id="how-to-add-all-files-based-on-a-glob-pattern-with-gitadd"></a><a href="#how-to-add-all-files-based-on-a-glob-pattern-with-gitadd" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>How to add all files based on a glob pattern with git.add?</h2>
 <blockquote>
-<p>I'm looking for a way init a git repo, add all existing files, and commit them, while if I understand correctly, the git.add function needs me to give all of the files explicitly.</p>
-<p>Is there a way that I can add all of the files in one or two command?</p>
+<p>I want to add multiple files based on a pattern. How can I do this?</p>
 </blockquote>
 <p><em>Answer by Will Hilton (@wmhilton):</em></p>
 <p>TLDR:</p>
 <pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> globby = <span class="hljs-built_in">require</span>(<span class="hljs-string">'globby'</span>);
-<span class="hljs-keyword">const</span> paths = <span class="hljs-keyword">await</span> globby([<span class="hljs-string">'./**'</span>, <span class="hljs-string">'./**/.*'</span>], { <span class="hljs-attr">gitignore</span>: <span class="hljs-literal">true</span> });
+<span class="hljs-comment">// Add all .js files using the pattern "**/*.js" - adjust the</span>
+<span class="hljs-comment">// pattern to suit your needs!</span>
+<span class="hljs-keyword">const</span> paths = <span class="hljs-keyword">await</span> globby([<span class="hljs-string">'**/*.js'</span>], { <span class="hljs-attr">gitignore</span>: <span class="hljs-literal">true</span> });
 <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> filepath <span class="hljs-keyword">of</span> paths) {
     <span class="hljs-keyword">await</span> git.add({ fs, dir, filepath });
 }
 </code></pre>
 <p>Long answer including a browser solution by @jcubic: <a href="https://github.com/isomorphic-git/isomorphic-git/issues/187">#187</a></p>
+<h2><a class="anchor" aria-hidden="true" id="how-to-add-all-untracked-files-with-gitadd"></a><a href="#how-to-add-all-untracked-files-with-gitadd" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>How to add all untracked files with git.add?</h2>
+<blockquote>
+<p>I want to add all the files in a repository. How can I do this?</p>
+</blockquote>
+<p><em>Answer by @mtlewis:</em></p>
+<p>If you want to add all the files in a repo, you can use the code below. The <code>dir</code> parameter should be set to the repository directory. Patterns in .gitignore will be respected, so ignored files should not be added by this command.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> git.add({ fs, dir, <span class="hljs-attr">filepath</span>: <span class="hljs-string">'.'</span> });
+</code></pre>
 <h2><a class="anchor" aria-hidden="true" id="how-to-make-a-shallow-repository-unshallow"></a><a href="#how-to-make-a-shallow-repository-unshallow" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>How to make a shallow repository unshallow?</h2>
 <blockquote>
 <p>Is there an equivalent to <code>git fetch --unshallow</code>?</p>
