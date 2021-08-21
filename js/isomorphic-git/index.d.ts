@@ -659,6 +659,7 @@ declare namespace index {
     export { indexPack };
     export { init };
     export { isDescendent };
+    export { isIgnored };
     export { listBranches };
     export { listFiles };
     export { listNotes };
@@ -1761,6 +1762,27 @@ export function isDescendent({ fs, dir, gitdir, oid, ancestor, depth, cache, }: 
     ancestor: string;
     depth?: number;
     cache?: any;
+}): Promise<boolean>;
+/**
+ * Test whether a filepath should be ignored (because of .gitignore or .git/exclude)
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.filepath - The filepath to test
+ *
+ * @returns {Promise<boolean>} Resolves to true if the file should be ignored
+ *
+ * @example
+ * await git.isIgnored({ fs, dir: '/tutorial', filepath: 'docs/add.md' })
+ *
+ */
+export function isIgnored({ fs, dir, gitdir, filepath, }: {
+    fs: CallbackFsClient | PromiseFsClient;
+    dir: string;
+    gitdir?: string;
+    filepath: string;
 }): Promise<boolean>;
 /**
  * List branches

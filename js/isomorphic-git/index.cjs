@@ -9878,6 +9878,47 @@ async function isDescendent({
 // @ts-check
 
 /**
+ * Test whether a filepath should be ignored (because of .gitignore or .git/exclude)
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.filepath - The filepath to test
+ *
+ * @returns {Promise<boolean>} Resolves to true if the file should be ignored
+ *
+ * @example
+ * await git.isIgnored({ fs, dir: '/tutorial', filepath: 'docs/add.md' })
+ *
+ */
+async function isIgnored({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  filepath,
+}) {
+  try {
+    assertParameter('fs', fs);
+    assertParameter('dir', dir);
+    assertParameter('gitdir', gitdir);
+    assertParameter('filepath', filepath);
+
+    return GitIgnoreManager.isIgnored({
+      fs: new FileSystem(fs),
+      dir,
+      gitdir,
+      filepath,
+    })
+  } catch (err) {
+    err.caller = 'git.isIgnored';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
  * List branches
  *
  * By default it lists local branches. If a 'remote' is specified, it lists the remote's branches. When listing remote branches, the HEAD branch is not filtered out, so it may be included in the list of results.
@@ -14094,6 +14135,7 @@ var index = {
   indexPack,
   init,
   isDescendent,
+  isIgnored,
   listBranches,
   listFiles,
   listNotes,
@@ -14161,6 +14203,7 @@ exports.hashBlob = hashBlob;
 exports.indexPack = indexPack;
 exports.init = init;
 exports.isDescendent = isDescendent;
+exports.isIgnored = isIgnored;
 exports.listBranches = listBranches;
 exports.listFiles = listFiles;
 exports.listNotes = listNotes;
