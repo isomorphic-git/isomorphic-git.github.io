@@ -4042,7 +4042,7 @@ class GitIgnoreManager {
         filepath,
       },
     ];
-    const pieces = filepath.split('/');
+    const pieces = filepath.split('/').filter(Boolean);
     for (let i = 1; i < pieces.length; i++) {
       const folder = pieces.slice(0, i).join('/');
       const file = pieces.slice(i).join('/');
