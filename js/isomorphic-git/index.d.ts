@@ -945,6 +945,7 @@ export function branch({ fs, dir, gitdir, ref, checkout, }: {
  * @param {boolean} [args.dryRun = false] - If true, simulates a checkout so you can test whether it would succeed.
  * @param {boolean} [args.force = false] - If true, conflicts will be ignored and files will be overwritten regardless of local changes.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {object} [args.track] - If true, will not set the remote branch tracking information. Defaults to false.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -979,7 +980,7 @@ export function branch({ fs, dir, gitdir, ref, checkout, }: {
  * })
  * console.log('done')
  */
-export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, cache, }: {
+export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, cache, track, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onProgress?: ProgressCallback;
     dir: string;
@@ -992,6 +993,7 @@ export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filep
     dryRun?: boolean;
     force?: boolean;
     cache?: any;
+    track?: any;
 }): Promise<void>;
 /**
  * Clone a repository

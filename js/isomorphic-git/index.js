@@ -5545,6 +5545,7 @@ const worthWalking = (filepath, root) => {
  * @param {boolean} [args.noUpdateHead]
  * @param {boolean} [args.dryRun]
  * @param {boolean} [args.force]
+ * @param {boolean} [args.track]
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -5562,6 +5563,7 @@ async function _checkout({
   noUpdateHead,
   dryRun,
   force,
+  track,
 }) {
   // Get tree oid
   let oid;
@@ -5579,11 +5581,13 @@ async function _checkout({
       gitdir,
       ref: remoteRef,
     });
-    // Set up remote tracking branch
-    const config = await GitConfigManager.get({ fs, gitdir });
-    await config.set(`branch.${ref}.remote`, remote);
-    await config.set(`branch.${ref}.merge`, `refs/heads/${ref}`);
-    await GitConfigManager.save({ fs, gitdir, config });
+    if (track) {
+      // Set up remote tracking branch
+      const config = await GitConfigManager.get({ fs, gitdir });
+      await config.set(`branch.${ref}.remote`, remote);
+      await config.set(`branch.${ref}.merge`, `refs/heads/${ref}`);
+      await GitConfigManager.save({ fs, gitdir, config });
+    }
     // Create a new branch that points at that same commit
     await GitRefManager.writeRef({
       fs,
@@ -6109,6 +6113,7 @@ async function analyze({
  * @param {boolean} [args.dryRun = false] - If true, simulates a checkout so you can test whether it would succeed.
  * @param {boolean} [args.force = false] - If true, conflicts will be ignored and files will be overwritten regardless of local changes.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {object} [args.track] - If true, will not set the remote branch tracking information. Defaults to false.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -6156,6 +6161,7 @@ async function checkout({
   dryRun = false,
   force = false,
   cache = {},
+  track = true,
 }) {
   try {
     assertParameter('fs', fs);
@@ -6176,6 +6182,7 @@ async function checkout({
       noUpdateHead,
       dryRun,
       force,
+      track,
     })
   } catch (err) {
     err.caller = 'git.checkout';
