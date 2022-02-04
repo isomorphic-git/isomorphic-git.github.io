@@ -3271,7 +3271,7 @@ class UnknownTransportError extends BaseError {
   /**
    * @param {string} url
    * @param {string} transport
-   * @param {string} suggestion
+   * @param {string} [suggestion]
    */
   constructor(url, transport, suggestion) {
     super(

@@ -3948,15 +3948,15 @@ declare class UnknownTransportError extends BaseError {
     /**
      * @param {string} url
      * @param {string} transport
-     * @param {string} suggestion
+     * @param {string} [suggestion]
      */
-    constructor(url: string, transport: string, suggestion: string);
+    constructor(url: string, transport: string, suggestion?: string | undefined);
     code: "UnknownTransportError";
     name: "UnknownTransportError";
     data: {
         url: string;
         transport: string;
-        suggestion: string;
+        suggestion: string | undefined;
     };
 }
 declare namespace UnknownTransportError {
