@@ -90,6 +90,7 @@ git.getRemoteInfo({ <span class="hljs-attr">http</span>: GitHttp, <span class="h
   <span class="hljs-keyword">async</span> request ({
     url,
     method,
+    agent,
     headers,
     body,
     onProgress
@@ -116,6 +117,7 @@ git.getRemoteInfo({ <span class="hljs-attr">http</span>: GitHttp, <span class="h
 <tbody>
 <tr><td><strong>url</strong></td><td>string</td><td>The URL to request</td></tr>
 <tr><td><strong>method</strong></td><td>string = 'GET'</td><td>The HTTP method to use</td></tr>
+<tr><td><strong>agent</strong></td><td>object (optional)</td><td>An HTTP/HTTPS agent that manages HTTP client connections (Node.js only)</td></tr>
 <tr><td><strong>headers</strong></td><td>object = {}</td><td>Headers to include in the HTTP request</td></tr>
 <tr><td><strong>body</strong></td><td>AsyncIterableIterator&lt;Uint8Array&gt;</td><td>An async iterator of Uint8Arrays that make up the body of POST requests</td></tr>
 <tr><td>onProgress</td><td>function (optional)</td><td>Reserved for future use (emitting <code>GitProgressEvent</code>s)</td></tr>
