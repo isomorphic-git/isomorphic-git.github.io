@@ -8644,6 +8644,7 @@ async function mergeBlobs({
  * @param {string} args.gitdir
  * @param {string} [args.ours]
  * @param {string} args.theirs
+ * @param {boolean} args.fastForward
  * @param {boolean} args.fastForwardOnly
  * @param {boolean} args.dryRun
  * @param {boolean} args.noUpdateBranch
@@ -8670,6 +8671,7 @@ async function _merge({
   gitdir,
   ours,
   theirs,
+  fastForward = true,
   fastForwardOnly = false,
   dryRun = false,
   noUpdateBranch = false,
@@ -8720,7 +8722,7 @@ async function _merge({
       alreadyMerged: true,
     }
   }
-  if (baseOid === ourOid) {
+  if (fastForward && baseOid === ourOid) {
     if (!dryRun && !noUpdateBranch) {
       await GitRefManager.writeRef({ fs, gitdir, ref: ours, value: theirOid });
     }
@@ -8794,6 +8796,7 @@ async function _merge({
  * @param {string} [args.remoteRef]
  * @param {string} [args.corsProxy]
  * @param {boolean} args.singleBranch
+ * @param {boolean} args.fastForward
  * @param {boolean} args.fastForwardOnly
  * @param {Object<string, string>} [args.headers]
  * @param {Object} args.author
@@ -8826,6 +8829,7 @@ async function _pull({
   url,
   remote,
   remoteRef,
+  fastForward,
   fastForwardOnly,
   corsProxy,
   singleBranch,
@@ -8870,6 +8874,7 @@ async function _pull({
       gitdir,
       ours: ref,
       theirs: fetchHead,
+      fastForward,
       fastForwardOnly,
       message: `Merge ${fetchHeadDescription}`,
       author,
@@ -10849,6 +10854,7 @@ async function log({
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ours] - The branch receiving the merge. If undefined, defaults to the current branch.
  * @param {string} args.theirs - The branch to be merged
+ * @param {boolean} [args.fastForward = true] - If false, create a merge commit in all cases.
  * @param {boolean} [args.fastForwardOnly = false] - If true, then non-fast-forward merges will throw an Error instead of performing a merge.
  * @param {boolean} [args.dryRun = false] - If true, simulates a merge so you can test whether it would succeed.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
@@ -10886,6 +10892,7 @@ async function merge({
   gitdir = join(dir, '.git'),
   ours,
   theirs,
+  fastForward = true,
   fastForwardOnly = false,
   dryRun = false,
   noUpdateBranch = false,
@@ -10903,7 +10910,9 @@ async function merge({
     const fs = new FileSystem(_fs);
 
     const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
-    if (!author && !fastForwardOnly) throw new MissingNameError('author')
+    if (!author && (!fastForwardOnly || !fastForward)) {
+      throw new MissingNameError('author')
+    }
 
     const committer = await normalizeCommitterObject({
       fs,
@@ -10911,7 +10920,7 @@ async function merge({
       author,
       committer: _committer,
     });
-    if (!committer && !fastForwardOnly) {
+    if (!committer && (!fastForwardOnly || !fastForward)) {
       throw new MissingNameError('committer')
     }
 
@@ -10921,6 +10930,7 @@ async function merge({
       gitdir,
       ours,
       theirs,
+      fastForward,
       fastForwardOnly,
       dryRun,
       noUpdateBranch,
@@ -11125,6 +11135,7 @@ async function packObjects({
  * @param {string} [args.remoteRef] - (Added in 1.1.0) The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
+ * @param {boolean} [args.fastForward = true] -  If false, only create merge commits.
  * @param {boolean} [args.fastForwardOnly = false] - Only perform simple fast-forward merges. (Don't create merge commits.)
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {Object} [args.author] - The details about the author.
@@ -11167,6 +11178,7 @@ async function pull({
   url,
   remote,
   remoteRef,
+  fastForward = true,
   fastForwardOnly = false,
   corsProxy,
   singleBranch,
@@ -11208,6 +11220,7 @@ async function pull({
       url,
       remote,
       remoteRef,
+      fastForward,
       fastForwardOnly,
       corsProxy,
       singleBranch,

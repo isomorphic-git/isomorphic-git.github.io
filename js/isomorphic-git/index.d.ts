@@ -2097,6 +2097,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ours] - The branch receiving the merge. If undefined, defaults to the current branch.
  * @param {string} args.theirs - The branch to be merged
+ * @param {boolean} [args.fastForward = true] - If false, create a merge commit in all cases.
  * @param {boolean} [args.fastForwardOnly = false] - If true, then non-fast-forward merges will throw an Error instead of performing a merge.
  * @param {boolean} [args.dryRun = false] - If true, simulates a merge so you can test whether it would succeed.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
@@ -2127,13 +2128,14 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * console.log(m)
  *
  */
-export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForwardOnly, dryRun, noUpdateBranch, message, author: _author, committer: _committer, signingKey, cache, }: {
+export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward, fastForwardOnly, dryRun, noUpdateBranch, message, author: _author, committer: _committer, signingKey, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onSign?: SignCallback;
     dir?: string;
     gitdir?: string;
     ours?: string;
     theirs: string;
+    fastForward?: boolean;
     fastForwardOnly?: boolean;
     dryRun?: boolean;
     noUpdateBranch?: boolean;
@@ -2210,6 +2212,7 @@ export function packObjects({ fs, dir, gitdir, oids, write, cache, }: {
  * @param {string} [args.remoteRef] - (Added in 1.1.0) The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
+ * @param {boolean} [args.fastForward = true] -  If false, only create merge commits.
  * @param {boolean} [args.fastForwardOnly = false] - Only perform simple fast-forward merges. (Don't create merge commits.)
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {Object} [args.author] - The details about the author.
@@ -2238,7 +2241,7 @@ export function packObjects({ fs, dir, gitdir, oids, write, cache, }: {
  * console.log('done')
  *
  */
-export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, ref, url, remote, remoteRef, fastForwardOnly, corsProxy, singleBranch, headers, author: _author, committer: _committer, signingKey, cache, }: {
+export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, ref, url, remote, remoteRef, fastForward, fastForwardOnly, corsProxy, singleBranch, headers, author: _author, committer: _committer, signingKey, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     http: HttpClient;
     onProgress?: ProgressCallback;
@@ -2254,6 +2257,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
     remoteRef?: string;
     corsProxy?: string;
     singleBranch?: boolean;
+    fastForward?: boolean;
     fastForwardOnly?: boolean;
     headers?: {
         [x: string]: string;

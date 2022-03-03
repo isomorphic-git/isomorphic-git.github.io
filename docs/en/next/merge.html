@@ -66,6 +66,7 @@
 <tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/next/dir-vs-gitdir">git directory</a> path</td></tr>
 <tr><td>ours</td><td>string</td><td>The branch receiving the merge. If undefined, defaults to the current branch.</td></tr>
 <tr><td><strong>theirs</strong></td><td>string</td><td>The branch to be merged</td></tr>
+<tr><td>fastForward</td><td>boolean = true</td><td>If false, create a merge commit in all cases.</td></tr>
 <tr><td>fastForwardOnly</td><td>boolean = false</td><td>If true, then non-fast-forward merges will throw an Error instead of performing a merge.</td></tr>
 <tr><td>dryRun</td><td>boolean = false</td><td>If true, simulates a merge so you can test whether it would succeed.</td></tr>
 <tr><td>noUpdateBranch</td><td>boolean = false</td><td>If true, does not update the branch pointer after creating the commit.</td></tr>
