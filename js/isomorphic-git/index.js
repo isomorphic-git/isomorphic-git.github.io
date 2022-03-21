@@ -4441,6 +4441,7 @@ function assertParameter(name, value) {
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string|string[]} args.filepath - The path to the file to add to the index
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.force=false] - add to index even if matches gitignore. Think `git add --force`
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -4456,6 +4457,7 @@ async function add({
   gitdir = join(dir, '.git'),
   filepath,
   cache = {},
+  force = false,
 }) {
   try {
     assertParameter('fs', _fs);
@@ -4465,7 +4467,7 @@ async function add({
 
     const fs = new FileSystem(_fs);
     await GitIndexManager.acquire({ fs, gitdir, cache }, async index => {
-      return addToIndex({ dir, gitdir, fs, filepath, index })
+      return addToIndex({ dir, gitdir, fs, filepath, index, force })
     });
   } catch (err) {
     err.caller = 'git.add';
@@ -4473,17 +4475,19 @@ async function add({
   }
 }
 
-async function addToIndex({ dir, gitdir, fs, filepath, index }) {
+async function addToIndex({ dir, gitdir, fs, filepath, index, force }) {
   // TODO: Should ignore UNLESS it's already in the index.
   filepath = Array.isArray(filepath) ? filepath : [filepath];
   const promises = filepath.map(async currentFilepath => {
-    const ignored = await GitIgnoreManager.isIgnored({
-      fs,
-      dir,
-      gitdir,
-      filepath: currentFilepath,
-    });
-    if (ignored) return
+    if (!force) {
+      const ignored = await GitIgnoreManager.isIgnored({
+        fs,
+        dir,
+        gitdir,
+        filepath: currentFilepath,
+      });
+      if (ignored) return
+    }
     const stats = await fs.lstat(join(dir, currentFilepath));
     if (!stats) throw new NotFoundError(currentFilepath)
 
@@ -4496,6 +4500,7 @@ async function addToIndex({ dir, gitdir, fs, filepath, index }) {
           fs,
           filepath: [join(currentFilepath, child)],
           index,
+          force,
         })
       );
       await Promise.all(promises);
@@ -13336,6 +13341,7 @@ async function getHeadTree({ fs, cache, gitdir }) {
  * @param {string[]} [args.filepaths = ['.']] - Limit the query to the given files and directories
  * @param {function(string): boolean} [args.filter] - Filter the results to only those whose filepath matches a function.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.ignored = false] - include ignored files in the result
  *
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
@@ -13348,6 +13354,7 @@ async function statusMatrix({
   filepaths = ['.'],
   filter,
   cache = {},
+  ignored: shouldIgnore = false,
 }) {
   try {
     assertParameter('fs', _fs);
@@ -13364,14 +13371,15 @@ async function statusMatrix({
       map: async function(filepath, [head, workdir, stage]) {
         // Ignore ignored files, but only if they are not already tracked.
         if (!head && !stage && workdir) {
-          if (
-            await GitIgnoreManager.isIgnored({
+          if (!shouldIgnore) {
+            const isIgnored = await GitIgnoreManager.isIgnored({
               fs,
               dir,
               filepath,
-            })
-          ) {
-            return null
+            });
+            if (isIgnored) {
+              return null
+            }
           }
         }
         // match against base paths

@@ -754,6 +754,7 @@ export function WORKDIR(): Walker;
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string|string[]} args.filepath - The path to the file to add to the index
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.force=false] - add to index even if matches gitignore. Think `git add --force`
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -763,12 +764,13 @@ export function WORKDIR(): Walker;
  * console.log('done')
  *
  */
-export function add({ fs: _fs, dir, gitdir, filepath, cache, }: {
+export function add({ fs: _fs, dir, gitdir, filepath, cache, force, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir: string;
     gitdir?: string;
     filepath: string | string[];
     cache?: any;
+    force?: boolean;
 }): Promise<void>;
 /**
  * Add or update an object note
@@ -3069,11 +3071,12 @@ export function status({ fs: _fs, dir, gitdir, filepath, cache, }: {
  * @param {string[]} [args.filepaths = ['.']] - Limit the query to the given files and directories
  * @param {function(string): boolean} [args.filter] - Filter the results to only those whose filepath matches a function.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.ignored = false] - include ignored files in the result
  *
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
  */
-export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cache, }: {
+export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cache, ignored: shouldIgnore, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir: string;
     gitdir?: string;
@@ -3081,6 +3084,7 @@ export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cac
     filepaths?: string[];
     filter?: (arg0: string) => boolean;
     cache?: any;
+    ignored?: boolean;
 }): Promise<[string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3][]>;
 /**
  * Create a lightweight tag
