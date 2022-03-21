@@ -756,6 +756,10 @@ class GitIndex {
     this._dirty = true;
   }
 
+  has({ filepath }) {
+    return this._entries.has(filepath)
+  }
+
   render() {
     return this.entries
       .map(entry => `${entry.mode.toString(8)} ${entry.oid}    ${entry.path}`)
@@ -865,7 +869,7 @@ class GitIndexManager {
     const filepath = `${gitdir}/index`;
     if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
     let result;
-    await lock.acquire(filepath, async function() {
+    await lock.acquire(filepath, async () => {
       // Acquire a file lock while we're reading the index
       // to make sure other processes aren't writing to it
       // simultaneously, which could result in a corrupted index.
@@ -885,6 +889,7 @@ class GitIndexManager {
         index._dirty = false;
       }
     });
+
     return result
   }
 }
@@ -3112,12 +3117,14 @@ HttpError.code = 'HttpError';
 
 class InvalidFilepathError extends BaseError {
   /**
-   * @param {'leading-slash'|'trailing-slash'} [reason]
+   * @param {'leading-slash'|'trailing-slash'|'directory'} [reason]
    */
   constructor(reason) {
     let message = 'invalid filepath';
     if (reason === 'leading-slash' || reason === 'trailing-slash') {
       message = `"filepath" parameter should not include leading or trailing directory separators because these can cause problems on some platforms.`;
+    } else if (reason === 'directory') {
+      message = `"filepath" should not be a directory.`;
     }
     super(message);
     this.code = this.name = InvalidFilepathError.code;
@@ -4016,6 +4023,23 @@ function WORKDIR() {
 
 // @ts-check
 
+class MultipleGitError extends BaseError {
+  /**
+   * @param {Error[]} errors
+   * @param {string} message
+   */
+  constructor(errors) {
+    super(
+      `There are multiple errors that were thrown by the method. Please refer to the "errors" property to see more`
+    );
+    this.code = this.name = MultipleGitError.code;
+    this.data = { errors };
+    this.errors = errors;
+  }
+}
+/** @type {'MultipleGitError'} */
+MultipleGitError.code = 'MultipleGitError';
+
 // I'm putting this in a Manager because I reckon it could benefit
 // from a LOT of cacheing.
 class GitIgnoreManager {
@@ -4406,12 +4430,6 @@ function assertParameter(name, value) {
   }
 }
 
-function posixifyPathBuffer(buffer) {
-  let idx;
-  while (~(idx = buffer.indexOf(92))) buffer[idx] = 47;
-  return buffer
-}
-
 // @ts-check
 
 /**
@@ -4421,7 +4439,7 @@ function posixifyPathBuffer(buffer) {
  * @param {FsClient} args.fs - a file system implementation
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} args.filepath - The path to the file to add to the index
+ * @param {string|string[]} args.filepath - The path to the file to add to the index
  * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
@@ -4443,11 +4461,11 @@ async function add({
     assertParameter('fs', _fs);
     assertParameter('dir', dir);
     assertParameter('gitdir', gitdir);
-    assertParameter('filepath', filepath);
+    assertParameter('filepaths', filepath);
 
     const fs = new FileSystem(_fs);
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      await addToIndex({ dir, gitdir, fs, filepath, index });
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async index => {
+      return addToIndex({ dir, gitdir, fs, filepath, index })
     });
   } catch (err) {
     err.caller = 'git.add';
@@ -4457,29 +4475,56 @@ async function add({
 
 async function addToIndex({ dir, gitdir, fs, filepath, index }) {
   // TODO: Should ignore UNLESS it's already in the index.
-  const ignored = await GitIgnoreManager.isIgnored({
-    fs,
-    dir,
-    gitdir,
-    filepath,
+  filepath = Array.isArray(filepath) ? filepath : [filepath];
+  const promises = filepath.map(async currentFilepath => {
+    const ignored = await GitIgnoreManager.isIgnored({
+      fs,
+      dir,
+      gitdir,
+      filepath: currentFilepath,
+    });
+    if (ignored) return
+    const stats = await fs.lstat(join(dir, currentFilepath));
+    if (!stats) throw new NotFoundError(currentFilepath)
+
+    if (stats.isDirectory()) {
+      const children = await fs.readdir(join(dir, currentFilepath));
+      const promises = children.map(child =>
+        addToIndex({
+          dir,
+          gitdir,
+          fs,
+          filepath: [join(currentFilepath, child)],
+          index,
+        })
+      );
+      await Promise.all(promises);
+    } else {
+      const object = stats.isSymbolicLink()
+        ? await fs.readlink(join(dir, currentFilepath))
+        : await fs.read(join(dir, currentFilepath));
+      if (object === null) throw new NotFoundError(currentFilepath)
+      const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
+      index.insert({ filepath: currentFilepath, stats, oid });
+    }
   });
-  if (ignored) return
-  const stats = await fs.lstat(join(dir, filepath));
-  if (!stats) throw new NotFoundError(filepath)
-  if (stats.isDirectory()) {
-    const children = await fs.readdir(join(dir, filepath));
-    const promises = children.map(child =>
-      addToIndex({ dir, gitdir, fs, filepath: join(filepath, child), index })
-    );
-    await Promise.all(promises);
-  } else {
-    const object = stats.isSymbolicLink()
-      ? await fs.readlink(join(dir, filepath)).then(posixifyPathBuffer)
-      : await fs.read(join(dir, filepath));
-    if (object === null) throw new NotFoundError(filepath)
-    const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
-    index.insert({ filepath, stats, oid });
+
+  const settledPromises = await Promise.allSettled(promises);
+  const rejectedPromises = settledPromises
+    .filter(settle => settle.status === 'rejected')
+    .map(settle => settle.reason);
+  if (rejectedPromises.length > 1) {
+    throw new MultipleGitError(rejectedPromises)
   }
+  if (rejectedPromises.length === 1) {
+    throw rejectedPromises[0]
+  }
+
+  const fulfilledPromises = settledPromises
+    .filter(settle => settle.status === 'fulfilled' && settle.value)
+    .map(settle => settle.value);
+
+  return fulfilledPromises
 }
 
 // @ts-check
@@ -13445,6 +13490,162 @@ async function tag({
 // @ts-check
 
 /**
+ * Register file contents in the working tree or object database to the git index (aka staging area).
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.filepath - File to act upon.
+ * @param {string} [args.oid] - OID of the object in the object database to add to the index with the specified filepath.
+ * @param {number} [args.mode = 100644] - The file mode to add the file to the index.
+ * @param {boolean} [args.add] - Adds the specified file to the index if it does not yet exist in the index.
+ * @param {boolean} [args.remove] - Remove the specified file from the index if it does not exist in the workspace anymore.
+ * @param {boolean} [args.force] - Remove the specified file from the index, even if it still exists in the workspace.
+ * @param {object} [args.cache] - a [cache](cache.md) object
+ *
+ * @returns {Promise<string | void>} Resolves successfully with the SHA-1 object id of the object written or updated in the index, or nothing if the file was removed.
+ *
+ * @example
+ * await git.updateIndex({
+ *   fs,
+ *   dir: '/tutorial',
+ *   filepath: 'readme.md'
+ * })
+ *
+ * @example
+ * // Manually create a blob in the object database.
+ * let oid = await git.writeBlob({
+ *   fs,
+ *   dir: '/tutorial',
+ *   blob: new Uint8Array([])
+ * })
+ *
+ * // Write the object in the object database to the index.
+ * await git.updateIndex({
+ *   fs,
+ *   dir: '/tutorial',
+ *   add: true,
+ *   filepath: 'readme.md',
+ *   oid
+ * })
+ */
+async function updateIndex({
+  fs: _fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  cache = {},
+  filepath,
+  oid,
+  mode,
+  add,
+  remove,
+  force,
+}) {
+  try {
+    assertParameter('fs', _fs);
+    assertParameter('gitdir', gitdir);
+    assertParameter('filepath', filepath);
+
+    const fs = new FileSystem(_fs);
+
+    if (remove) {
+      return await GitIndexManager.acquire(
+        { fs, gitdir, cache },
+        async function(index) {
+          let fileStats;
+
+          if (!force) {
+            // Check if the file is still present in the working directory
+            fileStats = await fs.lstat(join(dir, filepath));
+
+            if (fileStats) {
+              // Do nothing if we don't force and the file still exists in the workdir
+              return
+            }
+          }
+
+          // Remove the file from the index if it's forced or the file does not exist
+          index.delete({
+            filepath,
+          });
+        }
+      )
+    }
+
+    // Test if it is a file and exists on disk if `remove` is not provided, only of no oid is provided
+    let fileStats;
+
+    if (!oid) {
+      fileStats = await fs.lstat(join(dir, filepath));
+
+      if (!fileStats) {
+        throw new NotFoundError(
+          `file at "${filepath}" on disk and "remove" not set`
+        )
+      }
+
+      if (fileStats.isDirectory()) {
+        throw new InvalidFilepathError('directory')
+      }
+    }
+
+    return await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
+      index
+    ) {
+      if (!add && !index.has({ filepath })) {
+        // If the index does not contain the filepath yet and `add` is not set, we should throw
+        throw new NotFoundError(
+          `file at "${filepath}" in index and "add" not set`
+        )
+      }
+
+      // By default we use 0 for the stats of the index file
+      let stats = {
+        ctime: new Date(0),
+        mtime: new Date(0),
+        dev: 0,
+        ino: 0,
+        mode,
+        uid: 0,
+        gid: 0,
+        size: 0,
+      };
+
+      if (!oid) {
+        stats = fileStats;
+
+        // Write the file to the object database
+        const object = stats.isSymbolicLink()
+          ? await fs.readlink(join(dir, filepath))
+          : await fs.read(join(dir, filepath));
+
+        oid = await _writeObject({
+          fs,
+          gitdir,
+          type: 'blob',
+          format: 'content',
+          object,
+        });
+      }
+
+      index.insert({
+        filepath,
+        oid: oid,
+        stats,
+      });
+
+      return oid
+    })
+  } catch (err) {
+    err.caller = 'git.updateIndex';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
  * Return the version number of isomorphic-git
  *
  * I don't know why you might need this. I added it just so I could check that I was getting
@@ -14214,6 +14415,7 @@ var index = {
   removeNote,
   renameBranch,
   resetIndex,
+  updateIndex,
   resolveRef,
   status,
   statusMatrix,
@@ -14229,4 +14431,4 @@ var index = {
 };
 
 export default index;
-export { Errors, STAGE, TREE, WORKDIR, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, status, statusMatrix, tag, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
+export { Errors, STAGE, TREE, WORKDIR, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, status, statusMatrix, tag, updateIndex, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
