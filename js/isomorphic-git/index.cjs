@@ -3210,6 +3210,23 @@ class MissingParameterError extends BaseError {
 /** @type {'MissingParameterError'} */
 MissingParameterError.code = 'MissingParameterError';
 
+class MultipleGitError extends BaseError {
+  /**
+   * @param {Error[]} errors
+   * @param {string} message
+   */
+  constructor(errors) {
+    super(
+      `There are multiple errors that were thrown by the method. Please refer to the "errors" property to see more`
+    );
+    this.code = this.name = MultipleGitError.code;
+    this.data = { errors };
+    this.errors = errors;
+  }
+}
+/** @type {'MultipleGitError'} */
+MultipleGitError.code = 'MultipleGitError';
+
 class ParseError extends BaseError {
   /**
    * @param {string} expected
@@ -3335,6 +3352,7 @@ var Errors = /*#__PURE__*/Object.freeze({
   MergeNotSupportedError: MergeNotSupportedError,
   MissingNameError: MissingNameError,
   MissingParameterError: MissingParameterError,
+  MultipleGitError: MultipleGitError,
   NoRefspecError: NoRefspecError,
   NotFoundError: NotFoundError,
   ObjectTypeError: ObjectTypeError,
@@ -4028,23 +4046,6 @@ function WORKDIR() {
 }
 
 // @ts-check
-
-class MultipleGitError extends BaseError {
-  /**
-   * @param {Error[]} errors
-   * @param {string} message
-   */
-  constructor(errors) {
-    super(
-      `There are multiple errors that were thrown by the method. Please refer to the "errors" property to see more`
-    );
-    this.code = this.name = MultipleGitError.code;
-    this.data = { errors };
-    this.errors = errors;
-  }
-}
-/** @type {'MultipleGitError'} */
-MultipleGitError.code = 'MultipleGitError';
 
 // I'm putting this in a Manager because I reckon it could benefit
 // from a LOT of cacheing.
