@@ -22,7 +22,9 @@ Lucky for you, I already looked up and codified it for you.
 - oauth2('github', token) - GitHub uses `token` as the username, and `'x-oauth-basic'` as the password.
 - oauth2('githubapp', token) - GitHub Apps use `'x-access-token'` as the username, and `token` as the password.
 - oauth2('bitbucket', token) - Bitbucket uses `'x-token-auth'` as the username, and `token` as the password.
-- oauth2('gitlab', token) - GitLab uses `'oauth2'` as the username, and `token` as the password.
+- oauth2('gitlab', token) - GitLab uses `token` as both the username and as the password. ()
+  - Different header options: [Gitlab API docs](https://docs.gitlab.com/ee/api/#personalprojectgroup-access-tokens)
+  - Works but insecure: [StackExchange Answer suggesting insecure URL credentials](https://stackoverflow.com/a/57624220/2919380)
 
 I will gladly accept pull requests for more companies' conventions.
 
