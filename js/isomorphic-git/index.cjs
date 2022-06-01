@@ -10787,11 +10787,11 @@ async function _log({
             }
           }
           if (!found) {
-            if (!force && !follow) throw e
             if (isOk && lastFileOid) {
               commits.push(lastCommit);
-              // break
+              if (!force) break
             }
+            if (!force && !follow) throw e
           }
           lastCommit = commit;
           isOk = false;
