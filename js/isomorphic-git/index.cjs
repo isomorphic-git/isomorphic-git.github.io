@@ -240,6 +240,19 @@ var diff3Merge = _interopDefault(require('diff3'));
  */
 
 /**
+ * @typedef {Object} MergeDriverParams
+ * @property {Array<string>} branches
+ * @property {Array<string>} contents
+ * @property {string} path
+ */
+
+/**
+ * @callback MergeDriverCallback
+ * @param {MergeDriverParams} args
+ * @return {{cleanMerge: boolean, mergedText: string} | Promise<{cleanMerge: boolean, mergedText: string}>}
+ */
+
+/**
  * @callback WalkerMap
  * @param {string} filename
  * @param {WalkerEntry[]} entries
@@ -3202,6 +3215,21 @@ class MergeNotSupportedError extends BaseError {
 /** @type {'MergeNotSupportedError'} */
 MergeNotSupportedError.code = 'MergeNotSupportedError';
 
+class MergeConflictError extends BaseError {
+  /**
+   * @param {Array<string>} filepaths
+   */
+  constructor(filepaths) {
+    super(
+      `Automatic merge failed with one or more merge conflicts in the following files: ${filepaths.toString()}. Fix conflicts then commit the result.`
+    );
+    this.code = this.name = MergeConflictError.code;
+    this.data = { filepaths };
+  }
+}
+/** @type {'MergeConflictError'} */
+MergeConflictError.code = 'MergeConflictError';
+
 class MissingNameError extends BaseError {
   /**
    * @param {'author'|'committer'|'tagger'} role
@@ -3372,6 +3400,7 @@ var Errors = /*#__PURE__*/Object.freeze({
   InvalidRefNameError: InvalidRefNameError,
   MaxDepthError: MaxDepthError,
   MergeNotSupportedError: MergeNotSupportedError,
+  MergeConflictError: MergeConflictError,
   MissingNameError: MissingNameError,
   MissingParameterError: MissingParameterError,
   MultipleGitError: MultipleGitError,
@@ -4633,7 +4662,15 @@ async function _commit({
         // Probably an initial commit
         parent = [];
       }
+    } else {
+      // ensure that the parents are oids, not refs
+      parent = await Promise.all(
+        parent.map(p => {
+          return GitRefManager.resolve({ fs, gitdir, ref: p })
+        })
+      );
     }
+
     let comm = GitCommit.from({
       tree,
       parent,
@@ -8423,16 +8460,14 @@ async function _findMergeBase({ fs, cache, gitdir, oids }) {
 
 const LINEBREAKS = /^.*(\r?\n|$)/gm;
 
-function mergeFile({
-  ourContent,
-  baseContent,
-  theirContent,
-  ourName = 'ours',
-  baseName = 'base',
-  theirName = 'theirs',
-  format = 'diff',
-  markerSize = 7,
-}) {
+function mergeFile({ branches, contents }) {
+  const ourName = branches[1];
+  const theirName = branches[2];
+
+  const baseContent = contents[0];
+  const ourContent = contents[1];
+  const theirContent = contents[2];
+
   const ours = ourContent.match(LINEBREAKS);
   const base = baseContent.match(LINEBREAKS);
   const theirs = theirContent.match(LINEBREAKS);
@@ -8440,9 +8475,12 @@ function mergeFile({
   // Here we let the diff3 library do the heavy lifting.
   const result = diff3Merge(ours, base, theirs);
 
+  const markerSize = 7;
+
   // Here we note whether there are conflicts and format the results
   let mergedText = '';
   let cleanMerge = true;
+
   for (const item of result) {
     if (item.ok) {
       mergedText += item.ok.join('');
@@ -8451,10 +8489,7 @@ function mergeFile({
       cleanMerge = false;
       mergedText += `${'<'.repeat(markerSize)} ${ourName}\n`;
       mergedText += item.conflict.a.join('');
-      if (format === 'diff3') {
-        mergedText += `${'|'.repeat(markerSize)} ${baseName}\n`;
-        mergedText += item.conflict.o.join('');
-      }
+
       mergedText += `${'='.repeat(markerSize)}\n`;
       mergedText += item.conflict.b.join('');
       mergedText += `${'>'.repeat(markerSize)} ${theirName}\n`;
@@ -8480,6 +8515,8 @@ function mergeFile({
  * @param {string} [args.baseName='base'] - The name to use in conflicted files (in diff3 format) for the base hunks
  * @param {string} [args.theirName='theirs'] - The name to use in conflicted files for their hunks
  * @param {boolean} [args.dryRun=false]
+ * @param {boolean} [args.abortOnConflict=false]
+ * @param {MergeDriverCallback} [args.mergeDriver]
  *
  * @returns {Promise<string>} - The SHA-1 object id of the merged tree
  *
@@ -8496,10 +8533,16 @@ async function mergeTree({
   baseName = 'base',
   theirName = 'theirs',
   dryRun = false,
+  abortOnConflict = true,
+  mergeDriver,
 }) {
   const ourTree = TREE({ ref: ourOid });
   const baseTree = TREE({ ref: baseOid });
   const theirTree = TREE({ ref: theirOid });
+
+  const unmergedFiles = [];
+
+  let cleanMerge = true;
 
   const results = await _walk({
     fs,
@@ -8561,6 +8604,11 @@ async function mergeTree({
               ourName,
               baseName,
               theirName,
+              mergeDriver,
+            }).then(r => {
+              cleanMerge = r.cleanMerge;
+              unmergedFiles.push(filepath);
+              return r.mergeResult
             })
           }
           // all other types of conflicts fail
@@ -8596,6 +8644,29 @@ async function mergeTree({
       return parent
     },
   });
+
+  if (!cleanMerge) {
+    if (dir && !abortOnConflict) {
+      await _walk({
+        fs,
+        cache,
+        dir,
+        gitdir,
+        trees: [TREE({ ref: results.oid })],
+        map: async function(filepath, [entry]) {
+          const path = `${dir}/${filepath}`;
+          if ((await entry.type()) === 'blob') {
+            const mode = await entry.mode();
+            const content = new TextDecoder().decode(await entry.content());
+            await fs.write(path, content, { mode });
+          }
+          return true
+        },
+      });
+    }
+    throw new MergeConflictError(unmergedFiles)
+  }
+
   return results.oid
 }
 
@@ -8634,9 +8705,8 @@ async function modified(entry, base) {
  * @param {string} [args.ourName]
  * @param {string} [args.baseName]
  * @param {string} [args.theirName]
- * @param {string} [args.format]
- * @param {number} [args.markerSize]
  * @param {boolean} [args.dryRun = false]
+ * @param {MergeDriverCallback} [args.mergeDriver]
  *
  */
 async function mergeBlobs({
@@ -8649,9 +8719,8 @@ async function mergeBlobs({
   ourName,
   theirName,
   baseName,
-  format,
-  markerSize,
   dryRun,
+  mergeDriver = mergeFile,
 }) {
   const type = 'blob';
   // Compute the new mode.
@@ -8662,30 +8731,33 @@ async function mergeBlobs({
       : await ours.mode();
   // The trivial case: nothing to merge except maybe mode
   if ((await ours.oid()) === (await theirs.oid())) {
-    return { mode, path, oid: await ours.oid(), type }
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await ours.oid(), type },
+    }
   }
   // if only one side made oid changes, return that side's oid
   if ((await ours.oid()) === (await base.oid())) {
-    return { mode, path, oid: await theirs.oid(), type }
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await theirs.oid(), type },
+    }
   }
   if ((await theirs.oid()) === (await base.oid())) {
-    return { mode, path, oid: await ours.oid(), type }
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await ours.oid(), type },
+    }
   }
   // if both sides made changes do a merge
-  const { mergedText, cleanMerge } = mergeFile({
-    ourContent: Buffer.from(await ours.content()).toString('utf8'),
-    baseContent: Buffer.from(await base.content()).toString('utf8'),
-    theirContent: Buffer.from(await theirs.content()).toString('utf8'),
-    ourName,
-    theirName,
-    baseName,
-    format,
-    markerSize,
+  const ourContent = Buffer.from(await ours.content()).toString('utf8');
+  const baseContent = Buffer.from(await base.content()).toString('utf8');
+  const theirContent = Buffer.from(await theirs.content()).toString('utf8');
+  const { mergedText, cleanMerge } = await mergeDriver({
+    branches: [baseName, ourName, theirName],
+    contents: [baseContent, ourContent, theirContent],
+    path,
   });
-  if (!cleanMerge) {
-    // all other types of conflicts fail
-    throw new MergeNotSupportedError()
-  }
   const oid = await _writeObject({
     fs,
     gitdir,
@@ -8693,7 +8765,8 @@ async function mergeBlobs({
     object: Buffer.from(mergedText, 'utf8'),
     dryRun,
   });
-  return { mode, path, oid, type }
+
+  return { cleanMerge, mergeResult: { mode, path, oid, type } }
 }
 
 // @ts-check
@@ -8721,6 +8794,7 @@ async function mergeBlobs({
  * @param {boolean} args.fastForwardOnly
  * @param {boolean} args.dryRun
  * @param {boolean} args.noUpdateBranch
+ * @param {boolean} args.abortOnConflict
  * @param {string} [args.message]
  * @param {Object} args.author
  * @param {string} args.author.name
@@ -8734,6 +8808,7 @@ async function mergeBlobs({
  * @param {number} args.committer.timezoneOffset
  * @param {string} [args.signingKey]
  * @param {SignCallback} [args.onSign] - a PGP signing implementation
+ * @param {MergeDriverCallback} [args.mergeDriver]
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  *
@@ -8741,6 +8816,7 @@ async function mergeBlobs({
 async function _merge({
   fs,
   cache,
+  dir,
   gitdir,
   ours,
   theirs,
@@ -8748,11 +8824,13 @@ async function _merge({
   fastForwardOnly = false,
   dryRun = false,
   noUpdateBranch = false,
+  abortOnConflict = true,
   message,
   author,
   committer,
   signingKey,
   onSign,
+  mergeDriver,
 }) {
   if (ours === undefined) {
     ours = await _currentBranch({ fs, gitdir, fullname: true });
@@ -8812,14 +8890,17 @@ async function _merge({
     const tree = await mergeTree({
       fs,
       cache,
+      dir,
       gitdir,
       ourOid,
       theirOid,
       baseOid,
-      ourName: ours,
+      ourName: abbreviateRef(ours),
       baseName: 'base',
-      theirName: theirs,
+      theirName: abbreviateRef(theirs),
       dryRun,
+      abortOnConflict,
+      mergeDriver,
     });
     if (!message) {
       message = `Merge branch '${abbreviateRef(theirs)}' into ${abbreviateRef(
@@ -10911,14 +10992,62 @@ async function log({
 /**
  * Merge two branches
  *
- * ## Limitations
- *
- * Currently it does not support incomplete merges. That is, if there are merge conflicts it cannot solve
- * with the built in diff3 algorithm it will not modify the working dir, and will throw a [`MergeNotSupportedError`](./errors.md#mergenotsupportedError) error.
- *
  * Currently it will fail if multiple candidate merge bases are found. (It doesn't yet implement the recursive merge strategy.)
  *
  * Currently it does not support selecting alternative merge strategies.
+ *
+ * Currently it is not possible to abort an incomplete merge. To restore the worktree to a clean state, you will need to checkout an earlier commit.
+ *
+ * Currently it does not directly support the behavior of `git merge --continue`. To complete a merge after manual conflict resolution, you will need to add and commit the files manually, and specify the appropriate parent commits.
+ *
+ * ## Manually resolving merge conflicts
+ * By default, if isomorphic-git encounters a merge conflict it cannot resolve using the builtin diff3 algorithm or provided merge driver, it will abort and throw a `MergeNotSupportedError`.
+ * This leaves the index and working tree untouched.
+ *
+ * When `abortOnConflict` is set to `false`, and a merge conflict cannot be automatically resolved, a `MergeConflictError` is thrown and the results of the incomplete merge will be written to the working directory.
+ * This includes conflict markers in files with unresolved merge conflicts.
+ *
+ * To complete the merge, edit the conflicting files as you see fit, and then add and commit the resolved merge.
+ *
+ * For a proper merge commit, be sure to specify the branches or commits you are merging in the `parent` argument to `git.commit`.
+ * For example, say we are merging the branch `feature` into the branch `main` and there is a conflict we want to resolve manually.
+ * The flow would look like this:
+ *
+ * ```
+ * await git.merge({
+ *   fs,
+ *   dir,
+ *   ours: 'main',
+ *   theirs: 'feature',
+ *   abortOnConflict: false,
+ * }).catch(e => {
+ *   if (e instanceof Errors.MergeConflictError) {
+ *     console.log(
+ *       'Automatic merge failed for the following files: '
+ *       + `${e.data}. `
+ *       + 'Resolve these conflicts and then commit your changes.'
+ *     )
+ *   } else throw e
+ * })
+ *
+ * // This is the where we manually edit the files that have been written to the working directory
+ * // ...
+ * // Files have been edited and we are ready to commit
+ *
+ * await git.add({
+ *   fs,
+ *   dir,
+ *   filepath: '.',
+ * })
+ *
+ * await git.commit({
+ *   fs,
+ *   dir,
+ *   ref: 'main',
+ *   message: "Merge branch 'feature' into main",
+ *   parent: ['main', 'feature'], // Be sure to specify the parents when creating a merge commit
+ * })
+ * ```
  *
  * @param {object} args
  * @param {FsClient} args.fs - a file system client
@@ -10931,6 +11060,7 @@ async function log({
  * @param {boolean} [args.fastForwardOnly = false] - If true, then non-fast-forward merges will throw an Error instead of performing a merge.
  * @param {boolean} [args.dryRun = false] - If true, simulates a merge so you can test whether it would succeed.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
+ * @param {boolean} [args.abortOnConflict = true] - If true, merges with conflicts will not update the worktree or index.
  * @param {string} [args.message] - Overrides the default auto-generated merge commit message
  * @param {Object} [args.author] - passed to [commit](commit.md) when creating a merge commit
  * @param {string} [args.author.name] - Default is `user.name` config.
@@ -10944,6 +11074,7 @@ async function log({
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {MergeDriverCallback} [args.mergeDriver] - a [merge driver](mergeDriver.md) implementation
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  * @see MergeResult
@@ -10969,11 +11100,13 @@ async function merge({
   fastForwardOnly = false,
   dryRun = false,
   noUpdateBranch = false,
+  abortOnConflict = true,
   message,
   author: _author,
   committer: _committer,
   signingKey,
   cache = {},
+  mergeDriver,
 }) {
   try {
     assertParameter('fs', _fs);
@@ -11000,6 +11133,7 @@ async function merge({
     return await _merge({
       fs,
       cache,
+      dir,
       gitdir,
       ours,
       theirs,
@@ -11007,11 +11141,13 @@ async function merge({
       fastForwardOnly,
       dryRun,
       noUpdateBranch,
+      abortOnConflict,
       message,
       author,
       committer,
       signingKey,
       onSign,
+      mergeDriver,
     })
   } catch (err) {
     err.caller = 'git.merge';

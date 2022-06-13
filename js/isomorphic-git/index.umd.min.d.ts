@@ -611,6 +611,18 @@ export type SignCallback = (args: SignParams) => {
 } | Promise<{
     signature: string;
 }>;
+export type MergeDriverParams = {
+    branches: string[];
+    contents: string[];
+    path: string;
+};
+export type MergeDriverCallback = (args: MergeDriverParams) => {
+    cleanMerge: boolean;
+    mergedText: string;
+} | Promise<{
+    cleanMerge: boolean;
+    mergedText: string;
+}>;
 export type RefUpdateStatus = {
     ok: boolean;
     error: string;
@@ -715,6 +727,7 @@ export var Errors: Readonly<{
     InvalidRefNameError: typeof InvalidRefNameError;
     MaxDepthError: typeof MaxDepthError;
     MergeNotSupportedError: typeof MergeNotSupportedError;
+    MergeConflictError: typeof MergeConflictError;
     MissingNameError: typeof MissingNameError;
     MissingParameterError: typeof MissingParameterError;
     MultipleGitError: typeof MultipleGitError;
@@ -2085,14 +2098,62 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
 /**
  * Merge two branches
  *
- * ## Limitations
- *
- * Currently it does not support incomplete merges. That is, if there are merge conflicts it cannot solve
- * with the built in diff3 algorithm it will not modify the working dir, and will throw a [`MergeNotSupportedError`](./errors.md#mergenotsupportedError) error.
- *
  * Currently it will fail if multiple candidate merge bases are found. (It doesn't yet implement the recursive merge strategy.)
  *
  * Currently it does not support selecting alternative merge strategies.
+ *
+ * Currently it is not possible to abort an incomplete merge. To restore the worktree to a clean state, you will need to checkout an earlier commit.
+ *
+ * Currently it does not directly support the behavior of `git merge --continue`. To complete a merge after manual conflict resolution, you will need to add and commit the files manually, and specify the appropriate parent commits.
+ *
+ * ## Manually resolving merge conflicts
+ * By default, if isomorphic-git encounters a merge conflict it cannot resolve using the builtin diff3 algorithm or provided merge driver, it will abort and throw a `MergeNotSupportedError`.
+ * This leaves the index and working tree untouched.
+ *
+ * When `abortOnConflict` is set to `false`, and a merge conflict cannot be automatically resolved, a `MergeConflictError` is thrown and the results of the incomplete merge will be written to the working directory.
+ * This includes conflict markers in files with unresolved merge conflicts.
+ *
+ * To complete the merge, edit the conflicting files as you see fit, and then add and commit the resolved merge.
+ *
+ * For a proper merge commit, be sure to specify the branches or commits you are merging in the `parent` argument to `git.commit`.
+ * For example, say we are merging the branch `feature` into the branch `main` and there is a conflict we want to resolve manually.
+ * The flow would look like this:
+ *
+ * ```
+ * await git.merge({
+ *   fs,
+ *   dir,
+ *   ours: 'main',
+ *   theirs: 'feature',
+ *   abortOnConflict: false,
+ * }).catch(e => {
+ *   if (e instanceof Errors.MergeConflictError) {
+ *     console.log(
+ *       'Automatic merge failed for the following files: '
+ *       + `${e.data}. `
+ *       + 'Resolve these conflicts and then commit your changes.'
+ *     )
+ *   } else throw e
+ * })
+ *
+ * // This is the where we manually edit the files that have been written to the working directory
+ * // ...
+ * // Files have been edited and we are ready to commit
+ *
+ * await git.add({
+ *   fs,
+ *   dir,
+ *   filepath: '.',
+ * })
+ *
+ * await git.commit({
+ *   fs,
+ *   dir,
+ *   ref: 'main',
+ *   message: "Merge branch 'feature' into main",
+ *   parent: ['main', 'feature'], // Be sure to specify the parents when creating a merge commit
+ * })
+ * ```
  *
  * @param {object} args
  * @param {FsClient} args.fs - a file system client
@@ -2105,6 +2166,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * @param {boolean} [args.fastForwardOnly = false] - If true, then non-fast-forward merges will throw an Error instead of performing a merge.
  * @param {boolean} [args.dryRun = false] - If true, simulates a merge so you can test whether it would succeed.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
+ * @param {boolean} [args.abortOnConflict = true] - If true, merges with conflicts will not update the worktree or index.
  * @param {string} [args.message] - Overrides the default auto-generated merge commit message
  * @param {Object} [args.author] - passed to [commit](commit.md) when creating a merge commit
  * @param {string} [args.author.name] - Default is `user.name` config.
@@ -2118,6 +2180,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {MergeDriverCallback} [args.mergeDriver] - a [merge driver](mergeDriver.md) implementation
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  * @see MergeResult
@@ -2132,7 +2195,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * console.log(m)
  *
  */
-export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward, fastForwardOnly, dryRun, noUpdateBranch, message, author: _author, committer: _committer, signingKey, cache, }: {
+export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward, fastForwardOnly, dryRun, noUpdateBranch, abortOnConflict, message, author: _author, committer: _committer, signingKey, cache, mergeDriver, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onSign?: SignCallback;
     dir?: string;
@@ -2143,6 +2206,7 @@ export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward,
     fastForwardOnly?: boolean;
     dryRun?: boolean;
     noUpdateBranch?: boolean;
+    abortOnConflict?: boolean;
     message?: string;
     author?: {
         name?: string;
@@ -2158,6 +2222,7 @@ export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward,
     };
     signingKey?: string;
     cache?: any;
+    mergeDriver?: MergeDriverCallback;
 }): Promise<MergeResult>;
 /**
  *
@@ -3864,6 +3929,21 @@ declare namespace MergeNotSupportedError {
     const code_13: 'MergeNotSupportedError';
     export { code_13 as code };
 }
+declare class MergeConflictError extends BaseError {
+    /**
+     * @param {Array<string>} filepaths
+     */
+    constructor(filepaths: string[]);
+    code: "MergeConflictError";
+    name: "MergeConflictError";
+    data: {
+        filepaths: string[];
+    };
+}
+declare namespace MergeConflictError {
+    const code_14: 'MergeConflictError';
+    export { code_14 as code };
+}
 declare class MissingNameError extends BaseError {
     /**
      * @param {'author'|'committer'|'tagger'} role
@@ -3876,8 +3956,8 @@ declare class MissingNameError extends BaseError {
     };
 }
 declare namespace MissingNameError {
-    const code_14: 'MissingNameError';
-    export { code_14 as code };
+    const code_15: 'MissingNameError';
+    export { code_15 as code };
 }
 declare class MissingParameterError extends BaseError {
     /**
@@ -3891,8 +3971,8 @@ declare class MissingParameterError extends BaseError {
     };
 }
 declare namespace MissingParameterError {
-    const code_15: 'MissingParameterError';
-    export { code_15 as code };
+    const code_16: 'MissingParameterError';
+    export { code_16 as code };
 }
 declare class MultipleGitError extends BaseError {
     /**
@@ -3908,8 +3988,8 @@ declare class MultipleGitError extends BaseError {
     errors: Error[];
 }
 declare namespace MultipleGitError {
-    const code_16: 'MultipleGitError';
-    export { code_16 as code };
+    const code_17: 'MultipleGitError';
+    export { code_17 as code };
 }
 declare class NoRefspecError extends BaseError {
     /**
@@ -3923,8 +4003,8 @@ declare class NoRefspecError extends BaseError {
     };
 }
 declare namespace NoRefspecError {
-    const code_17: 'NoRefspecError';
-    export { code_17 as code };
+    const code_18: 'NoRefspecError';
+    export { code_18 as code };
 }
 declare class NotFoundError extends BaseError {
     /**
@@ -3938,8 +4018,8 @@ declare class NotFoundError extends BaseError {
     };
 }
 declare namespace NotFoundError {
-    const code_18: 'NotFoundError';
-    export { code_18 as code };
+    const code_19: 'NotFoundError';
+    export { code_19 as code };
 }
 declare class ObjectTypeError extends BaseError {
     /**
@@ -3959,8 +4039,8 @@ declare class ObjectTypeError extends BaseError {
     };
 }
 declare namespace ObjectTypeError {
-    const code_19: 'ObjectTypeError';
-    export { code_19 as code };
+    const code_20: 'ObjectTypeError';
+    export { code_20 as code };
 }
 declare class ParseError extends BaseError {
     /**
@@ -3976,8 +4056,8 @@ declare class ParseError extends BaseError {
     };
 }
 declare namespace ParseError {
-    const code_20: 'ParseError';
-    export { code_20 as code };
+    const code_21: 'ParseError';
+    export { code_21 as code };
 }
 declare class PushRejectedError extends BaseError {
     /**
@@ -3991,8 +4071,8 @@ declare class PushRejectedError extends BaseError {
     };
 }
 declare namespace PushRejectedError {
-    const code_21: 'PushRejectedError';
-    export { code_21 as code };
+    const code_22: 'PushRejectedError';
+    export { code_22 as code };
 }
 declare class RemoteCapabilityError extends BaseError {
     /**
@@ -4008,8 +4088,8 @@ declare class RemoteCapabilityError extends BaseError {
     };
 }
 declare namespace RemoteCapabilityError {
-    const code_22: 'RemoteCapabilityError';
-    export { code_22 as code };
+    const code_23: 'RemoteCapabilityError';
+    export { code_23 as code };
 }
 declare class SmartHttpError extends BaseError {
     /**
@@ -4025,8 +4105,8 @@ declare class SmartHttpError extends BaseError {
     };
 }
 declare namespace SmartHttpError {
-    const code_23: 'SmartHttpError';
-    export { code_23 as code };
+    const code_24: 'SmartHttpError';
+    export { code_24 as code };
 }
 declare class UnknownTransportError extends BaseError {
     /**
@@ -4044,8 +4124,8 @@ declare class UnknownTransportError extends BaseError {
     };
 }
 declare namespace UnknownTransportError {
-    const code_24: 'UnknownTransportError';
-    export { code_24 as code };
+    const code_25: 'UnknownTransportError';
+    export { code_25 as code };
 }
 declare class UnsafeFilepathError extends BaseError {
     /**
@@ -4059,8 +4139,8 @@ declare class UnsafeFilepathError extends BaseError {
     };
 }
 declare namespace UnsafeFilepathError {
-    const code_25: 'UnsafeFilepathError';
-    export { code_25 as code };
+    const code_26: 'UnsafeFilepathError';
+    export { code_26 as code };
 }
 declare class UrlParseError extends BaseError {
     /**
@@ -4074,8 +4154,8 @@ declare class UrlParseError extends BaseError {
     };
 }
 declare namespace UrlParseError {
-    const code_26: 'UrlParseError';
-    export { code_26 as code };
+    const code_27: 'UrlParseError';
+    export { code_27 as code };
 }
 declare class UserCanceledError extends BaseError {
     code: "UserCanceledError";
@@ -4083,8 +4163,8 @@ declare class UserCanceledError extends BaseError {
     data: {};
 }
 declare namespace UserCanceledError {
-    const code_27: 'UserCanceledError';
-    export { code_27 as code };
+    const code_28: 'UserCanceledError';
+    export { code_28 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent
@@ -4286,6 +4366,17 @@ declare namespace UserCanceledError {
  * @callback SignCallback
  * @param {SignParams} args
  * @return {{signature: string} | Promise<{signature: string}>} - an 'ASCII armor' encoded "detached" signature
+ */
+/**
+ * @typedef {Object} MergeDriverParams
+ * @property {Array<string>} branches
+ * @property {Array<string>} contents
+ * @property {string} path
+ */
+/**
+ * @callback MergeDriverCallback
+ * @param {MergeDriverParams} args
+ * @return {{cleanMerge: boolean, mergedText: string} | Promise<{cleanMerge: boolean, mergedText: string}>}
  */
 /**
  * @callback WalkerMap
