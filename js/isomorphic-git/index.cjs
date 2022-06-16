@@ -8606,7 +8606,7 @@ async function mergeTree({
               theirName,
               mergeDriver,
             }).then(r => {
-              cleanMerge = r.cleanMerge;
+              cleanMerge = cleanMerge && r.cleanMerge;
               unmergedFiles.push(filepath);
               return r.mergeResult
             })
