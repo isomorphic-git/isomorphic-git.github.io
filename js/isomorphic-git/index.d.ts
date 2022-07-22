@@ -1406,8 +1406,8 @@ export function fastForward({ fs, http, onProgress, onMessage, onAuth, onAuthSuc
  * @param {boolean} [args.relative = false] - Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.
  * @param {Date} [args.since] - Only fetch commits created after the given date. Mutually exclusive with `depth`.
  * @param {string[]} [args.exclude = []] - A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.
- * @param {boolean} [args.prune] - Delete local remote-tracking branches that are not present on the remote
- * @param {boolean} [args.pruneTags] - Prune local tags that don’t exist on the remote, and force-update those tags that differ
+ * @param {boolean} [args.prune = false] - Delete local remote-tracking branches that are not present on the remote
+ * @param {boolean} [args.pruneTags = false] - Prune local tags that don’t exist on the remote, and force-update those tags that differ
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {object} [args.cache] - a [cache](cache.md) object
@@ -2279,6 +2279,8 @@ export function packObjects({ fs, dir, gitdir, oids, write, cache, }: {
  * @param {string} [args.url] - (Added in 1.1.0) The URL of the remote repository. The default is the value set in the git config for that remote.
  * @param {string} [args.remote] - (Added in 1.1.0) If URL is not specified, determines which remote to use.
  * @param {string} [args.remoteRef] - (Added in 1.1.0) The name of the branch on the remote to fetch. By default this is the configured remote tracking branch.
+ * @param {boolean} [args.prune = false] - Delete local remote-tracking branches that are not present on the remote
+ * @param {boolean} [args.pruneTags = false] - Prune local tags that don’t exist on the remote, and force-update those tags that differ
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {boolean} [args.singleBranch = false] - Instead of the default behavior of fetching all the branches, only fetch a single branch.
  * @param {boolean} [args.fastForward = true] -  If false, only create merge commits.
@@ -2310,7 +2312,7 @@ export function packObjects({ fs, dir, gitdir, oids, write, cache, }: {
  * console.log('done')
  *
  */
-export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, ref, url, remote, remoteRef, fastForward, fastForwardOnly, corsProxy, singleBranch, headers, author: _author, committer: _committer, signingKey, cache, }: {
+export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, ref, url, remote, remoteRef, prune, pruneTags, fastForward, fastForwardOnly, corsProxy, singleBranch, headers, author: _author, committer: _committer, signingKey, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     http: HttpClient;
     onProgress?: ProgressCallback;
@@ -2324,6 +2326,8 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
     url?: string;
     remote?: string;
     remoteRef?: string;
+    prune?: boolean;
+    pruneTags?: boolean;
     corsProxy?: string;
     singleBranch?: boolean;
     fastForward?: boolean;

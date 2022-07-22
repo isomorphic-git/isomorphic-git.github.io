@@ -79,8 +79,8 @@
 <tr><td>relative</td><td>boolean = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
 <tr><td>since</td><td>Date</td><td>Only fetch commits created after the given date. Mutually exclusive with <code>depth</code>.</td></tr>
 <tr><td>exclude</td><td>Array&lt;string&gt; = []</td><td>A list of branches or tags. Instructs the remote server not to send us any commits reachable from these refs.</td></tr>
-<tr><td>prune</td><td>boolean</td><td>Delete local remote-tracking branches that are not present on the remote</td></tr>
-<tr><td>pruneTags</td><td>boolean</td><td>Prune local tags that don’t exist on the remote, and force-update those tags that differ</td></tr>
+<tr><td>prune</td><td>boolean = false</td><td>Delete local remote-tracking branches that are not present on the remote</td></tr>
+<tr><td>pruneTags</td><td>boolean = false</td><td>Prune local tags that don’t exist on the remote, and force-update those tags that differ</td></tr>
 <tr><td>corsProxy</td><td>string</td><td>Optional <a href="https://www.npmjs.com/%40isomorphic-git/cors-proxy">CORS proxy</a>. Overrides value in repo config.</td></tr>
 <tr><td><a href="./headers">headers</a></td><td>Object&lt;string, string&gt;</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
