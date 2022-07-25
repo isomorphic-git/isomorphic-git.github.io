@@ -2712,7 +2712,7 @@ class GitPackIndex {
     const objectsByDepth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let offset in offsetToObject) {
       offset = Number(offset);
-      const percent = Math.floor((count++ * 100) / totalObjectCount);
+      const percent = Math.floor((count * 100) / totalObjectCount);
       if (percent !== lastPercent) {
         if (onProgress) {
           await onProgress({
@@ -2722,6 +2722,7 @@ class GitPackIndex {
           });
         }
       }
+      count++;
       lastPercent = percent;
 
       const o = offsetToObject[offset];
