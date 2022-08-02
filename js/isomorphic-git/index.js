@@ -4483,6 +4483,12 @@ function assertParameter(name, value) {
   }
 }
 
+function posixifyPathBuffer(buffer) {
+  let idx;
+  while (~(idx = buffer.indexOf(92))) buffer[idx] = 47;
+  return buffer
+}
+
 // @ts-check
 
 /**
@@ -4559,7 +4565,7 @@ async function addToIndex({ dir, gitdir, fs, filepath, index, force }) {
       await Promise.all(promises);
     } else {
       const object = stats.isSymbolicLink()
-        ? await fs.readlink(join(dir, currentFilepath))
+        ? await fs.readlink(join(dir, currentFilepath)).then(posixifyPathBuffer)
         : await fs.read(join(dir, currentFilepath));
       if (object === null) throw new NotFoundError(currentFilepath)
       const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
