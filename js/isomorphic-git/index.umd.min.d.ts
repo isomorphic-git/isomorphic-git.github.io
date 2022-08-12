@@ -752,7 +752,7 @@ export function STAGE(): Walker;
  * @param {string} [args.ref='HEAD']
  * @returns {Walker}
  */
-export function TREE({ ref }: {
+export function TREE({ ref }?: {
     ref?: string;
 }): Walker;
 /**

@@ -3919,7 +3919,7 @@ class GitWalkerRepo {
  * @param {string} [args.ref='HEAD']
  * @returns {Walker}
  */
-function TREE({ ref = 'HEAD' }) {
+function TREE({ ref = 'HEAD' } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
     value: function({ fs, gitdir, cache }) {
