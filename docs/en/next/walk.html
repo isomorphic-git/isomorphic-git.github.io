@@ -181,12 +181,14 @@ If you do not return a value (or return undefined) that entry will be filtered f
 }
 </code></pre>
 <p>Example 2: Return the difference between the working directory and the HEAD commit</p>
-<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> diff = <span class="hljs-built_in">require</span>(<span class="hljs-string">'diff-lines'</span>)
-<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span>(<span class="hljs-params">filepath, [head, workdir]</span>) </span>{
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> map = <span class="hljs-keyword">async</span> (filepath, [head, workdir]) =&gt; {
   <span class="hljs-keyword">return</span> {
     filepath,
-    <span class="hljs-attr">oid</span>: <span class="hljs-keyword">await</span> head.oid(),
-    <span class="hljs-attr">diff</span>: diff((<span class="hljs-keyword">await</span> head.content()).toString(<span class="hljs-string">'utf8'</span>), (<span class="hljs-keyword">await</span> workdir.content()).toString(<span class="hljs-string">'utf8'</span>))
+    <span class="hljs-attr">oid</span>: <span class="hljs-keyword">await</span> head?.oid(),
+    <span class="hljs-attr">diff</span>: diff(
+      (<span class="hljs-keyword">await</span> head?.content())?.toString(<span class="hljs-string">'utf8'</span>) || <span class="hljs-string">''</span>,
+      (<span class="hljs-keyword">await</span> workdir?.content())?.toString(<span class="hljs-string">'utf8'</span>) || <span class="hljs-string">''</span>
+    )
   }
 }
 </code></pre>
