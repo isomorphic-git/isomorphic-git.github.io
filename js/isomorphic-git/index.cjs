@@ -11819,6 +11819,7 @@ async function _push({
       }
     }
 
+    if (oid === oldoid) force = true;
     if (!force) {
       // Is it a tag that already exists?
       if (
