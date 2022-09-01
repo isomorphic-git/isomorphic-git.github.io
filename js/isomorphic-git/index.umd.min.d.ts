@@ -932,6 +932,7 @@ export function annotatedTag({ fs: _fs, onSign, dir, gitdir, ref, tagger: _tagge
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.ref - What to name the branch
+ * @param {string} [args.object = 'HEAD'] - What oid to use as the start point. Accepts a symbolic ref.
  * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
@@ -941,11 +942,12 @@ export function annotatedTag({ fs: _fs, onSign, dir, gitdir, ref, tagger: _tagge
  * console.log('done')
  *
  */
-export function branch({ fs, dir, gitdir, ref, checkout, }: {
+export function branch({ fs, dir, gitdir, ref, object, checkout, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir?: string;
     gitdir?: string;
     ref: string;
+    object?: string;
     checkout?: boolean;
 }): Promise<void>;
 /**

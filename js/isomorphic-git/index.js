@@ -5385,6 +5385,7 @@ async function annotatedTag({
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {string} args.gitdir
  * @param {string} args.ref
+ * @param {string} [args.object = 'HEAD']
  * @param {boolean} [args.checkout = false]
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
@@ -5394,7 +5395,7 @@ async function annotatedTag({
  * console.log('done')
  *
  */
-async function _branch({ fs, gitdir, ref, checkout = false }) {
+async function _branch({ fs, gitdir, ref, object, checkout = false }) {
   if (ref !== cleanGitRef.clean(ref)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
@@ -5409,7 +5410,7 @@ async function _branch({ fs, gitdir, ref, checkout = false }) {
   // Get current HEAD tree oid
   let oid;
   try {
-    oid = await GitRefManager.resolve({ fs, gitdir, ref: 'HEAD' });
+    oid = await GitRefManager.resolve({ fs, gitdir, ref: object || 'HEAD' });
   } catch (e) {
     // Probably an empty repo
   }
@@ -5440,6 +5441,7 @@ async function _branch({ fs, gitdir, ref, checkout = false }) {
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.ref - What to name the branch
+ * @param {string} [args.object = 'HEAD'] - What oid to use as the start point. Accepts a symbolic ref.
  * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
@@ -5454,6 +5456,7 @@ async function branch({
   dir,
   gitdir = join(dir, '.git'),
   ref,
+  object,
   checkout = false,
 }) {
   try {
@@ -5464,6 +5467,7 @@ async function branch({
       fs: new FileSystem(fs),
       gitdir,
       ref,
+      object,
       checkout,
     })
   } catch (err) {
