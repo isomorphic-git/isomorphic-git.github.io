@@ -934,6 +934,7 @@ export function annotatedTag({ fs: _fs, onSign, dir, gitdir, ref, tagger: _tagge
  * @param {string} args.ref - What to name the branch
  * @param {string} [args.object = 'HEAD'] - What oid to use as the start point. Accepts a symbolic ref.
  * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
+ * @param {boolean} [args.force = false] - Instead of throwing an error if a branched named `ref` already exists, overwrite the existing branch.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -942,13 +943,14 @@ export function annotatedTag({ fs: _fs, onSign, dir, gitdir, ref, tagger: _tagge
  * console.log('done')
  *
  */
-export function branch({ fs, dir, gitdir, ref, object, checkout, }: {
+export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir?: string;
     gitdir?: string;
     ref: string;
     object?: string;
     checkout?: boolean;
+    force?: boolean;
 }): Promise<void>;
 /**
  * Checkout a branch

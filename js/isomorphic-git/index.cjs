@@ -5393,6 +5393,7 @@ async function annotatedTag({
  * @param {string} args.ref
  * @param {string} [args.object = 'HEAD']
  * @param {boolean} [args.checkout = false]
+ * @param {boolean} [args.force = false]
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -5401,16 +5402,25 @@ async function annotatedTag({
  * console.log('done')
  *
  */
-async function _branch({ fs, gitdir, ref, object, checkout = false }) {
+async function _branch({
+  fs,
+  gitdir,
+  ref,
+  object,
+  checkout = false,
+  force = false,
+}) {
   if (ref !== cleanGitRef.clean(ref)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
   const fullref = `refs/heads/${ref}`;
 
-  const exist = await GitRefManager.exists({ fs, gitdir, ref: fullref });
-  if (exist) {
-    throw new AlreadyExistsError('branch', ref, false)
+  if (!force) {
+    const exist = await GitRefManager.exists({ fs, gitdir, ref: fullref });
+    if (exist) {
+      throw new AlreadyExistsError('branch', ref, false)
+    }
   }
 
   // Get current HEAD tree oid
@@ -5449,6 +5459,7 @@ async function _branch({ fs, gitdir, ref, object, checkout = false }) {
  * @param {string} args.ref - What to name the branch
  * @param {string} [args.object = 'HEAD'] - What oid to use as the start point. Accepts a symbolic ref.
  * @param {boolean} [args.checkout = false] - Update `HEAD` to point at the newly created branch
+ * @param {boolean} [args.force = false] - Instead of throwing an error if a branched named `ref` already exists, overwrite the existing branch.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -5464,6 +5475,7 @@ async function branch({
   ref,
   object,
   checkout = false,
+  force = false,
 }) {
   try {
     assertParameter('fs', fs);
@@ -5475,6 +5487,7 @@ async function branch({
       ref,
       object,
       checkout,
+      force,
     })
   } catch (err) {
     err.caller = 'git.branch';
