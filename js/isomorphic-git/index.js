@@ -336,6 +336,21 @@ class BaseError extends Error {
   }
 }
 
+class UnmergedPathsError extends BaseError {
+  /**
+   * @param {Array<string>} filepaths
+   */
+  constructor(filepaths) {
+    super(
+      `Modifying the index is not possible because you have unmerged files: ${filepaths.toString}. Fix them up in the work tree, and then use 'git add/rm as appropriate to mark resolution and make a commit.`
+    );
+    this.code = this.name = UnmergedPathsError.code;
+    this.data = { filepaths };
+  }
+}
+/** @type {'UnmergedPathsError'} */
+UnmergedPathsError.code = 'UnmergedPathsError';
+
 class InternalError extends BaseError {
   /**
    * @param {string} message
@@ -621,9 +636,26 @@ class GitIndex {
    _entries: Map<string, CacheEntry>
    _dirty: boolean // Used to determine if index needs to be saved to filesystem
    */
-  constructor(entries) {
+  constructor(entries, unmergedPaths) {
     this._dirty = false;
+    this._unmergedPaths = unmergedPaths || new Set();
     this._entries = entries || new Map();
+  }
+
+  _addEntry(entry) {
+    if (entry.flags.stage === 0) {
+      entry.stages = [entry];
+      this._entries.set(entry.path, entry);
+      this._unmergedPaths.delete(entry.path);
+    } else {
+      let existingEntry = this._entries.get(entry.path);
+      if (!existingEntry) {
+        this._entries.set(entry.path, entry);
+        existingEntry = entry;
+      }
+      existingEntry.stages[entry.flags.stage] = entry;
+      this._unmergedPaths.add(entry.path);
+    }
   }
 
   static async from(buffer) {
@@ -645,8 +677,8 @@ class GitIndex {
         `Invalid checksum in GitIndex buffer: expected ${shaClaimed} but saw ${shaComputed}`
       )
     }
+    const index = new GitIndex();
     const reader = new BufferCursor(buffer);
-    const _entries = new Map();
     const magic = reader.toString('utf8', 4);
     if (magic !== 'DIRC') {
       throw new InternalError(`Inavlid dircache magic file number: ${magic}`)
@@ -701,10 +733,17 @@ class GitIndex {
         }
       }
       // end of awkward part
-      _entries.set(entry.path, entry);
+      entry.stages = [];
+
+      index._addEntry(entry);
+
       i++;
     }
-    return new GitIndex(_entries)
+    return index
+  }
+
+  get unmergedPaths() {
+    return [...this._unmergedPaths]
   }
 
   get entries() {
@@ -715,13 +754,33 @@ class GitIndex {
     return this._entries
   }
 
+  get entriesFlat() {
+    return [...this.entries].flatMap(entry => {
+      return entry.stages.length > 1 ? entry.stages.filter(x => x) : entry
+    })
+  }
+
   *[Symbol.iterator]() {
     for (const entry of this.entries) {
       yield entry;
     }
   }
 
-  insert({ filepath, stats, oid }) {
+  insert({ filepath, stats, oid, stage = 0 }) {
+    if (!stats) {
+      stats = {
+        ctimeSeconds: 0,
+        ctimeNanoseconds: 0,
+        mtimeSeconds: 0,
+        mtimeNanoseconds: 0,
+        dev: 0,
+        ino: 0,
+        mode: 0,
+        uid: 0,
+        gid: 0,
+        size: 0,
+      };
+    }
     stats = normalizeStats(stats);
     const bfilepath = Buffer.from(filepath);
     const entry = {
@@ -743,11 +802,14 @@ class GitIndex {
       flags: {
         assumeValid: false,
         extended: false,
-        stage: 0,
+        stage,
         nameLength: bfilepath.length < 0xfff ? bfilepath.length : 0xfff,
       },
+      stages: [],
     };
-    this._entries.set(entry.path, entry);
+
+    this._addEntry(entry);
+
     this._dirty = true;
   }
 
@@ -760,6 +822,10 @@ class GitIndex {
           this._entries.delete(key);
         }
       }
+    }
+
+    if (this._unmergedPaths.has(filepath)) {
+      this._unmergedPaths.delete(filepath);
     }
     this._dirty = true;
   }
@@ -779,36 +845,50 @@ class GitIndex {
       .join('\n')
   }
 
+  static async _entryToBuffer(entry) {
+    const bpath = Buffer.from(entry.path);
+    // the fixed length + the filename + at least one null char => align by 8
+    const length = Math.ceil((62 + bpath.length + 1) / 8) * 8;
+    const written = Buffer.alloc(length);
+    const writer = new BufferCursor(written);
+    const stat = normalizeStats(entry);
+    writer.writeUInt32BE(stat.ctimeSeconds);
+    writer.writeUInt32BE(stat.ctimeNanoseconds);
+    writer.writeUInt32BE(stat.mtimeSeconds);
+    writer.writeUInt32BE(stat.mtimeNanoseconds);
+    writer.writeUInt32BE(stat.dev);
+    writer.writeUInt32BE(stat.ino);
+    writer.writeUInt32BE(stat.mode);
+    writer.writeUInt32BE(stat.uid);
+    writer.writeUInt32BE(stat.gid);
+    writer.writeUInt32BE(stat.size);
+    writer.write(entry.oid, 20, 'hex');
+    writer.writeUInt16BE(renderCacheEntryFlags(entry));
+    writer.write(entry.path, bpath.length, 'utf8');
+    return written
+  }
+
   async toObject() {
     const header = Buffer.alloc(12);
     const writer = new BufferCursor(header);
     writer.write('DIRC', 4, 'utf8');
     writer.writeUInt32BE(2);
-    writer.writeUInt32BE(this.entries.length);
-    const body = Buffer.concat(
-      this.entries.map(entry => {
-        const bpath = Buffer.from(entry.path);
-        // the fixed length + the filename + at least one null char => align by 8
-        const length = Math.ceil((62 + bpath.length + 1) / 8) * 8;
-        const written = Buffer.alloc(length);
-        const writer = new BufferCursor(written);
-        const stat = normalizeStats(entry);
-        writer.writeUInt32BE(stat.ctimeSeconds);
-        writer.writeUInt32BE(stat.ctimeNanoseconds);
-        writer.writeUInt32BE(stat.mtimeSeconds);
-        writer.writeUInt32BE(stat.mtimeNanoseconds);
-        writer.writeUInt32BE(stat.dev);
-        writer.writeUInt32BE(stat.ino);
-        writer.writeUInt32BE(stat.mode);
-        writer.writeUInt32BE(stat.uid);
-        writer.writeUInt32BE(stat.gid);
-        writer.writeUInt32BE(stat.size);
-        writer.write(entry.oid, 20, 'hex');
-        writer.writeUInt16BE(renderCacheEntryFlags(entry));
-        writer.write(entry.path, bpath.length, 'utf8');
-        return written
-      })
-    );
+    writer.writeUInt32BE(this.entriesFlat.length);
+
+    let entryBuffers = [];
+    for (const entry of this.entries) {
+      entryBuffers.push(GitIndex._entryToBuffer(entry));
+      if (entry.stages.length > 1) {
+        for (const stage of entry.stages) {
+          if (stage && stage !== entry) {
+            entryBuffers.push(GitIndex._entryToBuffer(stage));
+          }
+        }
+      }
+    }
+    entryBuffers = await Promise.all(entryBuffers);
+
+    const body = Buffer.concat(entryBuffers);
     const main = Buffer.concat([header, body]);
     const sum = await shasum(main);
     return Buffer.concat([main, Buffer.from(sum, 'hex')])
@@ -874,14 +954,16 @@ class GitIndexManager {
    * @param {import('../models/FileSystem.js').FileSystem} opts.fs
    * @param {string} opts.gitdir
    * @param {object} opts.cache
+   * @param {bool} opts.allowUnmerged
    * @param {function(GitIndex): any} closure
    */
-  static async acquire({ fs, gitdir, cache }, closure) {
+  static async acquire({ fs, gitdir, cache, allowUnmerged = true }, closure) {
     if (!cache[IndexCache]) cache[IndexCache] = createCache();
 
     const filepath = `${gitdir}/index`;
     if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
     let result;
+    let unmergedPaths = [];
     await lock.acquire(filepath, async () => {
       // Acquire a file lock while we're reading the index
       // to make sure other processes aren't writing to it
@@ -891,6 +973,11 @@ class GitIndexManager {
         await updateCachedIndexFile(fs, filepath, cache[IndexCache]);
       }
       const index = cache[IndexCache].map.get(filepath);
+      unmergedPaths = index.unmergedPaths;
+
+      if (unmergedPaths.length && !allowUnmerged)
+        throw new UnmergedPathsError(unmergedPaths)
+
       result = await closure(index);
       if (index._dirty) {
         // Acquire a file lock while we're writing the index file
@@ -3409,7 +3496,8 @@ var Errors = /*#__PURE__*/Object.freeze({
   UnknownTransportError: UnknownTransportError,
   UnsafeFilepathError: UnsafeFilepathError,
   UrlParseError: UrlParseError,
-  UserCanceledError: UserCanceledError
+  UserCanceledError: UserCanceledError,
+  UnmergedPathsError: UnmergedPathsError
 });
 
 function formatAuthor({ name, email, timestamp, timezoneOffset }) {
@@ -4644,62 +4732,65 @@ async function _commit({
     });
   }
 
-  return GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-    const inodes = flatFileListToDirectoryStructure(index.entries);
-    const inode = inodes.get('.');
-    if (!tree) {
-      tree = await constructTree({ fs, gitdir, inode, dryRun });
-    }
-    if (!parent) {
-      try {
-        parent = [
-          await GitRefManager.resolve({
-            fs,
-            gitdir,
-            ref,
-          }),
-        ];
-      } catch (err) {
-        // Probably an initial commit
-        parent = [];
+  return GitIndexManager.acquire(
+    { fs, gitdir, cache, allowUnmerged: false },
+    async function(index) {
+      const inodes = flatFileListToDirectoryStructure(index.entries);
+      const inode = inodes.get('.');
+      if (!tree) {
+        tree = await constructTree({ fs, gitdir, inode, dryRun });
       }
-    } else {
-      // ensure that the parents are oids, not refs
-      parent = await Promise.all(
-        parent.map(p => {
-          return GitRefManager.resolve({ fs, gitdir, ref: p })
-        })
-      );
-    }
+      if (!parent) {
+        try {
+          parent = [
+            await GitRefManager.resolve({
+              fs,
+              gitdir,
+              ref,
+            }),
+          ];
+        } catch (err) {
+          // Probably an initial commit
+          parent = [];
+        }
+      } else {
+        // ensure that the parents are oids, not refs
+        parent = await Promise.all(
+          parent.map(p => {
+            return GitRefManager.resolve({ fs, gitdir, ref: p })
+          })
+        );
+      }
 
-    let comm = GitCommit.from({
-      tree,
-      parent,
-      author,
-      committer,
-      message,
-    });
-    if (signingKey) {
-      comm = await GitCommit.sign(comm, onSign, signingKey);
-    }
-    const oid = await _writeObject({
-      fs,
-      gitdir,
-      type: 'commit',
-      object: comm.toObject(),
-      dryRun,
-    });
-    if (!noUpdateBranch && !dryRun) {
-      // Update branch pointer
-      await GitRefManager.writeRef({
+      let comm = GitCommit.from({
+        tree,
+        parent,
+        author,
+        committer,
+        message,
+      });
+      if (signingKey) {
+        comm = await GitCommit.sign(comm, onSign, signingKey);
+      }
+      const oid = await _writeObject({
         fs,
         gitdir,
-        ref,
-        value: oid,
+        type: 'commit',
+        object: comm.toObject(),
+        dryRun,
       });
+      if (!noUpdateBranch && !dryRun) {
+        // Update branch pointer
+        await GitRefManager.writeRef({
+          fs,
+          gitdir,
+          ref,
+          value: oid,
+        });
+      }
+      return oid
     }
-    return oid
-  })
+  )
 }
 
 async function constructTree({ fs, gitdir, inode, dryRun }) {
@@ -8881,6 +8972,7 @@ async function _merge({
     oids: [ourOid, theirOid],
   });
   if (baseOids.length !== 1) {
+    // TODO: Recursive Merge strategy
     throw new MergeNotSupportedError()
   }
   const baseOid = baseOids[0];
@@ -8905,21 +8997,32 @@ async function _merge({
       throw new FastForwardError()
     }
     // try a fancier merge
-    const tree = await mergeTree({
-      fs,
-      cache,
-      dir,
-      gitdir,
-      ourOid,
-      theirOid,
-      baseOid,
-      ourName: abbreviateRef(ours),
-      baseName: 'base',
-      theirName: abbreviateRef(theirs),
-      dryRun,
-      abortOnConflict,
-      mergeDriver,
-    });
+    const tree = await GitIndexManager.acquire(
+      { fs, gitdir, cache, allowUnmerged: false },
+      async index => {
+        return mergeTree({
+          fs,
+          cache,
+          dir,
+          gitdir,
+          index,
+          ourOid,
+          theirOid,
+          baseOid,
+          ourName: abbreviateRef(ours),
+          baseName: 'base',
+          theirName: abbreviateRef(theirs),
+          dryRun,
+          abortOnConflict,
+          mergeDriver,
+        })
+      }
+    );
+
+    // Defer throwing error until the index lock is relinquished and index is
+    // written to filsesystem
+    if (tree instanceof MergeConflictError) throw tree
+
     if (!message) {
       message = `Merge branch '${abbreviateRef(theirs)}' into ${abbreviateRef(
         ours

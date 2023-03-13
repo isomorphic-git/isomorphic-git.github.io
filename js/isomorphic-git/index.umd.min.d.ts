@@ -742,6 +742,7 @@ export var Errors: Readonly<{
     UnsafeFilepathError: typeof UnsafeFilepathError;
     UrlParseError: typeof UrlParseError;
     UserCanceledError: typeof UserCanceledError;
+    UnmergedPathsError: typeof UnmergedPathsError;
 }>;
 /**
  * @returns {Walker}
@@ -4175,6 +4176,21 @@ declare class UserCanceledError extends BaseError {
 declare namespace UserCanceledError {
     const code_28: 'UserCanceledError';
     export { code_28 as code };
+}
+declare class UnmergedPathsError extends BaseError {
+    /**
+     * @param {Array<string>} filepaths
+     */
+    constructor(filepaths: string[]);
+    code: "UnmergedPathsError";
+    name: "UnmergedPathsError";
+    data: {
+        filepaths: string[];
+    };
+}
+declare namespace UnmergedPathsError {
+    const code_29: 'UnmergedPathsError';
+    export { code_29 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent
