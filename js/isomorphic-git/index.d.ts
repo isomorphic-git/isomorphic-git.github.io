@@ -803,6 +803,7 @@ export function abortMerge({ fs: _fs, dir, gitdir, commit, cache, }: {
  * @param {string|string[]} args.filepath - The path to the file to add to the index
  * @param {object} [args.cache] - a [cache](cache.md) object
  * @param {boolean} [args.force=false] - add to index even if matches gitignore. Think `git add --force`
+ * @param {boolean} [args.parallel=false] - process each input file in parallel. Parallel processing will result in more memory consumption but less process time
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
  *
@@ -812,13 +813,14 @@ export function abortMerge({ fs: _fs, dir, gitdir, commit, cache, }: {
  * console.log('done')
  *
  */
-export function add({ fs: _fs, dir, gitdir, filepath, cache, force, }: {
+export function add({ fs: _fs, dir, gitdir, filepath, cache, force, parallel, }: {
     fs: CallbackFsClient | PromiseFsClient;
     dir: string;
     gitdir?: string;
     filepath: string | string[];
     cache?: any;
     force?: boolean;
+    parallel?: boolean;
 }): Promise<void>;
 /**
  * Add or update an object note

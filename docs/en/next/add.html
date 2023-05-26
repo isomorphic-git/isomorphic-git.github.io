@@ -66,6 +66,7 @@
 <tr><td><strong>filepath</strong></td><td>string  |  Array&lt;string&gt;</td><td>The path to the file to add to the index</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/next/cache">cache</a> object</td></tr>
 <tr><td>force</td><td>boolean = false</td><td>add to index even if matches gitignore. Think <code>git add --force</code></td></tr>
+<tr><td>parallel</td><td>boolean = false</td><td>process each input file in parallel. Parallel processing will result in more memory consumption but less process time</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully once the git index has been updated</td></tr>
 </tbody>
 </table>
