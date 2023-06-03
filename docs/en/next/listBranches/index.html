@@ -71,6 +71,8 @@
 <p>Note that specifying a remote does not actually contact the server and update the list of branches.
 If you want an up-to-date list, first do a <code>fetch</code> to that remote.
 (Which branch you fetch doesn't matter - the list of branches available on the remote is updated during the fetch handshake.)</p>
+<p>Also note, that a branch is a reference to a commit. If you initialize a new repository it has no commits, so the
+<code>listBranches</code> function will return an empty list, until you create the first commit.</p>
 <p>Example Code:</p>
 <pre><code class="hljs css language-js live"><span class="hljs-keyword">let</span> branches = <span class="hljs-keyword">await</span> git.listBranches({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span> })
 <span class="hljs-built_in">console</span>.log(branches)
