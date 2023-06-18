@@ -8382,6 +8382,7 @@ async function currentBranch({
  * @returns {Promise<void>}
  */
 async function _deleteBranch({ fs, gitdir, ref }) {
+  ref = ref.startsWith('refs/heads/') ? ref : `refs/heads/${ref}`;
   const exist = await GitRefManager.exists({ fs, gitdir, ref });
   if (!exist) {
     throw new NotFoundError(ref)
