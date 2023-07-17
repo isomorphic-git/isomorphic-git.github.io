@@ -4394,6 +4394,18 @@ async function rmRecursive(fs, filepath) {
   }
 }
 
+function isPromiseLike(obj) {
+  return isObject(obj) && isFunction(obj.then) && isFunction(obj.catch)
+}
+
+function isObject(obj) {
+  return obj && typeof obj === 'object'
+}
+
+function isFunction(obj) {
+  return typeof obj === 'function'
+}
+
 function isPromiseFs(fs) {
   const test = targetFs => {
     try {
@@ -4404,7 +4416,7 @@ function isPromiseFs(fs) {
       return e
     }
   };
-  return test(fs).constructor.name === 'Promise'
+  return isPromiseLike(test(fs))
 }
 
 // List of commands all filesystems are expected to provide. `rm` is not
