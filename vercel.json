@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "website/build/isomorphic-git.github.io/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "website/build/isomorphic-git.github.io/$1"
+    }
+  ]
+}
