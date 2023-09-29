@@ -19,9 +19,11 @@ All snippets are published under the MIT License.
 ```js
 const globby = require('globby');
 const paths = await globby(['./**', './**/.*'], { gitignore: true });
-for (const filepath of paths) {
-    await git.add({ fs, dir, filepath });
-}
+await Promise.all(
+    paths.map(async (filepath) => {
+        await git.add({ fs, dir, filepath });
+    })
+);
 ```
 
 ## git add -A .
