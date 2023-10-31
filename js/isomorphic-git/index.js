@@ -3306,13 +3306,16 @@ MergeNotSupportedError.code = 'MergeNotSupportedError';
 class MergeConflictError extends BaseError {
   /**
    * @param {Array<string>} filepaths
+   * @param {Array<string>} bothModified
+   * @param {Array<string>} deleteByUs
+   * @param {Array<string>} deleteByTheirs
    */
-  constructor(filepaths) {
+  constructor(filepaths, bothModified, deleteByUs, deleteByTheirs) {
     super(
       `Automatic merge failed with one or more merge conflicts in the following files: ${filepaths.toString()}. Fix conflicts then commit the result.`
     );
     this.code = this.name = MergeConflictError.code;
-    this.data = { filepaths };
+    this.data = { filepaths, bothModified, deleteByUs, deleteByTheirs };
   }
 }
 /** @type {'MergeConflictError'} */
@@ -8872,6 +8875,9 @@ async function mergeTree({
   const theirTree = TREE({ ref: theirOid });
 
   const unmergedFiles = [];
+  const bothModified = [];
+  const deleteByUs = [];
+  const deleteByTheirs = [];
 
   const results = await _walk({
     fs,
@@ -8937,6 +8943,7 @@ async function mergeTree({
             }).then(async r => {
               if (!r.cleanMerge) {
                 unmergedFiles.push(filepath);
+                bothModified.push(filepath);
                 if (!abortOnConflict) {
                   const baseOid = await base.oid();
                   const ourOid = await ours.oid();
@@ -8954,8 +8961,70 @@ async function mergeTree({
               return r.mergeResult
             })
           }
+
+          // deleted by us
+          if (
+            base &&
+            !ours &&
+            theirs &&
+            (await base.type()) === 'blob' &&
+            (await theirs.type()) === 'blob'
+          ) {
+            unmergedFiles.push(filepath);
+            deleteByUs.push(filepath);
+            if (!abortOnConflict) {
+              const baseOid = await base.oid();
+              const theirOid = await theirs.oid();
+
+              index.delete({ filepath });
+
+              index.insert({ filepath, oid: baseOid, stage: 1 });
+              index.insert({ filepath, oid: theirOid, stage: 3 });
+            }
+
+            return {
+              mode: await theirs.mode(),
+              oid: await theirs.oid(),
+              type: 'blob',
+              path,
+            }
+          }
+
+          // deleted by theirs
+          if (
+            base &&
+            ours &&
+            !theirs &&
+            (await base.type()) === 'blob' &&
+            (await ours.type()) === 'blob'
+          ) {
+            unmergedFiles.push(filepath);
+            deleteByTheirs.push(filepath);
+            if (!abortOnConflict) {
+              const baseOid = await base.oid();
+              const ourOid = await ours.oid();
+
+              index.delete({ filepath });
+
+              index.insert({ filepath, oid: baseOid, stage: 1 });
+              index.insert({ filepath, oid: ourOid, stage: 2 });
+            }
+
+            return {
+              mode: await ours.mode(),
+              oid: await ours.oid(),
+              type: 'blob',
+              path,
+            }
+          }
+
+          // deleted by both
+          if (base && !ours && !theirs && (await base.type()) === 'blob') {
+            return undefined
+          }
+
           // all other types of conflicts fail
-          // TODO: Merge conflicts involving deletions/additions
+          // TODO: Merge conflicts involving additions
           throw new MergeNotSupportedError()
         }
       }
@@ -9011,7 +9080,12 @@ async function mergeTree({
         },
       });
     }
-    return new MergeConflictError(unmergedFiles)
+    return new MergeConflictError(
+      unmergedFiles,
+      bothModified,
+      deleteByUs,
+      deleteByTheirs
+    )
   }
 
   return results.oid

@@ -3981,12 +3981,18 @@ declare namespace MergeNotSupportedError {
 declare class MergeConflictError extends BaseError {
     /**
      * @param {Array<string>} filepaths
+     * @param {Array<string>} bothModified
+     * @param {Array<string>} deleteByUs
+     * @param {Array<string>} deleteByTheirs
      */
-    constructor(filepaths: string[]);
+    constructor(filepaths: string[], bothModified: string[], deleteByUs: string[], deleteByTheirs: string[]);
     code: "MergeConflictError";
     name: "MergeConflictError";
     data: {
         filepaths: string[];
+        bothModified: string[];
+        deleteByUs: string[];
+        deleteByTheirs: string[];
     };
 }
 declare namespace MergeConflictError {
