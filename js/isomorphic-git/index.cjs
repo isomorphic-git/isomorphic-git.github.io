@@ -7581,6 +7581,9 @@ async function parseUploadPackResponse(stream) {
       } else if (line.startsWith('NAK')) {
         nak = true;
         done = true;
+      } else {
+        done = true;
+        nak = true;
       }
       if (done) {
         resolve({ shallows, unshallows, acks, nak, packfile, progress });
