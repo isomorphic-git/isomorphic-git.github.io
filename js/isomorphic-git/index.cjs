@@ -2457,6 +2457,7 @@ class StreamReader {
     let { done, value } = await this.stream.next();
     if (done) {
       this._ended = true;
+      if (!value) return Buffer.alloc(0)
     }
     if (value) {
       value = Buffer.from(value);
@@ -6839,7 +6840,7 @@ class GitPktLine {
         if (buffer == null) return true
         return buffer
       } catch (err) {
-        console.log('error', err);
+        stream.error = err;
         return true
       }
     }
@@ -7348,8 +7349,8 @@ class FIFO {
   }
 
   destroy(err) {
-    this._ended = true;
     this.error = err;
+    this.end();
   }
 
   async next() {
@@ -7444,7 +7445,7 @@ class GitSideBand {
       if (line === true) {
         packetlines.end();
         progress.end();
-        packfile.end();
+        input.error ? packfile.destroy(input.error) : packfile.end();
         return
       }
       // Examine first byte to determine which output "stream" to use
@@ -7463,12 +7464,14 @@ class GitSideBand {
           // fatal error message just before stream aborts
           const error = line.slice(1);
           progress.write(error);
+          packetlines.end();
+          progress.end();
           packfile.destroy(new Error(error.toString('utf8')));
           return
         }
         default: {
           // Not part of the side-band-64k protocol
-          packetlines.write(line.slice(0));
+          packetlines.write(line);
         }
       }
       // Careful not to blow up the stack.
@@ -7586,7 +7589,15 @@ async function parseUploadPackResponse(stream) {
         nak = true;
       }
       if (done) {
-        resolve({ shallows, unshallows, acks, nak, packfile, progress });
+        stream.error
+          ? reject(stream.error)
+          : resolve({ shallows, unshallows, acks, nak, packfile, progress });
+      }
+    }).finally(() => {
+      if (!done) {
+        stream.error
+          ? reject(stream.error)
+          : resolve({ shallows, unshallows, acks, nak, packfile, progress });
       }
     });
   })
@@ -7952,6 +7963,7 @@ async function _fetch({
     });
   }
   const packfile = Buffer.from(await collect(response.packfile));
+  if (raw.body.error) throw raw.body.error
   const packfileSha = packfile.slice(-20).toString('hex');
   const res = {
     defaultBranch: response.HEAD,
