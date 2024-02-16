@@ -1512,7 +1512,7 @@ const schema = {
 // section starts with [ and ends with ]
 // section is alphanumeric (ASCII) with - and .
 // section is case insensitive
-// subsection is optionnal
+// subsection is optional
 // subsection is specified after section and one or more spaces
 // subsection is specified between double quotes
 const SECTION_LINE_REGEX = /^\[([A-Za-z0-9-.]+)(?: "(.*)")?\]$/;
@@ -3496,7 +3496,7 @@ class IndexResetError extends BaseError {
    */
   constructor(filepath) {
     super(
-      `Could not merge index: Entry for '${filepath}' is not up to date. Either reset the index entry to HEAD, or stage your unstaged chages.`
+      `Could not merge index: Entry for '${filepath}' is not up to date. Either reset the index entry to HEAD, or stage your unstaged changes.`
     );
     this.code = this.name = IndexResetError.code;
     this.data = { filepath };
@@ -4495,7 +4495,7 @@ class FileSystem {
 
   /**
    * Return true if a file exists, false if it doesn't exist.
-   * Rethrows errors that aren't related to file existance.
+   * Rethrows errors that aren't related to file existence.
    */
   async exists(filepath, options = {}) {
     try {
@@ -4639,7 +4639,7 @@ class FileSystem {
 
   /**
    * Return the Stats of a file/symlink if it exists, otherwise returns null.
-   * Rethrows errors that aren't related to file existance.
+   * Rethrows errors that aren't related to file existence.
    */
   async lstat(filename) {
     try {
@@ -4655,7 +4655,7 @@ class FileSystem {
 
   /**
    * Reads the contents of a symlink if it exists, otherwise returns null.
-   * Rethrows errors that aren't related to file existance.
+   * Rethrows errors that aren't related to file existence.
    */
   async readlink(filename, opts = { encoding: 'buffer' }) {
     // Note: FileSystem.readlink returns a buffer by default
@@ -4815,7 +4815,7 @@ async function abortMerge({
 }
 
 // I'm putting this in a Manager because I reckon it could benefit
-// from a LOT of cacheing.
+// from a LOT of caching.
 class GitIgnoreManager {
   static async isIgnored({ fs, dir, gitdir = join(dir, '.git'), filepath }) {
     // ALWAYS ignore ".git" folders.
@@ -5800,7 +5800,7 @@ async function _annotatedTag({
  * @param {string} [args.tagger.email] - Default is `user.email` config.
  * @param {number} [args.tagger.timestamp=Math.floor(Date.now()/1000)] - Set the tagger timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.tagger.timezoneOffset] - Set the tagger timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
- * @param {string} [args.gpgsig] - The gpgsig attatched to the tag object. (Mutually exclusive with the `signingKey` option.)
+ * @param {string} [args.gpgsig] - The gpgsig attached to the tag object. (Mutually exclusive with the `signingKey` option.)
  * @param {string} [args.signingKey] - Sign the tag object using this private PGP key. (Mutually exclusive with the `gpgsig` option.)
  * @param {boolean} [args.force = false] - Instead of throwing an error if a tag named `ref` already exists, overwrite the existing tag. Note that this option does not modify the original tag object itself.
  * @param {object} [args.cache] - a [cache](cache.md) object
@@ -6295,7 +6295,7 @@ async function analyze({
 
       // This is a kind of silly pattern but it worked so well for me in the past
       // and it makes intuitively demonstrating exhaustiveness so *easy*.
-      // This checks for the presense and/or absence of each of the 3 entries,
+      // This checks for the presence and/or absence of each of the 3 entries,
       // converts that to a 3-bit binary representation, and then handles
       // every possible combination (2^3 or 8 cases) with a lookup table.
       const key = [!!stage, !!commit, !!workdir].map(Number).join('');
@@ -6776,7 +6776,7 @@ of the line, the pkt-len, indicates the total length of the line,
 in hexadecimal.  The pkt-len includes the 4 bytes used to contain
 the length's hexadecimal representation.
 
-A pkt-line MAY contain binary data, so implementors MUST ensure
+A pkt-line MAY contain binary data, so implementers MUST ensure
 pkt-line parsing/formatting routines are 8-bit clean.
 
 A non-binary line SHOULD BE terminated by an LF, which if present
@@ -6956,7 +6956,7 @@ function splitAndAssert(line, sep, expected) {
   return split
 }
 
-// Try to accomodate known CORS proxy implementations:
+// Try to accommodate known CORS proxy implementations:
 // - https://jcubic.pl/proxy.php?  <-- uses query string
 // - https://cors.isomorphic-git.org  <-- uses path
 const corsProxify = (corsProxy, url) =>
@@ -10920,12 +10920,12 @@ async function writeListRefsRequest({ prefix, symrefs, peelTags }) {
  * Hard numbers vary by situation, but here's some numbers from my machine:
  *
  * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://github.com/isomorphic-git/isomorphic-git
- * - Protocol Version 1 took ~300ms and transfered 84 KB.
- * - Protocol Version 2 took ~500ms and transfered 4.1 KB.
+ * - Protocol Version 1 took ~300ms and transferred 84 KB.
+ * - Protocol Version 2 took ~500ms and transferred 4.1 KB.
  *
  * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://gitlab.com/gitlab-org/gitlab
- * - Protocol Version 1 took ~4900ms and transfered 9.41 MB.
- * - Protocol Version 2 took ~1280ms and transfered 433 KB.
+ * - Protocol Version 1 took ~4900ms and transferred 9.41 MB.
+ * - Protocol Version 2 took ~1280ms and transferred 433 KB.
  *
  * Finally, there is a fun quirk regarding the `symrefs` parameter.
  * Protocol Version 1 will generally only return the `HEAD` symref and not others.

@@ -82,7 +82,7 @@ This has the added benefit that the JSDoc is also included in the <code>index.d.
 <p>And here's what it looks like in version 1.0:</p>
 <p><img src="/blog/assets/2020-02-25/tooltip-after.png" alt="v1.x.x tooltip"></p>
 <p>The functions themselves have been tweaked so that the <a href="https://github.com/isomorphic-git/isomorphic-git/blob/master/src/typedefs.js">core object interfaces</a> (<code>CommitObject</code>, <code>TreeEntry</code>, <code>TagObject</code>, etc) are reused wherever possible,
-so that all the functions feel consistant and there are no surprises.
+so that all the functions feel consistent and there are no surprises.
 The result is a cleaner API where the documentation comes to you, right where you are.</p>
 <h2><a class="anchor" aria-hidden="true" id="better-typescript-integration"></a><a href="#better-typescript-integration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Better TypeScript Integration</h2>
 <p>The return types gel with TS better now. For example, <code>readObject</code> returns a &quot;discriminated union&quot; type, so you can take advantage of powerful type inference, like this:</p>
@@ -184,7 +184,7 @@ Everyone has benefitted from the bugfixes, perf, and usability enhancements that
 <li>The <code>autoTranslateSSH</code> feature was removed, since it is trivial to implement your own version using just the <code>UnknownTransportError.data.suggestion</code></li>
 <li>The <code>writeObject</code> function when used to write a tree now expects a plain array rather than an object with a property called <code>entries</code> which is the array. (This is so that argument to <code>writeObject</code> has the same shape as the arguments to <code>writeBlob</code>/<code>writeCommit</code>/<code>writeTag</code>/<code>writeTree</code>.)</li>
 <li>The <code>noOverwrite</code> parameter was removed from <code>init</code> and is the new behavior.</li>
-<li>The <code>author.date</code>, <code>committer.date</code>, <code>tagger.date</code> parameters were removed in favor of <code>author.timestamp</code>, <code>comitter.timestamp</code>, <code>tagger.timestamp</code> in order to be clear about what is actually written and share the same shape as the return types in <code>readCommit</code>, <code>log</code>, and <code>readTag</code>.</li>
+<li>The <code>author.date</code>, <code>committer.date</code>, <code>tagger.date</code> parameters were removed in favor of <code>author.timestamp</code>, <code>committer.timestamp</code>, <code>tagger.timestamp</code> in order to be clear about what is actually written and share the same shape as the return types in <code>readCommit</code>, <code>log</code>, and <code>readTag</code>.</li>
 </ul>
 <h3><a class="anchor" aria-hidden="true" id="the-return-types-of-some-functions-have-changed"></a><a href="#the-return-types-of-some-functions-have-changed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The return types of some functions have changed:</h3>
 <ul>
@@ -484,7 +484,7 @@ To https://github.com/isomorphic-git/isomorphic-git
 Branch issue-107 <span class="hljs-built_in">set</span> up to track remote branch issue-107 from origin.
 </code></pre>
 <p>(If the linter had found any style problems, it would have fixed them using prettier.
-I have not automated ammending the commit though, so I would have to fix the commit with
+I have not automated amending the commit though, so I would have to fix the commit with
 <code>git add -u &amp;&amp; git commit --amend --no-edit</code> and try pushing again.)</p>
 <p>Since it succeeded, it will show up on the <a href="https://github.com/isomorphic-git/isomorphic-git">Github page</a>
 near the top, under &quot;Your recently pushed branches:&quot;. I go there and click the &quot;Compare &amp; pull request&quot; button.</p>
@@ -492,7 +492,7 @@ near the top, under &quot;Your recently pushed branches:&quot;. I go there and c
 However, now I will tack on &quot;(fixes #107)&quot; to the end of the title just so Github automatically creates a hyperlink between
 the issue and the PR.</p>
 <p>... I lied. Github is not smart enough to use the PR title. :eyeroll:
-I edit the PR description to be &quot;fixes #107&quot; and <em>then</em> Github adds the &quot;wmhilton referened this issue a minute ago&quot; link to the PR to the issue.</p>
+I edit the PR description to be &quot;fixes #107&quot; and <em>then</em> Github adds the &quot;wmhilton referenced this issue a minute ago&quot; link to the PR to the issue.</p>
 <p>Now we wait for the Continuous Integration (CI) system to do its thing.
 I didn't actually check if it would work in the browser -
 which we could have done by running <code>npm run test</code> (which will run Jasmine and Karma) instead of just <code>jest</code> -

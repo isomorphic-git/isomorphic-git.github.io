@@ -270,7 +270,7 @@ To https://github.com/isomorphic-git/isomorphic-git
 Branch issue-107 <span class="hljs-built_in">set</span> up to track remote branch issue-107 from origin.
 </code></pre>
 <p>(If the linter had found any style problems, it would have fixed them using prettier.
-I have not automated ammending the commit though, so I would have to fix the commit with
+I have not automated amending the commit though, so I would have to fix the commit with
 <code>git add -u &amp;&amp; git commit --amend --no-edit</code> and try pushing again.)</p>
 <p>Since it succeeded, it will show up on the <a href="https://github.com/isomorphic-git/isomorphic-git">Github page</a>
 near the top, under &quot;Your recently pushed branches:&quot;. I go there and click the &quot;Compare &amp; pull request&quot; button.</p>
@@ -278,7 +278,7 @@ near the top, under &quot;Your recently pushed branches:&quot;. I go there and c
 However, now I will tack on &quot;(fixes #107)&quot; to the end of the title just so Github automatically creates a hyperlink between
 the issue and the PR.</p>
 <p>... I lied. Github is not smart enough to use the PR title. :eyeroll:
-I edit the PR description to be &quot;fixes #107&quot; and <em>then</em> Github adds the &quot;wmhilton referened this issue a minute ago&quot; link to the PR to the issue.</p>
+I edit the PR description to be &quot;fixes #107&quot; and <em>then</em> Github adds the &quot;wmhilton referenced this issue a minute ago&quot; link to the PR to the issue.</p>
 <p>Now we wait for the Continuous Integration (CI) system to do its thing.
 I didn't actually check if it would work in the browser -
 which we could have done by running <code>npm run test</code> (which will run Jasmine and Karma) instead of just <code>jest</code> -

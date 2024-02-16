@@ -73,7 +73,7 @@
 <tr><td>tagger.date</td><td>string</td><td>Set the tagger timestamp field. Default is the current date.</td></tr>
 <tr><td>tagger.timestamp</td><td>string</td><td>Set the tagger timestamp field. This is an alternative to using <code>date</code> using an integer number of seconds since the Unix epoch instead of a JavaScript date object.</td></tr>
 <tr><td>tagger.timezoneOffset</td><td>string</td><td>Set the tagger timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
-<tr><td>signature</td><td>string</td><td>The signature attatched to the tag object. (Mutually exclusive with the <code>signingKey</code> option.)</td></tr>
+<tr><td>signature</td><td>string</td><td>The signature attached to the tag object. (Mutually exclusive with the <code>signingKey</code> option.)</td></tr>
 <tr><td>signingKey</td><td>string</td><td>Sign the tag object using this private PGP key. (Mutually exclusive with the <code>signature</code> option.)</td></tr>
 <tr><td>force</td><td>boolean = false</td><td>Instead of throwing an error if a tag named <code>ref</code> already exists, overwrite the existing tag. Note that this option does not modify the original tag object itself.</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when filesystem operations are complete</td></tr>

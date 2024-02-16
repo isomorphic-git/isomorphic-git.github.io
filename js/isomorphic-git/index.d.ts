@@ -920,7 +920,7 @@ export function addRemote({ fs, dir, gitdir, remote, url, force, }: {
  * @param {string} [args.tagger.email] - Default is `user.email` config.
  * @param {number} [args.tagger.timestamp=Math.floor(Date.now()/1000)] - Set the tagger timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.tagger.timezoneOffset] - Set the tagger timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
- * @param {string} [args.gpgsig] - The gpgsig attatched to the tag object. (Mutually exclusive with the `signingKey` option.)
+ * @param {string} [args.gpgsig] - The gpgsig attached to the tag object. (Mutually exclusive with the `signingKey` option.)
  * @param {string} [args.signingKey] - Sign the tag object using this private PGP key. (Mutually exclusive with the `gpgsig` option.)
  * @param {boolean} [args.force = false] - Instead of throwing an error if a tag named `ref` already exists, overwrite the existing tag. Note that this option does not modify the original tag object itself.
  * @param {object} [args.cache] - a [cache](cache.md) object
@@ -1974,12 +1974,12 @@ export function listRemotes({ fs, dir, gitdir }: {
  * Hard numbers vary by situation, but here's some numbers from my machine:
  *
  * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://github.com/isomorphic-git/isomorphic-git
- * - Protocol Version 1 took ~300ms and transfered 84 KB.
- * - Protocol Version 2 took ~500ms and transfered 4.1 KB.
+ * - Protocol Version 1 took ~300ms and transferred 84 KB.
+ * - Protocol Version 2 took ~500ms and transferred 4.1 KB.
  *
  * Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of https://gitlab.com/gitlab-org/gitlab
- * - Protocol Version 1 took ~4900ms and transfered 9.41 MB.
- * - Protocol Version 2 took ~1280ms and transfered 433 KB.
+ * - Protocol Version 1 took ~4900ms and transferred 9.41 MB.
+ * - Protocol Version 2 took ~1280ms and transferred 433 KB.
  *
  * Finally, there is a fun quirk regarding the `symrefs` parameter.
  * Protocol Version 1 will generally only return the `HEAD` symref and not others.

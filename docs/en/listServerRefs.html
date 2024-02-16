@@ -95,13 +95,13 @@ But for large repos (or slow Internet connections), the decreased payload size o
 <p>Hard numbers vary by situation, but here's some numbers from my machine:</p>
 <p>Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of <a href="https://github.com/isomorphic-git/isomorphic-git">https://github.com/isomorphic-git/isomorphic-git</a></p>
 <ul>
-<li>Protocol Version 1 took ~300ms and transfered 84 KB.</li>
-<li>Protocol Version 2 took ~500ms and transfered 4.1 KB.</li>
+<li>Protocol Version 1 took ~300ms and transferred 84 KB.</li>
+<li>Protocol Version 2 took ~500ms and transferred 4.1 KB.</li>
 </ul>
 <p>Using isomorphic-git in a browser, with a CORS proxy, listing only the branches (refs/heads) of <a href="https://gitlab.com/gitlab-org/gitlab">https://gitlab.com/gitlab-org/gitlab</a></p>
 <ul>
-<li>Protocol Version 1 took ~4900ms and transfered 9.41 MB.</li>
-<li>Protocol Version 2 took ~1280ms and transfered 433 KB.</li>
+<li>Protocol Version 1 took ~4900ms and transferred 9.41 MB.</li>
+<li>Protocol Version 2 took ~1280ms and transferred 433 KB.</li>
 </ul>
 <p>Finally, there is a fun quirk regarding the <code>symrefs</code> parameter.
 Protocol Version 1 will generally only return the <code>HEAD</code> symref and not others.

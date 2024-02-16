@@ -58,7 +58,7 @@
 This is helpful to know if you were using a saved password in the <code>onAuth</code> callback, then you may want to offer the user the option to delete the currently saved password.
 It also gives you an opportunity to retry the request with new credentials.</p>
 <p>As long as your <code>onAuthFailure</code> function returns credentials, it will keep trying.
-This is the main reason we don't re-use the <code>onAuth</code> callback for this purpose. If we did, then a naive <code>onAuth</code> callback that simply returned saved credentials might loop indefinitely.</p>
+This is the main reason we don't reuse the <code>onAuth</code> callback for this purpose. If we did, then a naive <code>onAuth</code> callback that simply returned saved credentials might loop indefinitely.</p>
 <p>An <code>onAuthFailure</code> function is called with a <code>url</code> and an <code>auth</code> object and can return a GitAuth object:</p>
 <pre><code class="hljs css language-js"><span class="hljs-comment">/**
  * @callback AuthFailureCallback
