@@ -1790,6 +1790,13 @@ const refpaths = ref => [
 // @see https://git-scm.com/docs/gitrepository-layout
 const GIT_FILES = ['config', 'description', 'index', 'shallow', 'commondir'];
 
+let lock$1;
+
+async function acquireLock(ref, callback) {
+  if (lock$1 === undefined) lock$1 = new AsyncLock();
+  return lock$1.acquire(ref, callback)
+}
+
 class GitRefManager {
   static async updateRemoteRefs({
     fs,
@@ -1896,7 +1903,9 @@ class GitRefManager {
     // are .git/refs/remotes/origin/refs/remotes/remote_mirror_3059
     // and .git/refs/remotes/origin/refs/merge-requests
     for (const [key, value] of actualRefsToWrite) {
-      await fs.write(join(gitdir, key), `${value.trim()}\n`, 'utf8');
+      await acquireLock(key, async () =>
+        fs.write(join(gitdir, key), `${value.trim()}\n`, 'utf8')
+      );
     }
     return { pruned }
   }
@@ -1907,11 +1916,15 @@ class GitRefManager {
     if (!value.match(/[0-9a-f]{40}/)) {
       throw new InvalidOidError(value)
     }
-    await fs.write(join(gitdir, ref), `${value.trim()}\n`, 'utf8');
+    await acquireLock(ref, async () =>
+      fs.write(join(gitdir, ref), `${value.trim()}\n`, 'utf8')
+    );
   }
 
   static async writeSymbolicRef({ fs, gitdir, ref, value }) {
-    await fs.write(join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8');
+    await acquireLock(ref, async () =>
+      fs.write(join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
+    );
   }
 
   static async deleteRef({ fs, gitdir, ref }) {
@@ -1922,7 +1935,9 @@ class GitRefManager {
     // Delete regular ref
     await Promise.all(refs.map(ref => fs.rm(join(gitdir, ref))));
     // Delete any packed ref
-    let text = await fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' });
+    let text = await acquireLock('packed-refs', async () =>
+      fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' })
+    );
     const packed = GitPackedRefs.from(text);
     const beforeSize = packed.refs.size;
     for (const ref of refs) {
@@ -1932,7 +1947,9 @@ class GitRefManager {
     }
     if (packed.refs.size < beforeSize) {
       text = packed.toString();
-      await fs.write(`${gitdir}/packed-refs`, text, { encoding: 'utf8' });
+      await acquireLock('packed-refs', async () =>
+        fs.write(`${gitdir}/packed-refs`, text, { encoding: 'utf8' })
+      );
     }
   }
 
@@ -1951,7 +1968,7 @@ class GitRefManager {
         return ref
       }
     }
-    let sha;
+
     // Is it a ref pointer?
     if (ref.startsWith('ref: ')) {
       ref = ref.slice('ref: '.length);
@@ -1967,9 +1984,12 @@ class GitRefManager {
     const allpaths = refpaths(ref).filter(p => !GIT_FILES.includes(p)); // exclude git system files (#709)
 
     for (const ref of allpaths) {
-      sha =
-        (await fs.read(`${gitdir}/${ref}`, { encoding: 'utf8' })) ||
-        packedMap.get(ref);
+      const sha = await acquireLock(
+        ref,
+        async () =>
+          (await fs.read(`${gitdir}/${ref}`, { encoding: 'utf8' })) ||
+          packedMap.get(ref)
+      );
       if (sha) {
         return GitRefManager.resolve({ fs, gitdir, ref: sha.trim(), depth })
       }
@@ -1997,7 +2017,10 @@ class GitRefManager {
     // Look in all the proper paths, in this order
     const allpaths = refpaths(ref);
     for (const ref of allpaths) {
-      if (await fs.exists(`${gitdir}/${ref}`)) return ref
+      const refExists = await acquireLock(ref, async () =>
+        fs.exists(`${gitdir}/${ref}`)
+      );
+      if (refExists) return ref
       if (packedMap.has(ref)) return ref
     }
     // Do we give up?
@@ -2048,7 +2071,9 @@ class GitRefManager {
   }
 
   static async packedRefs({ fs, gitdir }) {
-    const text = await fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' });
+    const text = await acquireLock('packed-refs', async () =>
+      fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' })
+    );
     const packed = GitPackedRefs.from(text);
     return packed.refs
   }
@@ -7210,14 +7235,14 @@ class GitRemoteManager {
   }
 }
 
-let lock$1 = null;
+let lock$2 = null;
 
 class GitShallowManager {
   static async read({ fs, gitdir }) {
-    if (lock$1 === null) lock$1 = new AsyncLock();
+    if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$1.acquire(filepath, async function() {
+    await lock$2.acquire(filepath, async function() {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -7230,18 +7255,18 @@ class GitShallowManager {
   }
 
   static async write({ fs, gitdir, oids }) {
-    if (lock$1 === null) lock$1 = new AsyncLock();
+    if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$1.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function() {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$1.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function() {
         await fs.rm(filepath);
       });
     }
