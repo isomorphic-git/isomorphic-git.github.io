@@ -4176,17 +4176,14 @@ class GitWalkerFs {
         entry._content = undefined;
       } else {
         const config = await GitConfigManager.get({ fs, gitdir });
-        const autocrlf = (await config.get('core.autocrlf')) || false;
-        const content = await fs.read(`${dir}/${entry._fullpath}`, {
-          encoding: 'utf8',
-          autocrlf,
-        });
+        const autocrlf = await config.get('core.autocrlf');
+        const content = await fs.read(`${dir}/${entry._fullpath}`, { autocrlf });
         // workaround for a BrowserFS edge case
         entry._actualSize = content.length;
         if (entry._stat && entry._stat.size === -1) {
           entry._stat.size = entry._actualSize;
         }
-        entry._content = new TextEncoder().encode(content);
+        entry._content = new Uint8Array(content);
       }
     }
     return entry._content
@@ -4557,8 +4554,14 @@ class FileSystem {
   async read(filepath, options = {}) {
     try {
       let buffer = await this._readFile(filepath, options);
-      if (typeof buffer === 'string' && options.autocrlf) {
-        buffer = buffer.replace(/\r\n/g, '\n');
+      if (options.autocrlf === 'true') {
+        try {
+          buffer = new TextDecoder('utf8', { fatal: true }).decode(buffer);
+          buffer = buffer.replace(/\r\n/g, '\n');
+          buffer = new TextEncoder().encode(buffer);
+        } catch (error) {
+          // non utf8 file
+        }
       }
       // Convert plain ArrayBuffers to Buffers
       if (typeof buffer !== 'string') {
@@ -5091,20 +5094,12 @@ async function addToIndex({
       }
     } else {
       const config = await GitConfigManager.get({ fs, gitdir });
-      const autocrlf = (await config.get('core.autocrlf')) || false;
+      const autocrlf = await config.get('core.autocrlf');
       const object = stats.isSymbolicLink()
         ? await fs.readlink(join(dir, currentFilepath)).then(posixifyPathBuffer)
-        : await fs.read(join(dir, currentFilepath), {
-            encoding: 'utf8',
-            autocrlf,
-          });
+        : await fs.read(join(dir, currentFilepath), { autocrlf });
       if (object === null) throw new NotFoundError(currentFilepath)
-      const oid = await _writeObject({
-        fs,
-        gitdir,
-        type: 'blob',
-        object: new TextEncoder().encode(object),
-      });
+      const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
       index.insert({ filepath: currentFilepath, stats, oid });
     }
   });
