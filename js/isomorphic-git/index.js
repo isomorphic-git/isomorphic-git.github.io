@@ -1,5 +1,6 @@
 import AsyncLock from 'async-lock';
 import Hash from 'sha.js/sha1.js';
+import { join } from 'path';
 import crc32 from 'crc-32';
 import pako from 'pako';
 import pify from 'pify';
@@ -301,6 +302,39 @@ import diff3Merge from 'diff3';
 
 /**
  * @typedef {[string, HeadStatus, WorkdirStatus, StageStatus]} StatusRow
+ */
+
+/**
+ * @typedef {Object} ClientRef
+ * @property {string} ref The name of the ref
+ * @property {string} oid The SHA-1 object id the ref points to
+ */
+
+/**
+ * @typedef {Object} PrePushParams
+ * @property {string} remote The expanded name of target remote
+ * @property {string} url The URL address of target remote
+ * @property {ClientRef} localRef The ref which the client wants to push to the remote
+ * @property {ClientRef} remoteRef The ref which is known by the remote
+ */
+
+/**
+ * @callback PrePushCallback
+ * @param {PrePushParams} args
+ * @returns {boolean | Promise<boolean>} Returns false if push must be cancelled
+ */
+
+/**
+ * @typedef {Object} PostCheckoutParams
+ * @property {string} previousHead The SHA-1 object id of HEAD before checkout
+ * @property {string} newHead The SHA-1 object id of HEAD after checkout
+ * @property {'branch' | 'file'} type flag determining whether a branch or a set of files was checked
+ */
+
+/**
+ * @callback PostCheckoutCallback
+ * @param {PostCheckoutParams} args
+ * @returns {void | Promise<void>}
  */
 
 class BaseError extends Error {
@@ -1442,40 +1476,6 @@ function compareRefNames(a, b) {
   return tmp
 }
 
-const memo = new Map();
-function normalizePath(path) {
-  let normalizedPath = memo.get(path);
-  if (!normalizedPath) {
-    normalizedPath = normalizePathInternal(path);
-    memo.set(path, normalizedPath);
-  }
-  return normalizedPath
-}
-
-function normalizePathInternal(path) {
-  path = path
-    .split('/./')
-    .join('/') // Replace '/./' with '/'
-    .replace(/\/{2,}/g, '/'); // Replace consecutive '/'
-
-  if (path === '/.') return '/' // if path === '/.' return '/'
-  if (path === './') return '.' // if path === './' return '.'
-
-  if (path.startsWith('./')) path = path.slice(2); // Remove leading './'
-  if (path.endsWith('/.')) path = path.slice(0, -2); // Remove trailing '/.'
-  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1); // Remove trailing '/'
-
-  if (path === '') return '.' // if path === '' return '.'
-
-  return path
-}
-
-// For some reason path.posix.join is undefined in webpack
-
-function join(...parts) {
-  return normalizePath(parts.map(normalizePath).join('/'))
-}
-
 // This is straight from parse_unit_factor in config.c of canonical git
 const num = val => {
   val = val.toLowerCase();
@@ -1590,7 +1590,7 @@ const getPath = (section, subsection, name) => {
     .join('.')
 };
 
-const normalizePath$1 = path => {
+const normalizePath = path => {
   const pathSegments = path.split('.');
   const section = pathSegments.shift();
   const name = pathSegments.pop();
@@ -1646,7 +1646,7 @@ class GitConfig {
   }
 
   async get(path, getall = false) {
-    const normalizedPath = normalizePath$1(path).path;
+    const normalizedPath = normalizePath(path).path;
     const allValues = this.parsedConfig
       .filter(config => config.path === normalizedPath)
       .map(({ section, name, value }) => {
@@ -1684,7 +1684,7 @@ class GitConfig {
       name,
       path: normalizedPath,
       sectionPath,
-    } = normalizePath$1(path);
+    } = normalizePath(path);
     const configIndex = findLastIndex(
       this.parsedConfig,
       config => config.path === normalizedPath
@@ -6045,6 +6045,7 @@ const worthWalking = (filepath, root) => {
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {any} args.cache
  * @param {ProgressCallback} [args.onProgress]
+ * @param {PostCheckoutCallback} [args.onPostCheckout]
  * @param {string} args.dir
  * @param {string} args.gitdir
  * @param {string} args.ref
@@ -6063,6 +6064,7 @@ async function _checkout({
   fs,
   cache,
   onProgress,
+  onPostCheckout,
   dir,
   gitdir,
   remote,
@@ -6074,6 +6076,16 @@ async function _checkout({
   force,
   track = true,
 }) {
+  // oldOid is defined only if onPostCheckout hook is attached
+  let oldOid;
+  if (onPostCheckout) {
+    try {
+      oldOid = await GitRefManager.resolve({ fs, gitdir, ref: 'HEAD' });
+    } catch (err) {
+      oldOid = '0000000000000000000000000000000000000000';
+    }
+  }
+
   // Get tree oid
   let oid;
   try {
@@ -6149,6 +6161,14 @@ async function _checkout({
     if (dryRun) {
       // Since the format of 'ops' is in flux, I really would rather folk besides myself not start relying on it
       // return ops
+
+      if (onPostCheckout) {
+        await onPostCheckout({
+          previousHead: oldOid,
+          newHead: oid,
+          type: filepaths != null && filepaths.length > 0 ? 'file' : 'branch',
+        });
+      }
       return
     }
 
@@ -6293,6 +6313,14 @@ async function _checkout({
           })
       );
     });
+
+    if (onPostCheckout) {
+      await onPostCheckout({
+        previousHead: oldOid,
+        newHead: oid,
+        type: filepaths != null && filepaths.length > 0 ? 'file' : 'branch',
+      });
+    }
   }
 
   // Update HEAD
@@ -6612,6 +6640,7 @@ async function analyze({
  * @param {object} args
  * @param {FsClient} args.fs - a file system implementation
  * @param {ProgressCallback} [args.onProgress] - optional progress event callback
+ * @param {PostCheckoutCallback} [args.onPostCheckout] - optional post-checkout hook callback
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref = 'HEAD'] - Source to checkout files from
@@ -6660,6 +6689,7 @@ async function analyze({
 async function checkout({
   fs,
   onProgress,
+  onPostCheckout,
   dir,
   gitdir = join(dir, '.git'),
   remote = 'origin',
@@ -6682,6 +6712,7 @@ async function checkout({
       fs: new FileSystem(fs),
       cache,
       onProgress,
+      onPostCheckout,
       dir,
       gitdir,
       remote,
@@ -8119,6 +8150,7 @@ async function _init({
  * @param {AuthCallback} [args.onAuth]
  * @param {AuthFailureCallback} [args.onAuthFailure]
  * @param {AuthSuccessCallback} [args.onAuthSuccess]
+ * @param {PostCheckoutCallback} [args.onPostCheckout]
  * @param {string} [args.dir]
  * @param {string} args.gitdir
  * @param {string} args.url
@@ -8146,6 +8178,7 @@ async function _clone({
   onAuth,
   onAuthSuccess,
   onAuthFailure,
+  onPostCheckout,
   dir,
   gitdir,
   url,
@@ -8198,6 +8231,7 @@ async function _clone({
       fs,
       cache,
       onProgress,
+      onPostCheckout,
       dir,
       gitdir,
       ref,
@@ -8228,6 +8262,7 @@ async function _clone({
  * @param {AuthCallback} [args.onAuth] - optional auth fill callback
  * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
  * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {PostCheckoutCallback} [args.onPostCheckout] - optional post-checkout hook callback
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.url - The URL of the remote repository
@@ -8267,6 +8302,7 @@ async function clone({
   onAuth,
   onAuthSuccess,
   onAuthFailure,
+  onPostCheckout,
   dir,
   gitdir = join(dir, '.git'),
   url,
@@ -8301,6 +8337,7 @@ async function clone({
       onAuth,
       onAuthSuccess,
       onAuthFailure,
+      onPostCheckout,
       dir,
       gitdir,
       url,
@@ -12137,6 +12174,7 @@ async function writeReceivePackRequest({
  * @param {AuthCallback} [args.onAuth]
  * @param {AuthFailureCallback} [args.onAuthFailure]
  * @param {AuthSuccessCallback} [args.onAuthSuccess]
+ * @param {PrePushCallback} [args.onPrePush]
  * @param {string} args.gitdir
  * @param {string} [args.ref]
  * @param {string} [args.remoteRef]
@@ -12158,6 +12196,7 @@ async function _push({
   onAuth,
   onAuthSuccess,
   onAuthFailure,
+  onPrePush,
   gitdir,
   ref: _ref,
   remoteRef: _remoteRef,
@@ -12241,6 +12280,16 @@ async function _push({
   const oldoid =
     httpRemote.refs.get(fullRemoteRef) ||
     '0000000000000000000000000000000000000000';
+
+  if (onPrePush) {
+    const hookCancel = await onPrePush({
+      remote,
+      url,
+      localRef: { ref: _delete ? '(delete)' : fullRef, oid: oid },
+      remoteRef: { ref: fullRemoteRef, oid: oldoid },
+    });
+    if (!hookCancel) throw new UserCanceledError()
+  }
 
   // Remotes can always accept thin-packs UNLESS they specify the 'no-thin' capability
   const thinPack = !httpRemote.capabilities.has('no-thin');
@@ -12419,6 +12468,7 @@ async function _push({
  * @param {AuthCallback} [args.onAuth] - optional auth fill callback
  * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
  * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {PrePushCallback} [args.onPrePush] - optional pre-push hook callback
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - Which branch to push. By default this is the currently checked out branch.
@@ -12455,6 +12505,7 @@ async function push({
   onAuth,
   onAuthSuccess,
   onAuthFailure,
+  onPrePush,
   dir,
   gitdir = join(dir, '.git'),
   ref,
@@ -12481,6 +12532,7 @@ async function push({
       onAuth,
       onAuthSuccess,
       onAuthFailure,
+      onPrePush,
       gitdir,
       ref,
       remoteRef,

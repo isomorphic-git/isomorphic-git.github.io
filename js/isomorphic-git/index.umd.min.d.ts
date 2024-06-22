@@ -641,6 +641,50 @@ export type HeadStatus = 0 | 1;
 export type WorkdirStatus = 0 | 1 | 2;
 export type StageStatus = 0 | 1 | 2 | 3;
 export type StatusRow = [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3];
+export type ClientRef = {
+    /**
+     * The name of the ref
+     */
+    ref: string;
+    /**
+     * The SHA-1 object id the ref points to
+     */
+    oid: string;
+};
+export type PrePushParams = {
+    /**
+     * The expanded name of target remote
+     */
+    remote: string;
+    /**
+     * The URL address of target remote
+     */
+    url: string;
+    /**
+     * The ref which the client wants to push to the remote
+     */
+    localRef: ClientRef;
+    /**
+     * The ref which is known by the remote
+     */
+    remoteRef: ClientRef;
+};
+export type PrePushCallback = (args: PrePushParams) => boolean | Promise<boolean>;
+export type PostCheckoutParams = {
+    /**
+     * The SHA-1 object id of HEAD before checkout
+     */
+    previousHead: string;
+    /**
+     * The SHA-1 object id of HEAD after checkout
+     */
+    newHead: string;
+    /**
+     * flag determining whether a branch or a set of files was checked
+     */
+    type: "branch" | "file";
+};
+export type PostCheckoutCallback = (args: PostCheckoutParams) => void | Promise<void>;
 export type types = number;
 declare namespace index {
     export { Errors };
@@ -996,6 +1040,7 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * @param {object} args
  * @param {FsClient} args.fs - a file system implementation
  * @param {ProgressCallback} [args.onProgress] - optional progress event callback
+ * @param {PostCheckoutCallback} [args.onPostCheckout] - optional post-checkout hook callback
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref = 'HEAD'] - Source to checkout files from
@@ -1041,9 +1086,10 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * })
  * console.log('done')
  */
-export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, track, cache, }: {
+export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, track, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onProgress?: ProgressCallback;
+    onPostCheckout?: PostCheckoutCallback;
     dir: string;
     gitdir?: string;
     ref?: string;
@@ -1067,6 +1113,7 @@ export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filep
  * @param {AuthCallback} [args.onAuth] - optional auth fill callback
  * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
  * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {PostCheckoutCallback} [args.onPostCheckout] - optional post-checkout hook callback
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.url - The URL of the remote repository
@@ -1098,7 +1145,7 @@ export function checkout({ fs, onProgress, dir, gitdir, remote, ref: _ref, filep
  * console.log('done')
  *
  */
-export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, url, corsProxy, ref, remote, depth, since, exclude, relative, singleBranch, noCheckout, noTags, headers, cache, }: {
+export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPostCheckout, dir, gitdir, url, corsProxy, ref, remote, depth, since, exclude, relative, singleBranch, noCheckout, noTags, headers, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     http: HttpClient;
     onProgress?: ProgressCallback;
@@ -1106,6 +1153,7 @@ export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, 
     onAuth?: AuthCallback;
     onAuthFailure?: AuthFailureCallback;
     onAuthSuccess?: AuthSuccessCallback;
+    onPostCheckout?: PostCheckoutCallback;
     dir: string;
     gitdir?: string;
     url: string;
@@ -2412,6 +2460,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
  * @param {AuthCallback} [args.onAuth] - optional auth fill callback
  * @param {AuthFailureCallback} [args.onAuthFailure] - optional auth rejected callback
  * @param {AuthSuccessCallback} [args.onAuthSuccess] - optional auth approved callback
+ * @param {PrePushCallback} [args.onPrePush] - optional pre-push hook callback
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref] - Which branch to push. By default this is the currently checked out branch.
@@ -2440,7 +2489,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
  * console.log(pushResult)
  *
  */
-export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, dir, gitdir, ref, remoteRef, remote, url, force, delete: _delete, corsProxy, headers, cache, }: {
+export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPrePush, dir, gitdir, ref, remoteRef, remote, url, force, delete: _delete, corsProxy, headers, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     http: HttpClient;
     onProgress?: ProgressCallback;
@@ -2448,6 +2497,7 @@ export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, o
     onAuth?: AuthCallback;
     onAuthFailure?: AuthFailureCallback;
     onAuthSuccess?: AuthSuccessCallback;
+    onPrePush?: PrePushCallback;
     dir?: string;
     gitdir?: string;
     ref?: string;
@@ -4511,6 +4561,34 @@ declare namespace IndexResetError {
  */
 /**
  * @typedef {[string, HeadStatus, WorkdirStatus, StageStatus]} StatusRow
+ */
+/**
+ * @typedef {Object} ClientRef
+ * @property {string} ref The name of the ref
+ * @property {string} oid The SHA-1 object id the ref points to
+ */
+/**
+ * @typedef {Object} PrePushParams
+ * @property {string} remote The expanded name of target remote
+ * @property {string} url The URL address of target remote
+ * @property {ClientRef} localRef The ref which the client wants to push to the remote
+ * @property {ClientRef} remoteRef The ref which is known by the remote
+ */
+/**
+ * @callback PrePushCallback
+ * @param {PrePushParams} args
+ * @returns {boolean | Promise<boolean>} Returns false if push must be cancelled
+ */
+/**
+ * @typedef {Object} PostCheckoutParams
+ * @property {string} previousHead The SHA-1 object id of HEAD before checkout
+ * @property {string} newHead The SHA-1 object id of HEAD after checkout
+ * @property {'branch' | 'file'} type flag determining whether a branch or a set of files was checked
+ */
+/**
+ * @callback PostCheckoutCallback
+ * @param {PostCheckoutParams} args
+ * @returns {void | Promise<void>}
  */
 declare class BaseError extends Error {
     constructor(message: any);
