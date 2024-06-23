@@ -1,6 +1,5 @@
 import AsyncLock from 'async-lock';
 import Hash from 'sha.js/sha1.js';
-import { join } from 'path';
 import crc32 from 'crc-32';
 import pako from 'pako';
 import pify from 'pify';
@@ -1476,6 +1475,40 @@ function compareRefNames(a, b) {
   return tmp
 }
 
+const memo = new Map();
+function normalizePath(path) {
+  let normalizedPath = memo.get(path);
+  if (!normalizedPath) {
+    normalizedPath = normalizePathInternal(path);
+    memo.set(path, normalizedPath);
+  }
+  return normalizedPath
+}
+
+function normalizePathInternal(path) {
+  path = path
+    .split('/./')
+    .join('/') // Replace '/./' with '/'
+    .replace(/\/{2,}/g, '/'); // Replace consecutive '/'
+
+  if (path === '/.') return '/' // if path === '/.' return '/'
+  if (path === './') return '.' // if path === './' return '.'
+
+  if (path.startsWith('./')) path = path.slice(2); // Remove leading './'
+  if (path.endsWith('/.')) path = path.slice(0, -2); // Remove trailing '/.'
+  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1); // Remove trailing '/'
+
+  if (path === '') return '.' // if path === '' return '.'
+
+  return path
+}
+
+// For some reason path.posix.join is undefined in webpack
+
+function join(...parts) {
+  return normalizePath(parts.map(normalizePath).join('/'))
+}
+
 // This is straight from parse_unit_factor in config.c of canonical git
 const num = val => {
   val = val.toLowerCase();
@@ -1590,7 +1623,7 @@ const getPath = (section, subsection, name) => {
     .join('.')
 };
 
-const normalizePath = path => {
+const normalizePath$1 = path => {
   const pathSegments = path.split('.');
   const section = pathSegments.shift();
   const name = pathSegments.pop();
@@ -1646,7 +1679,7 @@ class GitConfig {
   }
 
   async get(path, getall = false) {
-    const normalizedPath = normalizePath(path).path;
+    const normalizedPath = normalizePath$1(path).path;
     const allValues = this.parsedConfig
       .filter(config => config.path === normalizedPath)
       .map(({ section, name, value }) => {
@@ -1684,7 +1717,7 @@ class GitConfig {
       name,
       path: normalizedPath,
       sectionPath,
-    } = normalizePath(path);
+    } = normalizePath$1(path);
     const configIndex = findLastIndex(
       this.parsedConfig,
       config => config.path === normalizedPath

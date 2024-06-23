@@ -6,7 +6,6 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var AsyncLock = _interopDefault(require('async-lock'));
 var Hash = _interopDefault(require('sha.js/sha1.js'));
-var path = require('path');
 var crc32 = _interopDefault(require('crc-32'));
 var pako = _interopDefault(require('pako'));
 var pify = _interopDefault(require('pify'));
@@ -1482,6 +1481,40 @@ function compareRefNames(a, b) {
   return tmp
 }
 
+const memo = new Map();
+function normalizePath(path) {
+  let normalizedPath = memo.get(path);
+  if (!normalizedPath) {
+    normalizedPath = normalizePathInternal(path);
+    memo.set(path, normalizedPath);
+  }
+  return normalizedPath
+}
+
+function normalizePathInternal(path) {
+  path = path
+    .split('/./')
+    .join('/') // Replace '/./' with '/'
+    .replace(/\/{2,}/g, '/'); // Replace consecutive '/'
+
+  if (path === '/.') return '/' // if path === '/.' return '/'
+  if (path === './') return '.' // if path === './' return '.'
+
+  if (path.startsWith('./')) path = path.slice(2); // Remove leading './'
+  if (path.endsWith('/.')) path = path.slice(0, -2); // Remove trailing '/.'
+  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1); // Remove trailing '/'
+
+  if (path === '') return '.' // if path === '' return '.'
+
+  return path
+}
+
+// For some reason path.posix.join is undefined in webpack
+
+function join(...parts) {
+  return normalizePath(parts.map(normalizePath).join('/'))
+}
+
 // This is straight from parse_unit_factor in config.c of canonical git
 const num = val => {
   val = val.toLowerCase();
@@ -1596,7 +1629,7 @@ const getPath = (section, subsection, name) => {
     .join('.')
 };
 
-const normalizePath = path => {
+const normalizePath$1 = path => {
   const pathSegments = path.split('.');
   const section = pathSegments.shift();
   const name = pathSegments.pop();
@@ -1652,7 +1685,7 @@ class GitConfig {
   }
 
   async get(path, getall = false) {
-    const normalizedPath = normalizePath(path).path;
+    const normalizedPath = normalizePath$1(path).path;
     const allValues = this.parsedConfig
       .filter(config => config.path === normalizedPath)
       .map(({ section, name, value }) => {
@@ -1690,7 +1723,7 @@ class GitConfig {
       name,
       path: normalizedPath,
       sectionPath,
-    } = normalizePath(path);
+    } = normalizePath$1(path);
     const configIndex = findLastIndex(
       this.parsedConfig,
       config => config.path === normalizedPath
@@ -1912,7 +1945,7 @@ class GitRefManager {
     // and .git/refs/remotes/origin/refs/merge-requests
     for (const [key, value] of actualRefsToWrite) {
       await acquireLock(key, async () =>
-        fs.write(path.join(gitdir, key), `${value.trim()}\n`, 'utf8')
+        fs.write(join(gitdir, key), `${value.trim()}\n`, 'utf8')
       );
     }
     return { pruned }
@@ -1925,13 +1958,13 @@ class GitRefManager {
       throw new InvalidOidError(value)
     }
     await acquireLock(ref, async () =>
-      fs.write(path.join(gitdir, ref), `${value.trim()}\n`, 'utf8')
+      fs.write(join(gitdir, ref), `${value.trim()}\n`, 'utf8')
     );
   }
 
   static async writeSymbolicRef({ fs, gitdir, ref, value }) {
     await acquireLock(ref, async () =>
-      fs.write(path.join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
+      fs.write(join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
     );
   }
 
@@ -1941,7 +1974,7 @@ class GitRefManager {
 
   static async deleteRefs({ fs, gitdir, refs }) {
     // Delete regular ref
-    await Promise.all(refs.map(ref => fs.rm(path.join(gitdir, ref))));
+    await Promise.all(refs.map(ref => fs.rm(join(gitdir, ref))));
     // Delete any packed ref
     let text = await acquireLock('packed-refs', async () =>
       fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' })
@@ -3070,7 +3103,7 @@ async function readObjectPacked({
 }) {
   // Check to see if it's in a packfile.
   // Iterate through all the .idx files
-  let list = await fs.readdir(path.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -4025,9 +4058,9 @@ class GitWalkerRepo {
     const tree = GitTree.from(object);
     // cache all entries
     for (const entry of tree) {
-      map.set(path.join(filepath, entry.path), entry);
+      map.set(join(filepath, entry.path), entry);
     }
-    return tree.entries().map(entry => path.join(filepath, entry.path))
+    return tree.entries().map(entry => join(filepath, entry.path))
   }
 
   async type(entry) {
@@ -4138,9 +4171,9 @@ class GitWalkerFs {
   async readdir(entry) {
     const filepath = entry._fullpath;
     const { fs, dir } = this;
-    const names = await fs.readdir(path.join(dir, filepath));
+    const names = await fs.readdir(join(dir, filepath));
     if (names === null) return null
-    return names.map(name => path.join(filepath, name))
+    return names.map(name => join(filepath, name))
   }
 
   async type(entry) {
@@ -4447,7 +4480,7 @@ async function rmRecursive(fs, filepath) {
   } else if (entries.length) {
     await Promise.all(
       entries.map(entry => {
-        const subpath = path.join(filepath, entry);
+        const subpath = join(filepath, entry);
         return fs.lstat(subpath).then(stat => {
           if (!stat) return
           return stat.isDirectory() ? rmRecursive(fs, subpath) : fs.rm(subpath)
@@ -4792,7 +4825,7 @@ async function modified(entry, base) {
 async function abortMerge({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   commit = 'HEAD',
   cache = {},
 }) {
@@ -4871,21 +4904,21 @@ async function abortMerge({
 // I'm putting this in a Manager because I reckon it could benefit
 // from a LOT of caching.
 class GitIgnoreManager {
-  static async isIgnored({ fs, dir, gitdir = path.join(dir, '.git'), filepath }) {
+  static async isIgnored({ fs, dir, gitdir = join(dir, '.git'), filepath }) {
     // ALWAYS ignore ".git" folders.
     if (basename(filepath) === '.git') return true
     // '.' is not a valid gitignore entry, so '.' is never ignored
     if (filepath === '.') return false
     // Check and load exclusion rules from project exclude file (.git/info/exclude)
     let excludes = '';
-    const excludesFile = path.join(gitdir, 'info', 'exclude');
+    const excludesFile = join(gitdir, 'info', 'exclude');
     if (await fs.exists(excludesFile)) {
       excludes = await fs.read(excludesFile, 'utf8');
     }
     // Find all the .gitignore files that could affect this file
     const pairs = [
       {
-        gitignore: path.join(dir, '.gitignore'),
+        gitignore: join(dir, '.gitignore'),
         filepath,
       },
     ];
@@ -4894,7 +4927,7 @@ class GitIgnoreManager {
       const folder = pieces.slice(0, i).join('/');
       const file = pieces.slice(i).join('/');
       pairs.push({
-        gitignore: path.join(dir, folder, '.gitignore'),
+        gitignore: join(dir, folder, '.gitignore'),
         filepath: file,
       });
     }
@@ -5023,7 +5056,7 @@ function posixifyPathBuffer(buffer) {
 async function add({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
   force = false,
@@ -5074,18 +5107,18 @@ async function addToIndex({
       });
       if (ignored) return
     }
-    const stats = await fs.lstat(path.join(dir, currentFilepath));
+    const stats = await fs.lstat(join(dir, currentFilepath));
     if (!stats) throw new NotFoundError(currentFilepath)
 
     if (stats.isDirectory()) {
-      const children = await fs.readdir(path.join(dir, currentFilepath));
+      const children = await fs.readdir(join(dir, currentFilepath));
       if (parallel) {
         const promises = children.map(child =>
           addToIndex({
             dir,
             gitdir,
             fs,
-            filepath: [path.join(currentFilepath, child)],
+            filepath: [join(currentFilepath, child)],
             index,
             force,
             parallel,
@@ -5098,7 +5131,7 @@ async function addToIndex({
             dir,
             gitdir,
             fs,
-            filepath: [path.join(currentFilepath, child)],
+            filepath: [join(currentFilepath, child)],
             index,
             force,
             parallel,
@@ -5109,8 +5142,8 @@ async function addToIndex({
       const config = await GitConfigManager.get({ fs, gitdir });
       const autocrlf = await config.get('core.autocrlf');
       const object = stats.isSymbolicLink()
-        ? await fs.readlink(path.join(dir, currentFilepath)).then(posixifyPathBuffer)
-        : await fs.read(path.join(dir, currentFilepath), { autocrlf });
+        ? await fs.readlink(join(dir, currentFilepath)).then(posixifyPathBuffer)
+        : await fs.read(join(dir, currentFilepath), { autocrlf });
       if (object === null) throw new NotFoundError(currentFilepath)
       const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
       index.insert({ filepath: currentFilepath, stats, oid });
@@ -5615,7 +5648,7 @@ async function addNote({
   fs: _fs,
   onSign,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   note,
@@ -5730,7 +5763,7 @@ async function _addRemote({ fs, gitdir, remote, url, force }) {
 async function addRemote({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
   url,
   force = false,
@@ -5881,7 +5914,7 @@ async function annotatedTag({
   fs: _fs,
   onSign,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   tagger: _tagger,
   message = ref,
@@ -6012,7 +6045,7 @@ async function _branch({
 async function branch({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   object,
   checkout = false,
@@ -6700,7 +6733,7 @@ async function checkout({
   onProgress,
   onPostCheckout,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote = 'origin',
   ref: _ref,
   filepaths,
@@ -7305,7 +7338,7 @@ let lock$2 = null;
 class GitShallowManager {
   static async read({ fs, gitdir }) {
     if (lock$2 === null) lock$2 = new AsyncLock();
-    const filepath = path.join(gitdir, 'shallow');
+    const filepath = join(gitdir, 'shallow');
     const oids = new Set();
     await lock$2.acquire(filepath, async function() {
       const text = await fs.read(filepath, { encoding: 'utf8' });
@@ -7321,7 +7354,7 @@ class GitShallowManager {
 
   static async write({ fs, gitdir, oids }) {
     if (lock$2 === null) lock$2 = new AsyncLock();
-    const filepath = path.join(gitdir, 'shallow');
+    const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
       await lock$2.acquire(filepath, async function() {
@@ -7352,7 +7385,7 @@ async function hasObjectPacked({
 }) {
   // Check to see if it's in a packfile.
   // Iterate through all the .idx files
-  let list = await fs.readdir(path.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -8085,7 +8118,7 @@ async function _fetch({
   // c) compare the computed SHA with the last 20 bytes of the stream before saving to disk, and throwing a "packfile got corrupted during download" error if the SHA doesn't match.
   if (packfileSha !== '' && !emptyPackfile(packfile)) {
     res.packfile = `objects/pack/pack-${packfileSha}.pack`;
-    const fullpath = path.join(gitdir, res.packfile);
+    const fullpath = join(gitdir, res.packfile);
     await fs.write(fullpath, packfile);
     const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
@@ -8115,7 +8148,7 @@ async function _init({
   fs,
   bare = false,
   dir,
-  gitdir = bare ? dir : path.join(dir, '.git'),
+  gitdir = bare ? dir : join(dir, '.git'),
   defaultBranch = 'master',
 }) {
   // Don't overwrite an existing config
@@ -8313,7 +8346,7 @@ async function clone({
   onAuthFailure,
   onPostCheckout,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   url,
   corsProxy = undefined,
   ref = undefined,
@@ -8416,7 +8449,7 @@ async function commit({
   fs: _fs,
   onSign,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   message,
   author: _author,
   committer: _committer,
@@ -8495,7 +8528,7 @@ async function commit({
 async function currentBranch({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   fullname = false,
   test = false,
 }) {
@@ -8566,7 +8599,7 @@ async function _deleteBranch({ fs, gitdir, ref }) {
 async function deleteBranch({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
 }) {
   try {
@@ -8601,7 +8634,7 @@ async function deleteBranch({
  * console.log('done')
  *
  */
-async function deleteRef({ fs, dir, gitdir = path.join(dir, '.git'), ref }) {
+async function deleteRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
@@ -8649,7 +8682,7 @@ async function _deleteRemote({ fs, gitdir, remote }) {
 async function deleteRemote({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
 }) {
   try {
@@ -8706,7 +8739,7 @@ async function _deleteTag({ fs, gitdir, ref }) {
  * console.log('done')
  *
  */
-async function deleteTag({ fs, dir, gitdir = path.join(dir, '.git'), ref }) {
+async function deleteTag({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
@@ -8738,7 +8771,7 @@ async function expandOidPacked({
 }) {
   // Iterate through all the .pack files
   const results = [];
-  let list = await fs.readdir(path.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -8808,7 +8841,7 @@ async function _expandOid({ fs, cache, gitdir, oid: short }) {
 async function expandOid({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -8846,7 +8879,7 @@ async function expandOid({
  * console.log(fullRef)
  *
  */
-async function expandRef({ fs, dir, gitdir = path.join(dir, '.git'), ref }) {
+async function expandRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -8986,7 +9019,7 @@ async function mergeTree({
   fs,
   cache,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   index,
   ourOid,
   baseOid,
@@ -9643,7 +9676,7 @@ async function fastForward({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   url,
   remote,
@@ -9762,7 +9795,7 @@ async function fetch({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   remote,
   remoteRef,
@@ -9831,7 +9864,7 @@ async function fetch({
 async function findMergeBase({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
   cache = {},
 }) {
@@ -9866,7 +9899,7 @@ async function findMergeBase({
  * @returns {Promise<string>} Resolves successfully with a root git directory path
  */
 async function _findRoot({ fs, filepath }) {
-  if (await fs.exists(path.join(filepath, '.git'))) {
+  if (await fs.exists(join(filepath, '.git'))) {
     return filepath
   } else {
     const parent = dirname(filepath);
@@ -9938,16 +9971,16 @@ async function findRoot({ fs, filepath }) {
  * console.log(value)
  *
  */
-async function getConfig({ fs, dir, gitdir = path.join(dir, '.git'), path: path$1 }) {
+async function getConfig({ fs, dir, gitdir = join(dir, '.git'), path }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
-    assertParameter('path', path$1);
+    assertParameter('path', path);
 
     return await _getConfig({
       fs: new FileSystem(fs),
       gitdir,
-      path: path$1,
+      path,
     })
   } catch (err) {
     err.caller = 'git.getConfig';
@@ -9992,18 +10025,18 @@ async function _getConfigAll({ fs, gitdir, path }) {
 async function getConfigAll({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
-  path: path$1,
+  gitdir = join(dir, '.git'),
+  path,
 }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
-    assertParameter('path', path$1);
+    assertParameter('path', path);
 
     return await _getConfigAll({
       fs: new FileSystem(fs),
       gitdir,
-      path: path$1,
+      path,
     })
   } catch (err) {
     err.caller = 'git.getConfigAll';
@@ -10357,7 +10390,7 @@ async function _indexPack({
   filepath,
 }) {
   try {
-    filepath = path.join(dir, filepath);
+    filepath = join(dir, filepath);
     const pack = await fs.read(filepath);
     const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
@@ -10410,7 +10443,7 @@ async function indexPack({
   fs,
   onProgress,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -10456,7 +10489,7 @@ async function init({
   fs,
   bare = false,
   dir,
-  gitdir = bare ? dir : path.join(dir, '.git'),
+  gitdir = bare ? dir : join(dir, '.git'),
   defaultBranch = 'master',
 }) {
   try {
@@ -10577,7 +10610,7 @@ async function _isDescendent({
 async function isDescendent({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   ancestor,
   depth = -1,
@@ -10623,7 +10656,7 @@ async function isDescendent({
 async function isIgnored({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
 }) {
   try {
@@ -10676,7 +10709,7 @@ async function isIgnored({
 async function listBranches({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
 }) {
   try {
@@ -10745,10 +10778,10 @@ async function accumulateFilesFromOid({
         gitdir,
         oid: entry.oid,
         filenames,
-        prefix: path.join(prefix, entry.path),
+        prefix: join(prefix, entry.path),
       });
     } else {
-      filenames.push(path.join(prefix, entry.path));
+      filenames.push(join(prefix, entry.path));
     }
   }
 }
@@ -10782,7 +10815,7 @@ async function accumulateFilesFromOid({
 async function listFiles({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   cache = {},
 }) {
@@ -10861,7 +10894,7 @@ async function _listNotes({ fs, cache, gitdir, ref }) {
 async function listNotes({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   cache = {},
 }) {
@@ -10920,7 +10953,7 @@ async function _listRemotes({ fs, gitdir }) {
  * console.log(remotes)
  *
  */
-async function listRemotes({ fs, dir, gitdir = path.join(dir, '.git') }) {
+async function listRemotes({ fs, dir, gitdir = join(dir, '.git') }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11164,7 +11197,7 @@ async function listServerRefs({
  * console.log(tags)
  *
  */
-async function listTags({ fs, dir, gitdir = path.join(dir, '.git') }) {
+async function listTags({ fs, dir, gitdir = join(dir, '.git') }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11265,7 +11298,7 @@ async function _resolveFileId({
   const walks = tree.entries().map(function(entry) {
     let result;
     if (entry.oid === fileId) {
-      result = path.join(parentPath, entry.path);
+      result = join(parentPath, entry.path);
       filepaths.push(result);
     } else if (entry.type === 'tree') {
       result = _readObject({
@@ -11282,7 +11315,7 @@ async function _resolveFileId({
           fileId,
           oid,
           filepaths,
-          parentPath: path.join(parentPath, entry.path),
+          parentPath: join(parentPath, entry.path),
         })
       });
     }
@@ -11492,7 +11525,7 @@ async function _log({
 async function log({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   ref = 'HEAD',
   depth,
@@ -11640,7 +11673,7 @@ async function merge({
   fs: _fs,
   onSign,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ours,
   theirs,
   fastForward = true,
@@ -11726,7 +11759,7 @@ async function _pack({
   fs,
   cache,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
 }) {
   const hash = new Hash();
@@ -11802,7 +11835,7 @@ async function _packObjects({ fs, cache, gitdir, oids, write }) {
   const packfileSha = packfile.slice(-20).toString('hex');
   const filename = `pack-${packfileSha}.pack`;
   if (write) {
-    await fs.write(path.join(gitdir, `objects/pack/${filename}`), packfile);
+    await fs.write(join(gitdir, `objects/pack/${filename}`), packfile);
     return { filename }
   }
   return {
@@ -11847,7 +11880,7 @@ async function _packObjects({ fs, cache, gitdir, oids, write }) {
 async function packObjects({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
   write = false,
   cache = {},
@@ -11931,7 +11964,7 @@ async function pull({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   url,
   remote,
@@ -12011,7 +12044,7 @@ async function listCommitsAndTags({
   fs,
   cache,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   start,
   finish,
 }) {
@@ -12074,7 +12107,7 @@ async function listObjects({
   fs,
   cache,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
 }) {
   const visited = new Set();
@@ -12516,7 +12549,7 @@ async function push({
   onAuthFailure,
   onPrePush,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   remoteRef,
   remote = 'origin',
@@ -12651,7 +12684,7 @@ async function _readBlob({
 async function readBlob({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   filepath,
   cache = {},
@@ -12701,7 +12734,7 @@ async function readBlob({
 async function readCommit({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -12775,7 +12808,7 @@ async function _readNote({
 async function readNote({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   cache = {},
@@ -12992,7 +13025,7 @@ async function readNote({
 async function readObject({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   format = 'parsed',
   filepath = undefined,
@@ -13129,7 +13162,7 @@ async function _readTag({ fs, cache, gitdir, oid }) {
 async function readTag({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -13179,7 +13212,7 @@ async function readTag({
 async function readTree({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   filepath = undefined,
   cache = {},
@@ -13226,7 +13259,7 @@ async function readTree({
 async function remove({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -13362,7 +13395,7 @@ async function removeNote({
   fs: _fs,
   onSign,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   author: _author,
@@ -13494,7 +13527,7 @@ async function _renameBranch({
 async function renameBranch({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   oldref,
   checkout = false,
@@ -13546,7 +13579,7 @@ async function hashObject$1({ gitdir, type, object }) {
 async function resetIndex({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   ref,
   cache = {},
@@ -13601,7 +13634,7 @@ async function resetIndex({
       size: 0,
     };
     // If the file exists in the workdir...
-    const object = dir && (await fs.read(path.join(dir, filepath)));
+    const object = dir && (await fs.read(join(dir, filepath)));
     if (object) {
       // ... and has the same hash as the desired state...
       workdirOid = await hashObject$1({
@@ -13611,7 +13644,7 @@ async function resetIndex({
       });
       if (oid === workdirOid) {
         // ... use the workdir Stats object
-        stats = await fs.lstat(path.join(dir, filepath));
+        stats = await fs.lstat(join(dir, filepath));
       }
     }
     await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
@@ -13650,7 +13683,7 @@ async function resetIndex({
 async function resolveRef({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   depth,
 }) {
@@ -13719,23 +13752,23 @@ async function resolveRef({
 async function setConfig({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
-  path: path$1,
+  gitdir = join(dir, '.git'),
+  path,
   value,
   append = false,
 }) {
   try {
     assertParameter('fs', _fs);
     assertParameter('gitdir', gitdir);
-    assertParameter('path', path$1);
+    assertParameter('path', path);
     // assertParameter('value', value) // We actually allow 'undefined' as a value to unset/delete
 
     const fs = new FileSystem(_fs);
     const config = await GitConfigManager.get({ fs, gitdir });
     if (append) {
-      await config.append(path$1, value);
+      await config.append(path, value);
     } else {
-      await config.set(path$1, value);
+      await config.set(path, value);
     }
     await GitConfigManager.save({ fs, gitdir, config });
   } catch (err) {
@@ -13784,7 +13817,7 @@ async function setConfig({
 async function status({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -13820,7 +13853,7 @@ async function status({
         return null
       }
     );
-    const stats = await fs.lstat(path.join(dir, filepath));
+    const stats = await fs.lstat(join(dir, filepath));
 
     const H = treeOid !== null; // head
     const I = indexEntry !== null; // index
@@ -13830,7 +13863,7 @@ async function status({
       if (I && !compareStats(indexEntry, stats)) {
         return indexEntry.oid
       } else {
-        const object = await fs.read(path.join(dir, filepath));
+        const object = await fs.read(join(dir, filepath));
         const workdirOid = await hashObject$1({
           gitdir,
           type: 'blob',
@@ -14092,7 +14125,7 @@ async function getHeadTree({ fs, cache, gitdir }) {
 async function statusMatrix({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'HEAD',
   filepaths = ['.'],
   filter,
@@ -14202,7 +14235,7 @@ async function statusMatrix({
 async function tag({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   object,
   force = false,
@@ -14284,7 +14317,7 @@ async function tag({
 async function updateIndex({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   cache = {},
   filepath,
   oid,
@@ -14308,7 +14341,7 @@ async function updateIndex({
 
           if (!force) {
             // Check if the file is still present in the working directory
-            fileStats = await fs.lstat(path.join(dir, filepath));
+            fileStats = await fs.lstat(join(dir, filepath));
 
             if (fileStats) {
               if (fileStats.isDirectory()) {
@@ -14335,7 +14368,7 @@ async function updateIndex({
     let fileStats;
 
     if (!oid) {
-      fileStats = await fs.lstat(path.join(dir, filepath));
+      fileStats = await fs.lstat(join(dir, filepath));
 
       if (!fileStats) {
         throw new NotFoundError(
@@ -14375,8 +14408,8 @@ async function updateIndex({
 
         // Write the file to the object database
         const object = stats.isSymbolicLink()
-          ? await fs.readlink(path.join(dir, filepath))
-          : await fs.read(path.join(dir, filepath));
+          ? await fs.readlink(join(dir, filepath))
+          : await fs.read(join(dir, filepath));
 
         oid = await _writeObject({
           fs,
@@ -14674,7 +14707,7 @@ function version() {
 async function walk({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   trees,
   map,
   reduce,
@@ -14726,7 +14759,7 @@ async function walk({
  * console.log('oid', oid) // should be 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
  *
  */
-async function writeBlob({ fs, dir, gitdir = path.join(dir, '.git'), blob }) {
+async function writeBlob({ fs, dir, gitdir = join(dir, '.git'), blob }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -14788,7 +14821,7 @@ async function _writeCommit({ fs, gitdir, commit }) {
 async function writeCommit({
   fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   commit,
 }) {
   try {
@@ -14877,7 +14910,7 @@ async function writeCommit({
 async function writeObject({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   type,
   object,
   format = 'parsed',
@@ -14959,7 +14992,7 @@ async function writeObject({
 async function writeRef({
   fs: _fs,
   dir,
-  gitdir = path.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   value,
   force = false,
@@ -15069,7 +15102,7 @@ async function _writeTag({ fs, gitdir, tag }) {
  * console.log('tag', oid)
  *
  */
-async function writeTag({ fs, dir, gitdir = path.join(dir, '.git'), tag }) {
+async function writeTag({ fs, dir, gitdir = join(dir, '.git'), tag }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -15102,7 +15135,7 @@ async function writeTag({ fs, dir, gitdir = path.join(dir, '.git'), tag }) {
  * @see TreeEntry
  *
  */
-async function writeTree({ fs, dir, gitdir = path.join(dir, '.git'), tree }) {
+async function writeTree({ fs, dir, gitdir = join(dir, '.git'), tree }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
