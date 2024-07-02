@@ -1559,6 +1559,7 @@ const SECTION_REGEX = /^[A-Za-z0-9-.]+$/;
 const VARIABLE_LINE_REGEX = /^([A-Za-z][A-Za-z-]*)(?: *= *(.*))?$/;
 const VARIABLE_NAME_REGEX = /^[A-Za-z][A-Za-z-]*$/;
 
+// Comments start with either # or ; and extend to the end of line
 const VARIABLE_VALUE_COMMENT_REGEX = /^(.*?)( *[#;].*)$/;
 
 const extractSectionLine = line => {
@@ -8568,6 +8569,12 @@ async function _deleteBranch({ fs, gitdir, ref }) {
 
   // Delete a specified branch
   await GitRefManager.deleteRef({ fs, gitdir, ref: fullRef });
+
+  // Delete branch config entries
+  const abbrevRef = abbreviateRef(ref);
+  const config = await GitConfigManager.get({ fs, gitdir });
+  await config.deleteSection('branch', abbrevRef);
+  await GitConfigManager.save({ fs, gitdir, config });
 }
 
 // @ts-check
