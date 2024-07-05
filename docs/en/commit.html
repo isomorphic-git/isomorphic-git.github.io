@@ -64,7 +64,7 @@
 <tr><td><a href="./onSign">onSign</a></td><td>SignCallback</td><td>a PGP signing implementation</td></tr>
 <tr><td>dir</td><td>string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path</td></tr>
 <tr><td><strong>gitdir</strong></td><td>string = join(dir,'.git')</td><td>The <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
-<tr><td><strong>message</strong></td><td>string</td><td>The commit message to use.</td></tr>
+<tr><td>message</td><td>string</td><td>The commit message to use. Required, unless <code>amend === true</code></td></tr>
 <tr><td>author</td><td>Object</td><td>The details about the author.</td></tr>
 <tr><td>author.name</td><td>string</td><td>Default is <code>user.name</code> config.</td></tr>
 <tr><td>author.email</td><td>string</td><td>Default is <code>user.email</code> config.</td></tr>
@@ -76,6 +76,7 @@
 <tr><td>committer.timestamp</td><td>number = Math.floor(Date.now()/1000)</td><td>Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).</td></tr>
 <tr><td>committer.timezoneOffset</td><td>number</td><td>Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
 <tr><td>signingKey</td><td>string</td><td>Sign the tag object using this private PGP key.</td></tr>
+<tr><td>amend</td><td>boolean = false</td><td>If true, replaces the last commit pointed to by <code>ref</code> with a new commit.</td></tr>
 <tr><td>dryRun</td><td>boolean = false</td><td>If true, simulates making a commit so you can test whether it would succeed. Implies <code>noUpdateBranch</code>.</td></tr>
 <tr><td>noUpdateBranch</td><td>boolean = false</td><td>If true, does not update the branch pointer after creating the commit.</td></tr>
 <tr><td>ref</td><td>string</td><td>The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)</td></tr>

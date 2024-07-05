@@ -789,6 +789,7 @@ export var Errors: Readonly<{
     UserCanceledError: typeof UserCanceledError;
     UnmergedPathsError: typeof UnmergedPathsError;
     IndexResetError: typeof IndexResetError;
+    NoCommitError: typeof NoCommitError;
 }>;
 /**
  * @returns {Walker}
@@ -1180,7 +1181,7 @@ export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, 
  * @param {SignCallback} [args.onSign] - a PGP signing implementation
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} args.message - The commit message to use.
+ * @param {string} [args.message] - The commit message to use. Required, unless `amend === true`
  * @param {Object} [args.author] - The details about the author.
  * @param {string} [args.author.name] - Default is `user.name` config.
  * @param {string} [args.author.email] - Default is `user.email` config.
@@ -1192,6 +1193,7 @@ export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, 
  * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
  * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
  * @param {string} [args.signingKey] - Sign the tag object using this private PGP key.
+ * @param {boolean} [args.amend = false] - If true, replaces the last commit pointed to by `ref` with a new commit.
  * @param {boolean} [args.dryRun = false] - If true, simulates making a commit so you can test whether it would succeed. Implies `noUpdateBranch`.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
  * @param {string} [args.ref] - The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)
@@ -1214,12 +1216,12 @@ export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, 
  * console.log(sha)
  *
  */
-export function commit({ fs: _fs, onSign, dir, gitdir, message, author: _author, committer: _committer, signingKey, dryRun, noUpdateBranch, ref, parent, tree, cache, }: {
+export function commit({ fs: _fs, onSign, dir, gitdir, message, author, committer, signingKey, amend, dryRun, noUpdateBranch, ref, parent, tree, cache, }: {
     fs: CallbackFsClient | PromiseFsClient;
     onSign?: SignCallback;
     dir?: string;
     gitdir?: string;
-    message: string;
+    message?: string;
     author?: {
         name?: string;
         email?: string;
@@ -1233,6 +1235,7 @@ export function commit({ fs: _fs, onSign, dir, gitdir, message, author: _author,
         timezoneOffset?: number;
     };
     signingKey?: string;
+    amend?: boolean;
     dryRun?: boolean;
     noUpdateBranch?: boolean;
     ref?: string;
@@ -4302,6 +4305,21 @@ declare class IndexResetError extends BaseError {
 declare namespace IndexResetError {
     const code_30: 'IndexResetError';
     export { code_30 as code };
+}
+declare class NoCommitError extends BaseError {
+    /**
+     * @param {string} ref
+     */
+    constructor(ref: string);
+    code: "NoCommitError";
+    name: "NoCommitError";
+    data: {
+        ref: string;
+    };
+}
+declare namespace NoCommitError {
+    const code_31: 'NoCommitError';
+    export { code_31 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent
