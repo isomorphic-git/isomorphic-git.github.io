@@ -4567,7 +4567,11 @@ class FileSystem {
       await this._stat(filepath);
       return true
     } catch (err) {
-      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+      if (
+        err.code === 'ENOENT' ||
+        err.code === 'ENOTDIR' ||
+        (err.code || '').includes('ENS')
+      ) {
         return false
       } else {
         console.log('Unhandled error in "FileSystem.exists()" function', err);
@@ -4720,7 +4724,7 @@ class FileSystem {
       const stats = await this._lstat(filename);
       return stats
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if (err.code === 'ENOENT' || (err.code || '').includes('ENS')) {
         return null
       }
       throw err
@@ -4738,7 +4742,7 @@ class FileSystem {
       const link = await this._readlink(filename, opts);
       return Buffer.isBuffer(link) ? link : Buffer.from(link)
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if (err.code === 'ENOENT' || (err.code || '').includes('ENS')) {
         return null
       }
       throw err
