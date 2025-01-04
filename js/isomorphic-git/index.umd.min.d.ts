@@ -641,6 +641,14 @@ export type HeadStatus = 0 | 1;
 export type WorkdirStatus = 0 | 1 | 2;
 export type StageStatus = 0 | 1 | 2 | 3;
 export type StatusRow = [string, 0 | 1, 0 | 1 | 2, 0 | 1 | 2 | 3];
+/**
+ * the type of stash ops
+ */
+export type StashOp = "push" | "drop" | "pop" | "apply" | "list" | "clear";
+/**
+ * - when compare WORDIR to HEAD, 'remove' could mean 'untracked'
+ */
+export type StashChangeType = "add" | "unknown" | "remove" | "equal" | "modify";
 export type ClientRef = {
     /**
      * The name of the ref
@@ -755,6 +763,7 @@ declare namespace index {
     export { writeRef };
     export { writeTag };
     export { writeTree };
+    export { stash };
 }
 export var Errors: Readonly<{
     __proto__: null;
@@ -3060,6 +3069,65 @@ export function setConfig({ fs: _fs, dir, gitdir, path, value, append, }: {
     append?: boolean;
 }): Promise<void>;
 /**
+ * stash api, supports  {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear'} StashOp
+ * _note_,
+ * - all stash operations are done on tracked files only with loose objects, no packed objects
+ * - when op === 'push', both working directory and index (staged) changes will be stashed, tracked files only
+ * - when op === 'push', message is optional, and only applicable when op === 'push'
+ * - when op === 'apply | pop', the stashed changes will overwrite the working directory, no abort when conflicts
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - [required] a file system client
+ * @param {string} [args.dir] - [required] The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [optional] The [git directory](dir-vs-gitdir.md) path
+ * @param {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear'} [args.op = 'push'] - [optional] name of stash operation, default to 'push'
+ * @param {string} [args.message = ''] - [optional] message to be used for the stash entry, only applicable when op === 'push'
+ * @param {number} [args.refIdx = 0] - [optional - Number] stash ref index of entry, only applicable when op === ['apply' | 'drop' | 'pop'], refIdx >= 0 and < num of stash pushed
+ * @returns {Promise<string | void>}  Resolves successfully when stash operations are complete
+ *
+ * @example
+ * // stash changes in the working directory and index
+ * let dir = '/tutorial'
+ * await fs.promises.writeFile(`${dir}/a.txt`, 'original content - a')
+ * await fs.promises.writeFile(`${dir}/b.js`, 'original content - b')
+ * await git.add({ fs, dir, filepath: [`a.txt`,`b.txt`] })
+ * let sha = await git.commit({
+ *   fs,
+ *   dir,
+ *   author: {
+ *     name: 'Mr. Stash',
+ *     email: 'mstasher@stash.com',
+ *   },
+ *   message: 'add a.txt and b.txt to test stash'
+ * })
+ * console.log(sha)
+ *
+ * await fs.promises.writeFile(`${dir}/a.txt`, 'stashed chang- a')
+ * await git.add({ fs, dir, filepath: `${dir}/a.txt` })
+ * await fs.promises.writeFile(`${dir}/b.js`, 'work dir change. not stashed - b')
+ *
+ * await git.stash({ fs, dir }) // default gitdir and op
+ *
+ * console.log(await git.status({ fs, dir, filepath: 'a.txt' })) // 'unmodified'
+ * console.log(await git.status({ fs, dir, filepath: 'b.txt' })) // 'unmodified'
+ *
+ * const refLog = await git.stash({ fs, dir, op: 'list' })
+ * console.log(refLog) // [{stash{#} message}]
+ *
+ * await git.stash({ fs, dir, op: 'apply' }) // apply the stash
+ *
+ * console.log(await git.status({ fs, dir, filepath: 'a.txt' })) // 'modified'
+ * console.log(await git.status({ fs, dir, filepath: 'b.txt' })) // '*modified'
+ */
+export function stash({ fs, dir, gitdir, op, message, refIdx, }: {
+    fs: CallbackFsClient | PromiseFsClient;
+    dir?: string;
+    gitdir?: string;
+    op?: "push" | "drop" | "pop" | "apply" | "list" | "clear";
+    message?: string;
+    refIdx?: number;
+}): Promise<string | void>;
+/**
  * Tell whether a file has been changed
  *
  * The possible resolve values are:
@@ -4581,6 +4649,10 @@ declare namespace NoCommitError {
  * @typedef {[string, HeadStatus, WorkdirStatus, StageStatus]} StatusRow
  */
 /**
+ * @typedef {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear'} StashOp the type of stash ops
+ */
+/**
+ * @typedef {'equal' | 'modify' | 'add' | 'remove' | 'unknown'} StashChangeType - when compare WORDIR to HEAD, 'remove' could mean 'untracked'
  * @typedef {Object} ClientRef
  * @property {string} ref The name of the ref
  * @property {string} oid The SHA-1 object id the ref points to
