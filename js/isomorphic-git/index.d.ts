@@ -732,6 +732,7 @@ declare namespace index {
     export { listBranches };
     export { listFiles };
     export { listNotes };
+    export { listRefs };
     export { listRemotes };
     export { listServerRefs };
     export { listTags };
@@ -1993,6 +1994,28 @@ export function listNotes({ fs, dir, gitdir, ref, cache, }: {
     target: string;
     note: string;
 }[]>;
+/**
+ * List refs
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} [args.filepath] - [required] The refs path to list
+ *
+ * @returns {Promise<Array<string>>} Resolves successfully with an array of ref names below the supplied `filepath`
+ *
+ * @example
+ * let refs = await git.listRefs({ fs, dir: '/tutorial', filepath: 'refs/heads' })
+ * console.log(refs)
+ *
+ */
+export function listRefs({ fs, dir, gitdir, filepath, }: {
+    fs: CallbackFsClient | PromiseFsClient;
+    dir?: string;
+    gitdir?: string;
+    filepath?: string;
+}): Promise<string[]>;
 /**
  * List remotes
  *

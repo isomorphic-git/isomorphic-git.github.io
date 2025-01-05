@@ -11065,6 +11065,40 @@ async function listNotes({
 // @ts-check
 
 /**
+ * List refs
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system client
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} [args.filepath] - [required] The refs path to list
+ *
+ * @returns {Promise<Array<string>>} Resolves successfully with an array of ref names below the supplied `filepath`
+ *
+ * @example
+ * let refs = await git.listRefs({ fs, dir: '/tutorial', filepath: 'refs/heads' })
+ * console.log(refs)
+ *
+ */
+async function listRefs({
+  fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  filepath,
+}) {
+  try {
+    assertParameter('fs', fs);
+    assertParameter('gitdir', gitdir);
+    return GitRefManager.listRefs({ fs: new FileSystem(fs), gitdir, filepath })
+  } catch (err) {
+    err.caller = 'git.listRefs';
+    throw err
+  }
+}
+
+// @ts-check
+
+/**
  * @param {object} args
  * @param {import('../models/FileSystem.js').FileSystem} args.fs
  * @param {string} args.gitdir
@@ -16050,6 +16084,7 @@ var index = {
   listBranches,
   listFiles,
   listNotes,
+  listRefs,
   listRemotes,
   listServerRefs,
   listTags,
@@ -16085,4 +16120,4 @@ var index = {
 };
 
 export default index;
-export { Errors, STAGE, TREE, WORKDIR, abortMerge, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, stash, status, statusMatrix, tag, updateIndex, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
+export { Errors, STAGE, TREE, WORKDIR, abortMerge, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRefs, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, stash, status, statusMatrix, tag, updateIndex, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
