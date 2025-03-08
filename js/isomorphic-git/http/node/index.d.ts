@@ -13,13 +13,13 @@ export type GitHttpRequest = {
     /**
      * - The HTTP method to use
      */
-    method?: string;
+    method?: string | undefined;
     /**
      * - Headers to include in the HTTP request
      */
     headers?: {
         [x: string]: string;
-    };
+    } | undefined;
     /**
      * - An HTTP or HTTPS agent that manages connections for the HTTP client (Node.js only)
      */
@@ -27,15 +27,15 @@ export type GitHttpRequest = {
     /**
      * - An async iterator of Uint8Arrays that make up the body of POST requests
      */
-    body?: any;
+    body?: AsyncIterableIterator<Uint8Array>;
     /**
      * - Reserved for future use (emitting `GitProgressEvent`s)
      */
-    onProgress?: ProgressCallback;
+    onProgress?: ProgressCallback | undefined;
     /**
      * - Reserved for future use (canceling a request)
      */
-    signal?: any;
+    signal?: object;
 };
 export type GitHttpResponse = {
     /**
@@ -45,17 +45,17 @@ export type GitHttpResponse = {
     /**
      * - The HTTP method that was used
      */
-    method?: string;
+    method?: string | undefined;
     /**
      * - HTTP response headers
      */
     headers?: {
         [x: string]: string;
-    };
+    } | undefined;
     /**
      * - An async iterator of Uint8Arrays that make up the body of the response
      */
-    body?: any;
+    body?: AsyncIterableIterator<Uint8Array>;
     /**
      * - The HTTP status code
      */
