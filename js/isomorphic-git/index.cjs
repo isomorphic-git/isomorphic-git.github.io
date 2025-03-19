@@ -1489,6 +1489,10 @@ function compareRefNames(a, b) {
 
 // This is straight from parse_unit_factor in config.c of canonical git
 const num = val => {
+  if (typeof val === 'number') {
+    return val
+  }
+
   val = val.toLowerCase();
   let n = parseInt(val);
   if (val.endsWith('k')) n *= 1024;
@@ -1499,6 +1503,10 @@ const num = val => {
 
 // This is straight from git_parse_maybe_bool_text in config.c of canonical git
 const bool = val => {
+  if (typeof val === 'boolean') {
+    return val
+  }
+
   val = val.trim().toLowerCase();
   if (val === 'true' || val === 'yes' || val === 'on') return true
   if (val === 'false' || val === 'no' || val === 'off') return false
@@ -1614,6 +1622,7 @@ const normalizePath = path => {
     name,
     path: getPath(section, subsection, name),
     sectionPath: getPath(section, subsection, null),
+    isSection: !!section,
   }
 };
 
@@ -1674,7 +1683,7 @@ class GitConfig {
 
   async getSubsections(section) {
     return this.parsedConfig
-      .filter(config => config.section === section && config.isSection)
+      .filter(config => config.isSection && config.section === section)
       .map(config => config.subsection)
   }
 
@@ -1696,7 +1705,9 @@ class GitConfig {
       name,
       path: normalizedPath,
       sectionPath,
+      isSection,
     } = normalizePath(path);
+
     const configIndex = findLastIndex(
       this.parsedConfig,
       config => config.path === normalizedPath
@@ -1738,6 +1749,7 @@ class GitConfig {
           } else {
             // Add a new section
             const newSection = {
+              isSection,
               section,
               subsection,
               modified: true,
@@ -4124,6 +4136,8 @@ class GitWalkerFs {
     this.cache = cache;
     this.dir = dir;
     this.gitdir = gitdir;
+
+    this.config = null;
     const walker = this;
     this.ConstructEntry = class WorkdirEntry {
       constructor(fullpath) {
@@ -4210,7 +4224,7 @@ class GitWalkerFs {
       if ((await entry.type()) === 'tree') {
         entry._content = undefined;
       } else {
-        const config = await GitConfigManager.get({ fs, gitdir });
+        const config = await this._getGitConfig(fs, gitdir);
         const autocrlf = await config.get('core.autocrlf');
         const content = await fs.read(`${dir}/${entry._fullpath}`, { autocrlf });
         // workaround for a BrowserFS edge case
@@ -4226,6 +4240,7 @@ class GitWalkerFs {
 
   async oid(entry) {
     if (entry._oid === false) {
+      const self = this;
       const { fs, gitdir, cache } = this;
       let oid;
       // See if we can use the SHA1 hash in the index.
@@ -4234,7 +4249,7 @@ class GitWalkerFs {
       ) {
         const stage = index.entriesMap.get(entry._fullpath);
         const stats = await entry.stat();
-        const config = await GitConfigManager.get({ fs, gitdir });
+        const config = await self._getGitConfig(fs, gitdir);
         const filemode = await config.get('core.filemode');
         const trustino =
           typeof process !== 'undefined'
@@ -4272,6 +4287,14 @@ class GitWalkerFs {
       entry._oid = oid;
     }
     return entry._oid
+  }
+
+  async _getGitConfig(fs, gitdir) {
+    if (this.config) {
+      return this.config
+    }
+    this.config = await GitConfigManager.get({ fs, gitdir });
+    return this.config
   }
 }
 
@@ -5066,6 +5089,8 @@ async function add({
 
     const fs = new FileSystem(_fs);
     await GitIndexManager.acquire({ fs, gitdir, cache }, async index => {
+      const config = await GitConfigManager.get({ fs, gitdir });
+      const autocrlf = await config.get('core.autocrlf');
       return addToIndex({
         dir,
         gitdir,
@@ -5074,6 +5099,7 @@ async function add({
         index,
         force,
         parallel,
+        autocrlf,
       })
     });
   } catch (err) {
@@ -5090,6 +5116,7 @@ async function addToIndex({
   index,
   force,
   parallel,
+  autocrlf,
 }) {
   // TODO: Should ignore UNLESS it's already in the index.
   filepath = Array.isArray(filepath) ? filepath : [filepath];
@@ -5118,6 +5145,7 @@ async function addToIndex({
             index,
             force,
             parallel,
+            autocrlf,
           })
         );
         await Promise.all(promises);
@@ -5131,12 +5159,11 @@ async function addToIndex({
             index,
             force,
             parallel,
+            autocrlf,
           });
         }
       }
     } else {
-      const config = await GitConfigManager.get({ fs, gitdir });
-      const autocrlf = await config.get('core.autocrlf');
       const object = stats.isSymbolicLink()
         ? await fs.readlink(pathBrowserify.join(dir, currentFilepath)).then(posixifyPathBuffer)
         : await fs.read(pathBrowserify.join(dir, currentFilepath), { autocrlf });
