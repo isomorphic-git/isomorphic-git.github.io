@@ -973,8 +973,11 @@ function createCache() {
 }
 
 async function updateCachedIndexFile(fs, filepath, cache) {
-  const stat = await fs.lstat(filepath);
-  const rawIndexFile = await fs.read(filepath);
+  const [stat, rawIndexFile] = await Promise.all([
+    fs.lstat(filepath),
+    fs.read(filepath),
+  ]);
+
   const index = await GitIndex.from(rawIndexFile);
   // cache the GitIndex object so we don't need to re-read it every time.
   cache.map.set(filepath, index);
@@ -986,8 +989,9 @@ async function updateCachedIndexFile(fs, filepath, cache) {
 async function isIndexStale(fs, filepath, cache) {
   const savedStats = cache.stats.get(filepath);
   if (savedStats === undefined) return true
-  const currStats = await fs.lstat(filepath);
   if (savedStats === null) return false
+
+  const currStats = await fs.lstat(filepath);
   if (currStats === null) return false
   return compareStats(savedStats, currStats)
 }
@@ -1003,7 +1007,9 @@ class GitIndexManager {
    * @param {function(GitIndex): any} closure
    */
   static async acquire({ fs, gitdir, cache, allowUnmerged = true }, closure) {
-    if (!cache[IndexCache]) cache[IndexCache] = createCache();
+    if (!cache[IndexCache]) {
+      cache[IndexCache] = createCache();
+    }
 
     const filepath = `${gitdir}/index`;
     if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
@@ -1014,10 +1020,11 @@ class GitIndexManager {
       // to make sure other processes aren't writing to it
       // simultaneously, which could result in a corrupted index.
       // const fileLock = await Lock(filepath)
-      if (await isIndexStale(fs, filepath, cache[IndexCache])) {
-        await updateCachedIndexFile(fs, filepath, cache[IndexCache]);
+      const theIndexCache = cache[IndexCache];
+      if (await isIndexStale(fs, filepath, theIndexCache)) {
+        await updateCachedIndexFile(fs, filepath, theIndexCache);
       }
-      const index = cache[IndexCache].map.get(filepath);
+      const index = theIndexCache.map.get(filepath);
       unmergedPaths = index.unmergedPaths;
 
       if (unmergedPaths.length && !allowUnmerged)
@@ -1030,7 +1037,7 @@ class GitIndexManager {
         const buffer = await index.toObject();
         await fs.write(filepath, buffer);
         // Update cached stat value
-        cache[IndexCache].stats.set(filepath, await fs.lstat(filepath));
+        theIndexCache.stats.set(filepath, await fs.lstat(filepath));
         index._dirty = false;
       }
     });
@@ -4255,7 +4262,7 @@ class GitWalkerFs {
             oid = undefined;
           } else {
             oid = await shasum(
-              GitObject.wrap({ type: 'blob', object: await entry.content() })
+              GitObject.wrap({ type: 'blob', object: content })
             );
             // Update the stats in the index so we will get a "cache hit" next time
             // 1) if we can (because the oid and mode are the same)
@@ -4446,15 +4453,20 @@ async function _walk({
   const range = arrayRange(0, walkers.length);
   const unionWalkerFromReaddir = async entries => {
     range.map(i => {
-      entries[i] = entries[i] && new walkers[i].ConstructEntry(entries[i]);
+      const entry = entries[i];
+      entries[i] = entry && new walkers[i].ConstructEntry(entry);
     });
     const subdirs = await Promise.all(
-      range.map(i => (entries[i] ? walkers[i].readdir(entries[i]) : []))
+      range.map(i => {
+        const entry = entries[i];
+        return entry ? walkers[i].readdir(entry) : []
+      })
     );
     // Now process child directories
-    const iterators = subdirs
-      .map(array => (array === null ? [] : array))
-      .map(array => array[Symbol.iterator]());
+    const iterators = subdirs.map(array => {
+      return (array === null ? [] : array)[Symbol.iterator]()
+    });
+
     return {
       entries,
       children: unionOfIterators(iterators),
@@ -15282,11 +15294,9 @@ async function updateIndex({
       return await GitIndexManager.acquire(
         { fs, gitdir, cache },
         async function(index) {
-          let fileStats;
-
           if (!force) {
             // Check if the file is still present in the working directory
-            fileStats = await fs.lstat(join(dir, filepath));
+            const fileStats = await fs.lstat(join(dir, filepath));
 
             if (fileStats) {
               if (fileStats.isDirectory()) {
@@ -15336,18 +15346,7 @@ async function updateIndex({
         )
       }
 
-      // By default we use 0 for the stats of the index file
-      let stats = {
-        ctime: new Date(0),
-        mtime: new Date(0),
-        dev: 0,
-        ino: 0,
-        mode,
-        uid: 0,
-        gid: 0,
-        size: 0,
-      };
-
+      let stats;
       if (!oid) {
         stats = fileStats;
 
@@ -15363,6 +15362,18 @@ async function updateIndex({
           format: 'content',
           object,
         });
+      } else {
+        // By default we use 0 for the stats of the index file
+        stats = {
+          ctime: new Date(0),
+          mtime: new Date(0),
+          dev: 0,
+          ino: 0,
+          mode,
+          uid: 0,
+          gid: 0,
+          size: 0,
+        };
       }
 
       index.insert({
