@@ -9386,7 +9386,12 @@ async function mergeTree({
           }
 
           // deleted by both
-          if (base && !ours && !theirs && (await base.type()) === 'blob') {
+          if (
+            base &&
+            !ours &&
+            !theirs &&
+            ((await base.type()) === 'blob' || (await base.type()) === 'tree')
+          ) {
             return undefined
           }
 
@@ -9410,9 +9415,19 @@ async function mergeTree({
             if (!parent) return
 
             // automatically delete directories if they have been emptied
-            if (parent && parent.type === 'tree' && entries.length === 0) return
+            // except for the root directory
+            if (
+              parent &&
+              parent.type === 'tree' &&
+              entries.length === 0 &&
+              parent.path !== '.'
+            )
+              return
 
-            if (entries.length > 0) {
+            if (
+              entries.length > 0 ||
+              (parent.path === '.' && entries.length === 0)
+            ) {
               const tree = new GitTree(entries);
               const object = tree.toObject();
               const oid = await _writeObject({
@@ -9676,7 +9691,7 @@ async function _merge({
     );
 
     // Defer throwing error until the index lock is relinquished and index is
-    // written to filsesystem
+    // written to filesystem
     if (tree instanceof MergeConflictError) throw tree
 
     if (!message) {
