@@ -74,6 +74,8 @@
 <tr><td>force</td><td>boolean = false</td><td>If true, conflicts will be ignored and files will be overwritten regardless of local changes.</td></tr>
 <tr><td>track</td><td>boolean = true</td><td>If false, will not set the remote branch tracking information. Defaults to true.</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
+<tr><td>nonBlocking</td><td>boolean = false</td><td>If true, will use non-blocking file system operations to allow for better performance in certain environments (For example, in Browsers)</td></tr>
+<tr><td>batchSize</td><td>number = 100</td><td>If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when filesystem operations are complete</td></tr>
 </tbody>
 </table>

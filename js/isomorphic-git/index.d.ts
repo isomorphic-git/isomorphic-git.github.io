@@ -681,7 +681,7 @@ declare namespace index {
     export { removeNote };
     export { renameBranch };
     export { resetIndex };
-    export { updateIndex };
+    export { updateIndex$1 as updateIndex };
     export { resolveRef };
     export { status };
     export { statusMatrix };
@@ -993,6 +993,8 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * @param {boolean} [args.force = false] - If true, conflicts will be ignored and files will be overwritten regardless of local changes.
  * @param {boolean} [args.track = true] - If false, will not set the remote branch tracking information. Defaults to true.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.nonBlocking = false] - If true, will use non-blocking file system operations to allow for better performance in certain environments (For example, in Browsers)
+ * @param {number} [args.batchSize = 100] - If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -1027,7 +1029,7 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * })
  * console.log('done')
  */
-export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, track, cache, }: {
+export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, ref: _ref, filepaths, noCheckout, noUpdateHead, dryRun, force, track, cache, nonBlocking, batchSize, }: {
     fs: FsClient;
     onProgress?: ProgressCallback | undefined;
     onPostCheckout?: PostCheckoutCallback | undefined;
@@ -1042,6 +1044,8 @@ export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, 
     force?: boolean | undefined;
     track?: boolean | undefined;
     cache?: object;
+    nonBlocking?: boolean | undefined;
+    batchSize?: number | undefined;
 }): Promise<void>;
 /**
  * Clone a repository
@@ -1070,6 +1074,8 @@ export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, 
  * @param {boolean} [args.relative = false] - Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.
  * @param {Object<string, string>} [args.headers = {}] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.nonBlocking = false] - if true, checkout will happen non-blockingly (useful for long-running operations blocking the thread in browser environments)
+ * @param {number} [args.batchSize = 100] - If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.
  *
  * @returns {Promise<void>} Resolves successfully when clone completes
  *
@@ -1086,7 +1092,7 @@ export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, 
  * console.log('done')
  *
  */
-export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPostCheckout, dir, gitdir, url, corsProxy, ref, remote, depth, since, exclude, relative, singleBranch, noCheckout, noTags, headers, cache, }: {
+export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPostCheckout, dir, gitdir, url, corsProxy, ref, remote, depth, since, exclude, relative, singleBranch, noCheckout, noTags, headers, cache, nonBlocking, batchSize, }: {
     fs: FsClient;
     http: HttpClient;
     onProgress?: ProgressCallback | undefined;
@@ -1112,6 +1118,8 @@ export function clone({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, 
         [x: string]: string;
     } | undefined;
     cache?: object;
+    nonBlocking?: boolean | undefined;
+    batchSize?: number | undefined;
 }): Promise<void>;
 /**
  * Create a new commit
@@ -3342,7 +3350,7 @@ export function tag({ fs: _fs, dir, gitdir, ref, object, force, }: {
  *   oid
  * })
  */
-export function updateIndex({ fs: _fs, dir, gitdir, cache, filepath, oid, mode, add, remove, force, }: {
+declare function updateIndex$1({ fs: _fs, dir, gitdir, cache, filepath, oid, mode, add, remove, force, }: {
     fs: FsClient;
     dir: string;
     gitdir?: string | undefined;
@@ -4650,3 +4658,4 @@ declare class BaseError extends Error {
     fromJSON(json: any): BaseError;
     get isIsomorphicGitError(): boolean;
 }
+export { updateIndex$1 as updateIndex };

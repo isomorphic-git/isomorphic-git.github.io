@@ -6291,6 +6291,8 @@ const worthWalking = (filepath, root) => {
  * @param {boolean} [args.dryRun]
  * @param {boolean} [args.force]
  * @param {boolean} [args.track]
+ * @param {boolean} [args.nonBlocking]
+ * @param {number} [args.batchSize]
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -6310,6 +6312,8 @@ async function _checkout({
   dryRun,
   force,
   track = true,
+  nonBlocking = false,
+  batchSize = 100,
 }) {
   // oldOid is defined only if onPostCheckout hook is attached
   let oldOid;
@@ -6482,72 +6486,122 @@ async function _checkout({
         })
     );
 
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      await Promise.all(
-        ops
-          .filter(
-            ([method]) =>
-              method === 'create' ||
-              method === 'create-index' ||
-              method === 'update' ||
-              method === 'mkdir-index'
-          )
-          .map(async function([method, fullpath, oid, mode, chmod]) {
-            const filepath = `${dir}/${fullpath}`;
-            try {
-              if (method !== 'create-index' && method !== 'mkdir-index') {
-                const { object } = await _readObject({ fs, cache, gitdir, oid });
-                if (chmod) {
-                  // Note: the mode option of fs.write only works when creating files,
-                  // not updating them. Since the `fs` plugin doesn't expose `chmod` this
-                  // is our only option.
-                  await fs.rm(filepath);
-                }
-                if (mode === 0o100644) {
-                  // regular file
-                  await fs.write(filepath, object);
-                } else if (mode === 0o100755) {
-                  // executable file
-                  await fs.write(filepath, object, { mode: 0o777 });
-                } else if (mode === 0o120000) {
-                  // symlink
-                  await fs.writelink(filepath, object);
-                } else {
-                  throw new InternalError(
-                    `Invalid mode 0o${mode.toString(8)} detected in blob ${oid}`
-                  )
-                }
-              }
-
-              const stats = await fs.lstat(filepath);
-              // We can't trust the executable bit returned by lstat on Windows,
-              // so we need to preserve this value from the TREE.
-              // TODO: Figure out how git handles this internally.
-              if (mode === 0o100755) {
-                stats.mode = 0o755;
-              }
-              // Submodules are present in the git index but use a unique mode different from trees
-              if (method === 'mkdir-index') {
-                stats.mode = 0o160000;
-              }
-              index.insert({
-                filepath: fullpath,
-                stats,
-                oid,
-              });
-              if (onProgress) {
-                await onProgress({
-                  phase: 'Updating workdir',
-                  loaded: ++count,
-                  total,
-                });
-              }
-            } catch (e) {
-              console.log(e);
-            }
-          })
+    if (nonBlocking) {
+      // Filter eligible operations first
+      const eligibleOps = ops.filter(
+        ([method]) =>
+          method === 'create' ||
+          method === 'create-index' ||
+          method === 'update' ||
+          method === 'mkdir-index'
       );
-    });
+
+      const updateWorkingDirResults = await batchAllSettled(
+        'Update Working Dir',
+        eligibleOps.map(([method, fullpath, oid, mode, chmod]) => () =>
+          updateWorkingDir({ fs, cache, gitdir, dir }, [
+            method,
+            fullpath,
+            oid,
+            mode,
+            chmod,
+          ])
+        ),
+        onProgress,
+        batchSize
+      );
+
+      await GitIndexManager.acquire(
+        { fs, gitdir, cache, allowUnmerged: true },
+        async function(index) {
+          await batchAllSettled(
+            'Update Index',
+            updateWorkingDirResults.map(([fullpath, oid, stats]) => () =>
+              updateIndex({ index, fullpath, oid, stats })
+            ),
+            onProgress,
+            batchSize
+          );
+        }
+      );
+    } else {
+      await GitIndexManager.acquire(
+        { fs, gitdir, cache, allowUnmerged: true },
+        async function(index) {
+          await Promise.all(
+            ops
+              .filter(
+                ([method]) =>
+                  method === 'create' ||
+                  method === 'create-index' ||
+                  method === 'update' ||
+                  method === 'mkdir-index'
+              )
+              .map(async function([method, fullpath, oid, mode, chmod]) {
+                const filepath = `${dir}/${fullpath}`;
+                try {
+                  if (method !== 'create-index' && method !== 'mkdir-index') {
+                    const { object } = await _readObject({
+                      fs,
+                      cache,
+                      gitdir,
+                      oid,
+                    });
+                    if (chmod) {
+                      // Note: the mode option of fs.write only works when creating files,
+                      // not updating them. Since the `fs` plugin doesn't expose `chmod` this
+                      // is our only option.
+                      await fs.rm(filepath);
+                    }
+                    if (mode === 0o100644) {
+                      // regular file
+                      await fs.write(filepath, object);
+                    } else if (mode === 0o100755) {
+                      // executable file
+                      await fs.write(filepath, object, { mode: 0o777 });
+                    } else if (mode === 0o120000) {
+                      // symlink
+                      await fs.writelink(filepath, object);
+                    } else {
+                      throw new InternalError(
+                        `Invalid mode 0o${mode.toString(
+                          8
+                        )} detected in blob ${oid}`
+                      )
+                    }
+                  }
+
+                  const stats = await fs.lstat(filepath);
+                  // We can't trust the executable bit returned by lstat on Windows,
+                  // so we need to preserve this value from the TREE.
+                  // TODO: Figure out how git handles this internally.
+                  if (mode === 0o100755) {
+                    stats.mode = 0o755;
+                  }
+                  // Submodules are present in the git index but use a unique mode different from trees
+                  if (method === 'mkdir-index') {
+                    stats.mode = 0o160000;
+                  }
+                  index.insert({
+                    filepath: fullpath,
+                    stats,
+                    oid,
+                  });
+                  if (onProgress) {
+                    await onProgress({
+                      phase: 'Updating workdir',
+                      loaded: ++count,
+                      total,
+                    });
+                  }
+                } catch (e) {
+                  console.log(e);
+                }
+              })
+          );
+        }
+      );
+    }
 
     if (onPostCheckout) {
       await onPostCheckout({
@@ -6865,6 +6919,78 @@ async function analyze({
   })
 }
 
+async function updateIndex({ index, fullpath, stats, oid }) {
+  try {
+    index.insert({
+      filepath: fullpath,
+      stats,
+      oid,
+    });
+  } catch (e) {
+    console.warn(`Error inserting ${fullpath} into index:`, e);
+  }
+}
+async function updateWorkingDir(
+  { fs, cache, gitdir, dir },
+  [method, fullpath, oid, mode, chmod]
+) {
+  const filepath = `${dir}/${fullpath}`;
+  if (method !== 'create-index' && method !== 'mkdir-index') {
+    const { object } = await _readObject({ fs, cache, gitdir, oid });
+    if (chmod) {
+      await fs.rm(filepath);
+    }
+    if (mode === 0o100644) {
+      // regular file
+      await fs.write(filepath, object);
+    } else if (mode === 0o100755) {
+      // executable file
+      await fs.write(filepath, object, { mode: 0o777 });
+    } else if (mode === 0o120000) {
+      // symlink
+      await fs.writelink(filepath, object);
+    } else {
+      throw new InternalError(
+        `Invalid mode 0o${mode.toString(8)} detected in blob ${oid}`
+      )
+    }
+  }
+  const stats = await fs.lstat(filepath);
+  if (mode === 0o100755) {
+    stats.mode = 0o755;
+  }
+  if (method === 'mkdir-index') {
+    stats.mode = 0o160000;
+  }
+  return [fullpath, oid, stats]
+}
+
+async function batchAllSettled(operationName, tasks, onProgress, batchSize) {
+  const results = [];
+  try {
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize).map(task => task());
+      const batchResults = await Promise.allSettled(batch);
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled') results.push(result.value);
+      });
+      if (onProgress) {
+        await onProgress({
+          phase: 'Updating workdir',
+          loaded: i + batch.length,
+          total: tasks.length,
+        });
+      }
+    }
+
+    return results
+  } catch (error) {
+    console.error(`Error during ${operationName}: ${error}`);
+  }
+
+  return results
+}
+
 // @ts-check
 
 /**
@@ -6887,6 +7013,8 @@ async function analyze({
  * @param {boolean} [args.force = false] - If true, conflicts will be ignored and files will be overwritten regardless of local changes.
  * @param {boolean} [args.track = true] - If false, will not set the remote branch tracking information. Defaults to true.
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.nonBlocking = false] - If true, will use non-blocking file system operations to allow for better performance in certain environments (For example, in Browsers)
+ * @param {number} [args.batchSize = 100] - If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.
  *
  * @returns {Promise<void>} Resolves successfully when filesystem operations are complete
  *
@@ -6936,6 +7064,8 @@ async function checkout({
   force = false,
   track = true,
   cache = {},
+  nonBlocking = false,
+  batchSize = 100,
 }) {
   try {
     assertParameter('fs', fs);
@@ -6958,6 +7088,8 @@ async function checkout({
       dryRun,
       force,
       track,
+      nonBlocking,
+      batchSize,
     })
   } catch (err) {
     err.caller = 'git.checkout';
@@ -8400,6 +8532,8 @@ async function _init({
  * @param {string[]} args.exclude
  * @param {boolean} args.relative
  * @param {Object<string, string>} args.headers
+ * @param {boolean} [args.nonBlocking]
+ * @param {number} [args.batchSize]
  *
  * @returns {Promise<void>} Resolves successfully when clone completes
  *
@@ -8428,6 +8562,8 @@ async function _clone({
   noCheckout,
   noTags,
   headers,
+  nonBlocking,
+  batchSize = 100,
 }) {
   try {
     await _init({ fs, gitdir });
@@ -8472,6 +8608,8 @@ async function _clone({
       ref,
       remote,
       noCheckout,
+      nonBlocking,
+      batchSize,
     });
   } catch (err) {
     // Remove partial local repository, see #1283
@@ -8513,6 +8651,8 @@ async function _clone({
  * @param {boolean} [args.relative = false] - Changes the meaning of `depth` to be measured from the current shallow depth rather than from the branch tip.
  * @param {Object<string, string>} [args.headers = {}] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.nonBlocking = false] - if true, checkout will happen non-blockingly (useful for long-running operations blocking the thread in browser environments)
+ * @param {number} [args.batchSize = 100] - If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.
  *
  * @returns {Promise<void>} Resolves successfully when clone completes
  *
@@ -8553,6 +8693,8 @@ async function clone({
   noTags = false,
   headers = {},
   cache = {},
+  nonBlocking = false,
+  batchSize = 100,
 }) {
   try {
     assertParameter('fs', fs);
@@ -8587,6 +8729,8 @@ async function clone({
       noCheckout,
       noTags,
       headers,
+      nonBlocking,
+      batchSize,
     })
   } catch (err) {
     err.caller = 'git.clone';
@@ -15312,7 +15456,7 @@ async function tag({
  *   oid
  * })
  */
-async function updateIndex({
+async function updateIndex$1({
   fs: _fs,
   dir,
   gitdir = pathBrowserify.join(dir, '.git'),
@@ -16182,7 +16326,7 @@ var index = {
   removeNote,
   renameBranch,
   resetIndex,
-  updateIndex,
+  updateIndex: updateIndex$1,
   resolveRef,
   status,
   statusMatrix,
@@ -16260,7 +16404,7 @@ exports.stash = stash;
 exports.status = status;
 exports.statusMatrix = statusMatrix;
 exports.tag = tag;
-exports.updateIndex = updateIndex;
+exports.updateIndex = updateIndex$1;
 exports.version = version;
 exports.walk = walk;
 exports.writeBlob = writeBlob;

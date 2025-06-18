@@ -83,6 +83,8 @@
 <tr><td>relative</td><td>boolean = false</td><td>Changes the meaning of <code>depth</code> to be measured from the current shallow depth rather than from the branch tip.</td></tr>
 <tr><td><a href="./headers">headers</a></td><td>Object&lt;string, string&gt; = {}</td><td>Additional headers to include in HTTP requests, similar to git's <code>extraHeader</code> config</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
+<tr><td>nonBlocking</td><td>boolean = false</td><td>if true, checkout will happen non-blockingly (useful for long-running operations blocking the thread in browser environments)</td></tr>
+<tr><td>batchSize</td><td>number = 100</td><td>If args.nonBlocking is true, batchSize is the number of files to process at a time avoid blocking the executing thread. The default value of 100 is a good starting point.</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully when clone completes</td></tr>
 </tbody>
 </table>
