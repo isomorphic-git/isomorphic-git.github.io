@@ -85,6 +85,7 @@
 <tr><td>signingKey</td><td>string</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>mergeDriver</td><td>MergeDriverCallback</td><td>a <a href="/docs/en/mergeDriver">merge driver</a> implementation</td></tr>
+<tr><td>allowUnrelatedHistories</td><td>boolean = false</td><td>If true, allows merging histories of two branches that started their lives independently.</td></tr>
 <tr><td>return</td><td>Promise&lt;MergeResult&gt;</td><td>Resolves to a description of the merge operation</td></tr>
 </tbody>
 </table>

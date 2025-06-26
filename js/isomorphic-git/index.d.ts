@@ -2245,6 +2245,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * @param {string} [args.signingKey] - passed to [commit](commit.md) when creating a merge commit
  * @param {object} [args.cache] - a [cache](cache.md) object
  * @param {MergeDriverCallback} [args.mergeDriver] - a [merge driver](mergeDriver.md) implementation
+ * @param {boolean} [args.allowUnrelatedHistories = false] - If true, allows merging histories of two branches that started their lives independently.
  *
  * @returns {Promise<MergeResult>} Resolves to a description of the merge operation
  * @see MergeResult
@@ -2259,7 +2260,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
  * console.log(m)
  *
  */
-export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward, fastForwardOnly, dryRun, noUpdateBranch, abortOnConflict, message, author: _author, committer: _committer, signingKey, cache, mergeDriver, }: {
+export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward, fastForwardOnly, dryRun, noUpdateBranch, abortOnConflict, message, author: _author, committer: _committer, signingKey, cache, mergeDriver, allowUnrelatedHistories, }: {
     fs: FsClient;
     onSign?: SignCallback | undefined;
     dir?: string | undefined;
@@ -2287,6 +2288,7 @@ export function merge({ fs: _fs, onSign, dir, gitdir, ours, theirs, fastForward,
     signingKey?: string | undefined;
     cache?: object;
     mergeDriver?: MergeDriverCallback | undefined;
+    allowUnrelatedHistories?: boolean | undefined;
 }): Promise<MergeResult>;
 /**
  *
