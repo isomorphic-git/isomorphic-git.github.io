@@ -6,6 +6,7 @@ import pako from 'pako';
 import pify from 'pify';
 import ignore from 'ignore';
 import cleanGitRef from 'clean-git-ref';
+import validRef from 'is-git-ref-name-valid';
 import diff3Merge from 'diff3';
 
 /**
@@ -6137,7 +6138,7 @@ async function addNote({
  *
  */
 async function _addRemote({ fs, gitdir, remote, url, force }) {
-  if (remote !== cleanGitRef.clean(remote)) {
+  if (!validRef(remote, true)) {
     throw new InvalidRefNameError(remote, cleanGitRef.clean(remote))
   }
   const config = await GitConfigManager.get({ fs, gitdir });
@@ -6409,7 +6410,7 @@ async function _branch({
   checkout = false,
   force = false,
 }) {
-  if (ref !== cleanGitRef.clean(ref)) {
+  if (!validRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
@@ -14144,11 +14145,11 @@ async function _renameBranch({
   ref,
   checkout = false,
 }) {
-  if (ref !== cleanGitRef.clean(ref)) {
+  if (!validRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
-  if (oldref !== cleanGitRef.clean(oldref)) {
+  if (!validRef(oldref, true)) {
     throw new InvalidRefNameError(oldref, cleanGitRef.clean(oldref))
   }
 
@@ -16518,7 +16519,7 @@ async function writeRef({
 
     const fs = new FileSystem(_fs);
 
-    if (ref !== cleanGitRef.clean(ref)) {
+    if (!validRef(ref, true)) {
       throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
     }
 
