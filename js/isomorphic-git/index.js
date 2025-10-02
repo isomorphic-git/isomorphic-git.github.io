@@ -15007,8 +15007,7 @@ class GitStashManager {
       return []
     }
 
-    const reflogBuffer = await this.fs.read(this.refLogsStashPath);
-    const reflogString = reflogBuffer.toString();
+    const reflogString = await this.fs.read(this.refLogsStashPath, 'utf8');
 
     return GitRefStash.getStashReflogEntry(reflogString, parsed)
   }
@@ -15016,7 +15015,11 @@ class GitStashManager {
 
 // @ts-check
 
-async function _stashPush({ fs, dir, gitdir, message = '' }) {
+/**
+ * Common logic for creating a stash commit
+ * @private
+ */
+async function _createStashCommit({ fs, dir, gitdir, message = '' }) {
   const stashMgr = new GitStashManager({ fs, dir, gitdir });
 
   await stashMgr.getAuthor(); // ensure there is an author
@@ -15051,7 +15054,7 @@ async function _stashPush({ fs, dir, gitdir, message = '' }) {
     // create a commit from the index tree, which has one parent, the current branch HEAD
     const stashCommitOne = await stashMgr.writeStashCommit({
       message: `stash-Index: WIP on ${branch} - ${new Date().toISOString()}`,
-      tree: indexTree, // stashCommitTree
+      tree: indexTree,
       parent: stashCommitParents,
     });
     stashCommitParents.push(stashCommitOne);
@@ -15092,6 +15095,17 @@ async function _stashPush({ fs, dir, gitdir, message = '' }) {
     parent: stashCommitParents,
   });
 
+  return { stashCommit, stashMsg, branch, stashMgr }
+}
+
+async function _stashPush({ fs, dir, gitdir, message = '' }) {
+  const { stashCommit, stashMsg, branch, stashMgr } = await _createStashCommit({
+    fs,
+    dir,
+    gitdir,
+    message,
+  });
+
   // next, write this commit into .git/refs/stash:
   await stashMgr.writeStashRef(stashCommit);
 
@@ -15111,6 +15125,18 @@ async function _stashPush({ fs, dir, gitdir, message = '' }) {
     force: true, // force checkout to discard changes
   });
 
+  return stashCommit
+}
+
+async function _stashCreate({ fs, dir, gitdir, message = '' }) {
+  const { stashCommit } = await _createStashCommit({
+    fs,
+    dir,
+    gitdir,
+    message,
+  });
+
+  // Return the stash commit hash without modifying refs or working directory
   return stashCommit
 }
 
@@ -15217,21 +15243,22 @@ async function _stashPop({ fs, dir, gitdir, refIdx = 0 }) {
 // @ts-check
 
 /**
- * stash api, supports  {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear'} StashOp
+ * stash api, supports  {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear' | 'create'} StashOp
  * _note_,
  * - all stash operations are done on tracked files only with loose objects, no packed objects
  * - when op === 'push', both working directory and index (staged) changes will be stashed, tracked files only
  * - when op === 'push', message is optional, and only applicable when op === 'push'
  * - when op === 'apply | pop', the stashed changes will overwrite the working directory, no abort when conflicts
+ * - when op === 'create', creates a stash commit without modifying working directory or refs, returns the commit hash
  *
  * @param {object} args
  * @param {FsClient} args.fs - [required] a file system client
  * @param {string} [args.dir] - [required] The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [optional] The [git directory](dir-vs-gitdir.md) path
- * @param {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear'} [args.op = 'push'] - [optional] name of stash operation, default to 'push'
- * @param {string} [args.message = ''] - [optional] message to be used for the stash entry, only applicable when op === 'push'
+ * @param {'push' | 'pop' | 'apply' | 'drop' | 'list' | 'clear' | 'create'} [args.op = 'push'] - [optional] name of stash operation, default to 'push'
+ * @param {string} [args.message = ''] - [optional] message to be used for the stash entry, only applicable when op === 'push' or 'create'
  * @param {number} [args.refIdx = 0] - [optional - Number] stash ref index of entry, only applicable when op === ['apply' | 'drop' | 'pop'], refIdx >= 0 and < num of stash pushed
- * @returns {Promise<string | void>}  Resolves successfully when stash operations are complete
+ * @returns {Promise<string | void>}  Resolves successfully when stash operations are complete. Returns commit hash for 'create' operation.
  *
  * @example
  * // stash changes in the working directory and index
@@ -15266,6 +15293,10 @@ async function _stashPop({ fs, dir, gitdir, refIdx = 0 }) {
  *
  * console.log(await git.status({ fs, dir, filepath: 'a.txt' })) // 'modified'
  * console.log(await git.status({ fs, dir, filepath: 'b.txt' })) // '*modified'
+ *
+ * // create a stash commit without modifying working directory
+ * const stashCommitHash = await git.stash({ fs, dir, op: 'create', message: 'my stash' })
+ * console.log(stashCommitHash) // returns the stash commit hash
  */
 
 async function stash({
@@ -15288,6 +15319,7 @@ async function stash({
     list: _stashList,
     clear: _stashClear,
     pop: _stashPop,
+    create: _stashCreate,
   };
 
   const opsNeedRefIdx = ['apply', 'drop', 'pop'];
