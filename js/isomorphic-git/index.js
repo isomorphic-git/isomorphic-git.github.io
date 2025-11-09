@@ -1,12 +1,10 @@
 import AsyncLock from 'async-lock';
 import Hash from 'sha.js/sha1.js';
-import { join } from 'path-browserify';
 import crc32 from 'crc-32';
 import pako from 'pako';
 import pify from 'pify';
 import ignore from 'ignore';
 import cleanGitRef from 'clean-git-ref';
-import validRef from 'is-git-ref-name-valid';
 import diff3Merge from 'diff3';
 
 /**
@@ -844,7 +842,7 @@ class GitIndex {
       gid: stats.gid,
       size: stats.size,
       path: filepath,
-      oid: oid,
+      oid,
       flags: {
         assumeValid: false,
         extended: false,
@@ -1093,7 +1091,7 @@ type Node = {
 
 function flatFileListToDirectoryStructure(files) {
   const inodes = new Map();
-  const mkdir = function(name) {
+  const mkdir = function (name) {
     if (!inodes.has(name)) {
       const dir = {
         type: 'tree',
@@ -1112,13 +1110,13 @@ function flatFileListToDirectoryStructure(files) {
     return inodes.get(name)
   };
 
-  const mkfile = function(name, metadata) {
+  const mkfile = function (name, metadata) {
     if (!inodes.has(name)) {
       const file = {
         type: 'blob',
         fullpath: name,
         basename: basename(name),
-        metadata: metadata,
+        metadata,
         // This recursively generates any missing parent folders.
         parent: mkdir(dirname(name)),
         children: [],
@@ -1156,7 +1154,7 @@ class GitWalkerIndex {
   constructor({ fs, gitdir, cache }) {
     this.treePromise = GitIndexManager.acquire(
       { fs, gitdir, cache },
-      async function(index) {
+      async function (index) {
         return flatFileListToDirectoryStructure(index.entries)
       }
     );
@@ -1270,7 +1268,7 @@ const GitWalkSymbol = Symbol('GitWalkSymbol');
 function STAGE() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerIndex({ fs, gitdir, cache })
     },
   });
@@ -1400,13 +1398,8 @@ class GitRefSpec {
   }
 
   static from(refspec) {
-    const [
-      forceMatch,
-      remotePath,
-      remoteGlobMatch,
-      localPath,
-      localGlobMatch,
-    ] = refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
+    const [forceMatch, remotePath, remoteGlobMatch, localPath, localGlobMatch] =
+      refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
     const force = forceMatch === '+';
     const remoteIsGlob = remoteGlobMatch === '*';
     const localIsGlob = localGlobMatch === '*';
@@ -1505,6 +1498,104 @@ function compareRefNames(a, b) {
     return a.endsWith('^{}') ? 1 : -1
   }
   return tmp
+}
+
+/*!
+ * This code for `path.join` is directly copied from @zenfs/core/path for bundle size improvements.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * Copyright (c) James Prevett and other ZenFS contributors.
+ */
+
+function normalizeString(path, aar) {
+  let res = '';
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let char = '\x00';
+  for (let i = 0; i <= path.length; ++i) {
+    if (i < path.length) char = path[i];
+    else if (char === '/') break
+    else char = '/';
+
+    if (char === '/') {
+      if (lastSlash === i - 1 || dots === 1) {
+        // NOOP
+      } else if (dots === 2) {
+        if (
+          res.length < 2 ||
+          lastSegmentLength !== 2 ||
+          res.at(-1) !== '.' ||
+          res.at(-2) !== '.'
+        ) {
+          if (res.length > 2) {
+            const lastSlashIndex = res.lastIndexOf('/');
+            if (lastSlashIndex === -1) {
+              res = '';
+              lastSegmentLength = 0;
+            } else {
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
+            }
+            lastSlash = i;
+            dots = 0;
+            continue
+          } else if (res.length !== 0) {
+            res = '';
+            lastSegmentLength = 0;
+            lastSlash = i;
+            dots = 0;
+            continue
+          }
+        }
+        if (aar) {
+          res += res.length > 0 ? '/..' : '..';
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0) res += '/' + path.slice(lastSlash + 1, i);
+        else res = path.slice(lastSlash + 1, i);
+        lastSegmentLength = i - lastSlash - 1;
+      }
+      lastSlash = i;
+      dots = 0;
+    } else if (char === '.' && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res
+}
+
+function normalize(path) {
+  if (!path.length) return '.'
+
+  const isAbsolute = path[0] === '/';
+  const trailingSeparator = path.at(-1) === '/';
+
+  path = normalizeString(path, !isAbsolute);
+
+  if (!path.length) {
+    if (isAbsolute) return '/'
+    return trailingSeparator ? './' : '.'
+  }
+  if (trailingSeparator) path += '/';
+
+  return isAbsolute ? `/${path}` : path
+}
+
+function join(...args) {
+  if (args.length === 0) return '.'
+  let joined;
+  for (let i = 0; i < args.length; ++i) {
+    const arg = args[i];
+    if (arg.length > 0) {
+      if (joined === undefined) joined = arg;
+      else joined += '/' + arg;
+    }
+  }
+  if (joined === undefined) return '.'
+  return normalize(joined)
 }
 
 // This is straight from parse_unit_factor in config.c of canonical git
@@ -3852,8 +3943,8 @@ function parseAuthor(author) {
     /^(.*) <(.*)> (.*) (.*)$/
   );
   return {
-    name: name,
-    email: email,
+    name,
+    email,
     timestamp: Number(timestamp),
     timezoneOffset: parseTimezoneOffset(offset),
   }
@@ -4312,7 +4403,7 @@ class GitWalkerRepo {
 function TREE({ ref = 'HEAD' } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerRepo({ fs, gitdir, ref, cache })
     },
   });
@@ -4436,46 +4527,47 @@ class GitWalkerFs {
       const { fs, gitdir, cache } = this;
       let oid;
       // See if we can use the SHA1 hash in the index.
-      await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-        index
-      ) {
-        const stage = index.entriesMap.get(entry._fullpath);
-        const stats = await entry.stat();
-        const config = await self._getGitConfig(fs, gitdir);
-        const filemode = await config.get('core.filemode');
-        const trustino =
-          typeof process !== 'undefined'
-            ? !(process.platform === 'win32')
-            : true;
-        if (!stage || compareStats(stats, stage, filemode, trustino)) {
-          const content = await entry.content();
-          if (content === undefined) {
-            oid = undefined;
-          } else {
-            oid = await shasum(
-              GitObject.wrap({ type: 'blob', object: content })
-            );
-            // Update the stats in the index so we will get a "cache hit" next time
-            // 1) if we can (because the oid and mode are the same)
-            // 2) and only if we need to (because other stats differ)
-            if (
-              stage &&
-              oid === stage.oid &&
-              (!filemode || stats.mode === stage.mode) &&
-              compareStats(stats, stage, filemode, trustino)
-            ) {
-              index.insert({
-                filepath: entry._fullpath,
-                stats,
-                oid: oid,
-              });
+      await GitIndexManager.acquire(
+        { fs, gitdir, cache },
+        async function (index) {
+          const stage = index.entriesMap.get(entry._fullpath);
+          const stats = await entry.stat();
+          const config = await self._getGitConfig(fs, gitdir);
+          const filemode = await config.get('core.filemode');
+          const trustino =
+            typeof process !== 'undefined'
+              ? !(process.platform === 'win32')
+              : true;
+          if (!stage || compareStats(stats, stage, filemode, trustino)) {
+            const content = await entry.content();
+            if (content === undefined) {
+              oid = undefined;
+            } else {
+              oid = await shasum(
+                GitObject.wrap({ type: 'blob', object: content })
+              );
+              // Update the stats in the index so we will get a "cache hit" next time
+              // 1) if we can (because the oid and mode are the same)
+              // 2) and only if we need to (because other stats differ)
+              if (
+                stage &&
+                oid === stage.oid &&
+                (!filemode || stats.mode === stage.mode) &&
+                compareStats(stats, stage, filemode, trustino)
+              ) {
+                index.insert({
+                  filepath: entry._fullpath,
+                  stats,
+                  oid,
+                });
+              }
             }
+          } else {
+            // Use the index SHA1 rather than compute it
+            oid = stage.oid;
           }
-        } else {
-          // Use the index SHA1 rather than compute it
-          oid = stage.oid;
         }
-      });
+      );
       entry._oid = oid;
     }
     return entry._oid
@@ -4498,7 +4590,7 @@ class GitWalkerFs {
 function WORKDIR() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, dir, gitdir, cache }) {
+    value: function ({ fs, dir, gitdir, cache }) {
       return new GitWalkerFs({ fs, dir, gitdir, cache })
     },
   });
@@ -4643,7 +4735,7 @@ async function _walk({
   const root = new Array(walkers.length).fill('.');
   const range = arrayRange(0, walkers.length);
   const unionWalkerFromReaddir = async entries => {
-    range.map(i => {
+    range.forEach(i => {
       const entry = entries[i];
       entries[i] = entry && new walkers[i].ConstructEntry(entry);
     });
@@ -4855,7 +4947,6 @@ class FileSystem {
   async write(filepath, contents, options = {}) {
     try {
       await this._writeFile(filepath, contents, options);
-      return
     } catch (err) {
       // Hmm. Let's try mkdirp and try again.
       await this.mkdir(dirname(filepath));
@@ -4873,7 +4964,6 @@ class FileSystem {
   async mkdir(filepath, _selfCall = false) {
     try {
       await this._mkdir(filepath);
-      return
     } catch (err) {
       // If err is null then operation succeeded!
       if (err === null) return
@@ -5092,9 +5182,12 @@ async function abortMerge({
     const trees = [TREE({ ref: commit }), WORKDIR(), STAGE()];
     let unmergedPaths = [];
 
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      unmergedPaths = index.unmergedPaths;
-    });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        unmergedPaths = index.unmergedPaths;
+      }
+    );
 
     const results = await _walk({
       fs,
@@ -5102,7 +5195,7 @@ async function abortMerge({
       dir,
       gitdir,
       trees,
-      map: async function(path, [head, workdir, index]) {
+      map: async function (path, [head, workdir, index]) {
         const staged = !(await modified(workdir, index));
         const unmerged = unmergedPaths.includes(path);
         const unmodified = !(await modified(index, head));
@@ -5124,31 +5217,36 @@ async function abortMerge({
       },
     });
 
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      // Reset paths in index and worktree, this can't be done in _walk because the
-      // STAGE walker acquires its own index lock.
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        // Reset paths in index and worktree, this can't be done in _walk because the
+        // STAGE walker acquires its own index lock.
 
-      for (const entry of results) {
-        if (entry === false) continue
+        for (const entry of results) {
+          if (entry === false) continue
 
-        // entry is not false, so from here we can assume index = workdir
-        if (!entry) {
-          await fs.rmdir(`${dir}/${entry.path}`, { recursive: true });
-          index.delete({ filepath: entry.path });
-          continue
-        }
+          // entry is not false, so from here we can assume index = workdir
+          if (!entry) {
+            await fs.rmdir(`${dir}/${entry.path}`, { recursive: true });
+            index.delete({ filepath: entry.path });
+            continue
+          }
 
-        if (entry.type === 'blob') {
-          const content = new TextDecoder().decode(entry.content);
-          await fs.write(`${dir}/${entry.path}`, content, { mode: entry.mode });
-          index.insert({
-            filepath: entry.path,
-            oid: entry.oid,
-            stage: 0,
-          });
+          if (entry.type === 'blob') {
+            const content = new TextDecoder().decode(entry.content);
+            await fs.write(`${dir}/${entry.path}`, content, {
+              mode: entry.mode,
+            });
+            index.insert({
+              filepath: entry.path,
+              oid: entry.oid,
+              stage: 0,
+            });
+          }
         }
       }
-    });
+    );
   } catch (err) {
     err.caller = 'git.abortMerge';
     throw err
@@ -5710,7 +5808,7 @@ async function _commit({
 
   return GitIndexManager.acquire(
     { fs, gitdir, cache, allowUnmerged: false },
-    async function(index) {
+    async function (index) {
       const inodes = flatFileListToDirectoryStructure(index.entries);
       const inode = inodes.get('.');
       if (!tree) {
@@ -6124,6 +6222,22 @@ async function addNote({
   }
 }
 
+/*
+Adapted from is-git-ref-name-valid
+SPDX-License-Identifier: MIT
+Copyright © Vincent Weevers
+*/
+
+// eslint-disable-next-line no-control-regex
+const bad = /(^|[/.])([/.]|$)|^@$|@{|[\x00-\x20\x7f~^:?*[\\]|\.lock(\/|$)/;
+
+function isValidRef(name, onelevel) {
+  if (typeof name !== 'string')
+    throw new TypeError('Reference name must be a string')
+
+  return !bad.test(name) && (!!onelevel || name.includes('/'))
+}
+
 // @ts-check
 
 /**
@@ -6138,7 +6252,7 @@ async function addNote({
  *
  */
 async function _addRemote({ fs, gitdir, remote, url, force }) {
-  if (!validRef(remote, true)) {
+  if (!isValidRef(remote, true)) {
     throw new InvalidRefNameError(remote, cleanGitRef.clean(remote))
   }
   const config = await GitConfigManager.get({ fs, gitdir });
@@ -6410,7 +6524,7 @@ async function _branch({
   checkout = false,
   force = false,
 }) {
-  if (!validRef(ref, true)) {
+  if (!isValidRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
@@ -6650,63 +6764,69 @@ async function _checkout({
 
     let count = 0;
     const total = ops.length;
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      await Promise.all(
-        ops
-          .filter(
-            ([method]) => method === 'delete' || method === 'delete-index'
-          )
-          .map(async function([method, fullpath]) {
-            const filepath = `${dir}/${fullpath}`;
-            if (method === 'delete') {
-              await fs.rm(filepath);
-            }
-            index.delete({ filepath: fullpath });
-            if (onProgress) {
-              await onProgress({
-                phase: 'Updating workdir',
-                loaded: ++count,
-                total,
-              });
-            }
-          })
-      );
-    });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        await Promise.all(
+          ops
+            .filter(
+              ([method]) => method === 'delete' || method === 'delete-index'
+            )
+            .map(async function ([method, fullpath]) {
+              const filepath = `${dir}/${fullpath}`;
+              if (method === 'delete') {
+                await fs.rm(filepath);
+              }
+              index.delete({ filepath: fullpath });
+              if (onProgress) {
+                await onProgress({
+                  phase: 'Updating workdir',
+                  loaded: ++count,
+                  total,
+                });
+              }
+            })
+        );
+      }
+    );
 
     // Note: this is cannot be done naively in parallel
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      for (const [method, fullpath] of ops) {
-        if (method === 'rmdir' || method === 'rmdir-index') {
-          const filepath = `${dir}/${fullpath}`;
-          try {
-            if (method === 'rmdir') {
-              await fs.rmdir(filepath);
-            }
-            index.delete({ filepath: fullpath });
-            if (onProgress) {
-              await onProgress({
-                phase: 'Updating workdir',
-                loaded: ++count,
-                total,
-              });
-            }
-          } catch (e) {
-            if (e.code === 'ENOTEMPTY') {
-              console.log(
-                `Did not delete ${fullpath} because directory is not empty`
-              );
-            } else {
-              throw e
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        for (const [method, fullpath] of ops) {
+          if (method === 'rmdir' || method === 'rmdir-index') {
+            const filepath = `${dir}/${fullpath}`;
+            try {
+              if (method === 'rmdir') {
+                await fs.rmdir(filepath);
+              }
+              index.delete({ filepath: fullpath });
+              if (onProgress) {
+                await onProgress({
+                  phase: 'Updating workdir',
+                  loaded: ++count,
+                  total,
+                });
+              }
+            } catch (e) {
+              if (e.code === 'ENOTEMPTY') {
+                console.log(
+                  `Did not delete ${fullpath} because directory is not empty`
+                );
+              } else {
+                throw e
+              }
             }
           }
         }
       }
-    });
+    );
 
     await Promise.all(
       ops
         .filter(([method]) => method === 'mkdir' || method === 'mkdir-index')
-        .map(async function([_, fullpath]) {
+        .map(async function ([_, fullpath]) {
           const filepath = `${dir}/${fullpath}`;
           await fs.mkdir(filepath);
           if (onProgress) {
@@ -6731,14 +6851,16 @@ async function _checkout({
 
       const updateWorkingDirResults = await batchAllSettled(
         'Update Working Dir',
-        eligibleOps.map(([method, fullpath, oid, mode, chmod]) => () =>
-          updateWorkingDir({ fs, cache, gitdir, dir }, [
-            method,
-            fullpath,
-            oid,
-            mode,
-            chmod,
-          ])
+        eligibleOps.map(
+          ([method, fullpath, oid, mode, chmod]) =>
+            () =>
+              updateWorkingDir({ fs, cache, gitdir, dir }, [
+                method,
+                fullpath,
+                oid,
+                mode,
+                chmod,
+              ])
         ),
         onProgress,
         batchSize
@@ -6746,11 +6868,13 @@ async function _checkout({
 
       await GitIndexManager.acquire(
         { fs, gitdir, cache, allowUnmerged: true },
-        async function(index) {
+        async function (index) {
           await batchAllSettled(
             'Update Index',
-            updateWorkingDirResults.map(([fullpath, oid, stats]) => () =>
-              updateIndex({ index, fullpath, oid, stats })
+            updateWorkingDirResults.map(
+              ([fullpath, oid, stats]) =>
+                () =>
+                  updateIndex({ index, fullpath, oid, stats })
             ),
             onProgress,
             batchSize
@@ -6760,7 +6884,7 @@ async function _checkout({
     } else {
       await GitIndexManager.acquire(
         { fs, gitdir, cache, allowUnmerged: true },
-        async function(index) {
+        async function (index) {
           await Promise.all(
             ops
               .filter(
@@ -6770,7 +6894,7 @@ async function _checkout({
                   method === 'update' ||
                   method === 'mkdir-index'
               )
-              .map(async function([method, fullpath, oid, mode, chmod]) {
+              .map(async function ([method, fullpath, oid, mode, chmod]) {
                 const filepath = `${dir}/${fullpath}`;
                 try {
                   if (method !== 'create-index' && method !== 'mkdir-index') {
@@ -6879,7 +7003,7 @@ async function analyze({
     dir,
     gitdir,
     trees: [TREE({ ref }), WORKDIR(), STAGE()],
-    map: async function(fullpath, [commit, workdir, stage]) {
+    map: async function (fullpath, [commit, workdir, stage]) {
       if (fullpath === '.') return
       // match against base paths
       if (filepaths && !filepaths.some(base => worthWalking(fullpath, base))) {
@@ -7137,7 +7261,7 @@ async function analyze({
       }
     },
     // Modify the default flat mapping
-    reduce: async function(parent, children) {
+    reduce: async function (parent, children) {
       children = flat(children);
       if (!parent) {
         return children
@@ -7331,7 +7455,7 @@ async function checkout({
 }
 
 // @see https://git-scm.com/docs/git-rev-parse.html#_specifying_revisions
-const abbreviateRx = new RegExp('^refs/(heads/|tags/|remotes/)?(.*)');
+const abbreviateRx = /^refs\/(heads\/|tags\/|remotes\/)?(.*)/;
 
 function abbreviateRef(ref) {
   const match = abbreviateRx.exec(ref);
@@ -7940,7 +8064,7 @@ class GitShallowManager {
     if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$2.acquire(filepath, async function() {
+    await lock$2.acquire(filepath, async function () {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -7967,14 +8091,14 @@ class GitShallowManager {
     const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.rm(filepath);
       });
     }
@@ -8181,7 +8305,7 @@ class GitSideBand {
     const packfile = new FIFO();
     const progress = new FIFO();
     // TODO: Use a proper through stream?
-    const nextBit = async function() {
+    const nextBit = async function () {
       const line = await read();
       // Skip over flush packets
       if (line === null) return nextBit()
@@ -9667,7 +9791,7 @@ async function mergeTree({
     dir,
     gitdir,
     trees: [ourTree, baseTree, theirTree],
-    map: async function(filepath, [ours, base, theirs]) {
+    map: async function (filepath, [ours, base, theirs]) {
       const path = basename(filepath);
       // What we did, what they did
       const ourChange = await modified(ours, base);
@@ -9904,7 +10028,7 @@ async function mergeTree({
         dir,
         gitdir,
         trees: [TREE({ ref: results.oid })],
-        map: async function(filepath, [entry]) {
+        map: async function (filepath, [entry]) {
           const path = `${dir}/${filepath}`;
           if ((await entry.type()) === 'blob') {
             const mode = await entry.mode();
@@ -11439,11 +11563,12 @@ async function _listFiles({ fs, gitdir, ref, cache }) {
     });
     return filenames
   } else {
-    return GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-      index
-    ) {
-      return index.entries.map(x => x.path)
-    })
+    return GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        return index.entries.map(x => x.path)
+      }
+    )
   }
 }
 
@@ -11973,7 +12098,7 @@ async function _resolveFileId({
   filepaths = [],
   parentPath = '',
 }) {
-  const walks = tree.entries().map(function(entry) {
+  const walks = tree.entries().map(function (entry) {
     let result;
     if (entry.oid === fileId) {
       result = join(parentPath, entry.path);
@@ -11984,7 +12109,7 @@ async function _resolveFileId({
         cache,
         gitdir,
         oid: entry.oid,
-      }).then(function({ object }) {
+      }).then(function ({ object }) {
         return _resolveFileId({
           fs,
           cache,
@@ -13008,7 +13133,7 @@ async function _push({
     const hookCancel = await onPrePush({
       remote,
       url,
-      localRef: { ref: _delete ? '(delete)' : fullRef, oid: oid },
+      localRef: { ref: _delete ? '(delete)' : fullRef, oid },
       remoteRef: { ref: fullRemoteRef, oid: oldoid },
     });
     if (!hookCancel) throw new UserCanceledError()
@@ -13956,7 +14081,7 @@ async function remove({
 
     await GitIndexManager.acquire(
       { fs: new FileSystem(_fs), gitdir, cache },
-      async function(index) {
+      async function (index) {
         index.delete({ filepath });
       }
     );
@@ -14145,11 +14270,11 @@ async function _renameBranch({
   ref,
   checkout = false,
 }) {
-  if (!validRef(ref, true)) {
+  if (!isValidRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
-  if (!validRef(oldref, true)) {
+  if (!isValidRef(oldref, true)) {
     throw new InvalidRefNameError(oldref, cleanGitRef.clean(oldref))
   }
 
@@ -14333,12 +14458,15 @@ async function resetIndex({
         stats = await fs.lstat(join(dir, filepath));
       }
     }
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      index.delete({ filepath });
-      if (oid) {
-        index.insert({ filepath, stats, oid });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        index.delete({ filepath });
+        if (oid) {
+          index.insert({ filepath, stats, oid });
+        }
       }
-    });
+    );
   } catch (err) {
     err.caller = 'git.reset';
     throw err
@@ -15204,9 +15332,8 @@ async function _stashDrop({ fs, dir, gitdir, refIdx = 0 }) {
         reflogEntries.reverse().join('\n') + '\n',
         'utf8'
       );
-      const lastStashCommit = reflogEntries[reflogEntries.length - 1].split(
-        ' '
-      )[1];
+      const lastStashCommit =
+        reflogEntries[reflogEntries.length - 1].split(' ')[1];
       await stashMgr.writeStashRef(lastStashCommit);
     } else {
       // remove the stash reflog file if no entry left
@@ -15421,7 +15548,7 @@ async function status({
     });
     const indexEntry = await GitIndexManager.acquire(
       { fs, gitdir, cache },
-      async function(index) {
+      async function (index) {
         for (const entry of index) {
           if (entry.path === filepath) return entry
         }
@@ -15451,11 +15578,12 @@ async function status({
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
           if (stats.size !== -1) {
             // We don't await this so we can return faster for one-off cases.
-            GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-              index
-            ) {
-              index.insert({ filepath, stats, oid: workdirOid });
-            });
+            GitIndexManager.acquire(
+              { fs, gitdir, cache },
+              async function (index) {
+                index.insert({ filepath, stats, oid: workdirOid });
+              }
+            );
           }
         }
         return workdirOid
@@ -15719,7 +15847,7 @@ async function statusMatrix({
       dir,
       gitdir,
       trees: [TREE({ ref }), WORKDIR(), STAGE()],
-      map: async function(filepath, [head, workdir, stage]) {
+      map: async function (filepath, [head, workdir, stage]) {
         // Ignore ignored files, but only if they are not already tracked.
         if (!head && !stage && workdir) {
           if (!shouldIgnore) {
@@ -15911,7 +16039,7 @@ async function updateIndex$1({
     if (remove) {
       return await GitIndexManager.acquire(
         { fs, gitdir, cache },
-        async function(index) {
+        async function (index) {
           if (!force) {
             // Check if the file is still present in the working directory
             const fileStats = await fs.lstat(join(dir, filepath));
@@ -15954,54 +16082,55 @@ async function updateIndex$1({
       }
     }
 
-    return await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-      index
-    ) {
-      if (!add && !index.has({ filepath })) {
-        // If the index does not contain the filepath yet and `add` is not set, we should throw
-        throw new NotFoundError(
-          `file at "${filepath}" in index and "add" not set`
-        )
-      }
+    return await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        if (!add && !index.has({ filepath })) {
+          // If the index does not contain the filepath yet and `add` is not set, we should throw
+          throw new NotFoundError(
+            `file at "${filepath}" in index and "add" not set`
+          )
+        }
 
-      let stats;
-      if (!oid) {
-        stats = fileStats;
+        let stats;
+        if (!oid) {
+          stats = fileStats;
 
-        // Write the file to the object database
-        const object = stats.isSymbolicLink()
-          ? await fs.readlink(join(dir, filepath))
-          : await fs.read(join(dir, filepath));
+          // Write the file to the object database
+          const object = stats.isSymbolicLink()
+            ? await fs.readlink(join(dir, filepath))
+            : await fs.read(join(dir, filepath));
 
-        oid = await _writeObject({
-          fs,
-          gitdir,
-          type: 'blob',
-          format: 'content',
-          object,
+          oid = await _writeObject({
+            fs,
+            gitdir,
+            type: 'blob',
+            format: 'content',
+            object,
+          });
+        } else {
+          // By default we use 0 for the stats of the index file
+          stats = {
+            ctime: new Date(0),
+            mtime: new Date(0),
+            dev: 0,
+            ino: 0,
+            mode,
+            uid: 0,
+            gid: 0,
+            size: 0,
+          };
+        }
+
+        index.insert({
+          filepath,
+          oid,
+          stats,
         });
-      } else {
-        // By default we use 0 for the stats of the index file
-        stats = {
-          ctime: new Date(0),
-          mtime: new Date(0),
-          dev: 0,
-          ino: 0,
-          mode,
-          uid: 0,
-          gid: 0,
-          size: 0,
-        };
+
+        return oid
       }
-
-      index.insert({
-        filepath,
-        oid: oid,
-        stats,
-      });
-
-      return oid
-    })
+    )
   } catch (err) {
     err.caller = 'git.updateIndex';
     throw err
@@ -16555,7 +16684,7 @@ async function writeRef({
 
     const fs = new FileSystem(_fs);
 
-    if (!validRef(ref, true)) {
+    if (!isValidRef(ref, true)) {
       throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
     }
 

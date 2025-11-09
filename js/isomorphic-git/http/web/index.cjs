@@ -161,7 +161,7 @@ async function request({
     statusCode: res.status,
     statusMessage: res.statusText,
     body: iter,
-    headers: headers,
+    headers,
   }
 }
 

@@ -1,5 +1,4 @@
 import ignore from 'ignore';
-import { join } from 'path-browserify';
 import AsyncLock from 'async-lock';
 import Hash from 'sha.js/sha1.js';
 import crc32 from 'crc-32';
@@ -688,6 +687,104 @@ function dirname(path) {
   return path.slice(0, last)
 }
 
+/*!
+ * This code for `path.join` is directly copied from @zenfs/core/path for bundle size improvements.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * Copyright (c) James Prevett and other ZenFS contributors.
+ */
+
+function normalizeString(path, aar) {
+  let res = '';
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let char = '\x00';
+  for (let i = 0; i <= path.length; ++i) {
+    if (i < path.length) char = path[i];
+    else if (char === '/') break
+    else char = '/';
+
+    if (char === '/') {
+      if (lastSlash === i - 1 || dots === 1) {
+        // NOOP
+      } else if (dots === 2) {
+        if (
+          res.length < 2 ||
+          lastSegmentLength !== 2 ||
+          res.at(-1) !== '.' ||
+          res.at(-2) !== '.'
+        ) {
+          if (res.length > 2) {
+            const lastSlashIndex = res.lastIndexOf('/');
+            if (lastSlashIndex === -1) {
+              res = '';
+              lastSegmentLength = 0;
+            } else {
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
+            }
+            lastSlash = i;
+            dots = 0;
+            continue
+          } else if (res.length !== 0) {
+            res = '';
+            lastSegmentLength = 0;
+            lastSlash = i;
+            dots = 0;
+            continue
+          }
+        }
+        if (aar) {
+          res += res.length > 0 ? '/..' : '..';
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0) res += '/' + path.slice(lastSlash + 1, i);
+        else res = path.slice(lastSlash + 1, i);
+        lastSegmentLength = i - lastSlash - 1;
+      }
+      lastSlash = i;
+      dots = 0;
+    } else if (char === '.' && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res
+}
+
+function normalize(path) {
+  if (!path.length) return '.'
+
+  const isAbsolute = path[0] === '/';
+  const trailingSeparator = path.at(-1) === '/';
+
+  path = normalizeString(path, !isAbsolute);
+
+  if (!path.length) {
+    if (isAbsolute) return '/'
+    return trailingSeparator ? './' : '.'
+  }
+  if (trailingSeparator) path += '/';
+
+  return isAbsolute ? `/${path}` : path
+}
+
+function join(...args) {
+  if (args.length === 0) return '.'
+  let joined;
+  for (let i = 0; i < args.length; ++i) {
+    const arg = args[i];
+    if (arg.length > 0) {
+      if (joined === undefined) joined = arg;
+      else joined += '/' + arg;
+    }
+  }
+  if (joined === undefined) return '.'
+  return normalize(joined)
+}
+
 // I'm putting this in a Manager because I reckon it could benefit
 // from a LOT of caching.
 class GitIgnoreManager {
@@ -1255,7 +1352,7 @@ class GitIndex {
       gid: stats.gid,
       size: stats.size,
       path: filepath,
-      oid: oid,
+      oid,
       flags: {
         assumeValid: false,
         extended: false,
@@ -1576,13 +1673,8 @@ class GitRefSpec {
   }
 
   static from(refspec) {
-    const [
-      forceMatch,
-      remotePath,
-      remoteGlobMatch,
-      localPath,
-      localGlobMatch,
-    ] = refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
+    const [forceMatch, remotePath, remoteGlobMatch, localPath, localGlobMatch] =
+      refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
     const force = forceMatch === '+';
     const remoteIsGlob = remoteGlobMatch === '*';
     const localIsGlob = localGlobMatch === '*';
@@ -2977,7 +3069,7 @@ class GitShallowManager {
     if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$2.acquire(filepath, async function() {
+    await lock$2.acquire(filepath, async function () {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -3004,14 +3096,14 @@ class GitShallowManager {
     const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.rm(filepath);
       });
     }
@@ -3082,8 +3174,8 @@ function parseAuthor(author) {
     /^(.*) <(.*)> (.*) (.*)$/
   );
   return {
-    name: name,
-    email: email,
+    name,
+    email,
     timestamp: Number(timestamp),
     timezoneOffset: parseTimezoneOffset(offset),
   }
@@ -4450,7 +4542,7 @@ type Node = {
 
 function flatFileListToDirectoryStructure(files) {
   const inodes = new Map();
-  const mkdir = function(name) {
+  const mkdir = function (name) {
     if (!inodes.has(name)) {
       const dir = {
         type: 'tree',
@@ -4469,13 +4561,13 @@ function flatFileListToDirectoryStructure(files) {
     return inodes.get(name)
   };
 
-  const mkfile = function(name, metadata) {
+  const mkfile = function (name, metadata) {
     if (!inodes.has(name)) {
       const file = {
         type: 'blob',
         fullpath: name,
         basename: basename(name),
-        metadata: metadata,
+        metadata,
         // This recursively generates any missing parent folders.
         parent: mkdir(dirname(name)),
         children: [],
@@ -4513,7 +4605,7 @@ class GitWalkerIndex {
   constructor({ fs, gitdir, cache }) {
     this.treePromise = GitIndexManager.acquire(
       { fs, gitdir, cache },
-      async function(index) {
+      async function (index) {
         return flatFileListToDirectoryStructure(index.entries)
       }
     );
@@ -4627,7 +4719,7 @@ const GitWalkSymbol = Symbol('GitWalkSymbol');
 function STAGE() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerIndex({ fs, gitdir, cache })
     },
   });
@@ -5187,7 +5279,7 @@ class GitWalkerRepo {
 function TREE({ ref = 'HEAD' } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerRepo({ fs, gitdir, ref, cache })
     },
   });
@@ -5309,46 +5401,47 @@ class GitWalkerFs {
       const { fs, gitdir, cache } = this;
       let oid;
       // See if we can use the SHA1 hash in the index.
-      await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-        index
-      ) {
-        const stage = index.entriesMap.get(entry._fullpath);
-        const stats = await entry.stat();
-        const config = await self._getGitConfig(fs, gitdir);
-        const filemode = await config.get('core.filemode');
-        const trustino =
-          typeof process !== 'undefined'
-            ? !(process.platform === 'win32')
-            : true;
-        if (!stage || compareStats(stats, stage, filemode, trustino)) {
-          const content = await entry.content();
-          if (content === undefined) {
-            oid = undefined;
-          } else {
-            oid = await shasum(
-              GitObject.wrap({ type: 'blob', object: content })
-            );
-            // Update the stats in the index so we will get a "cache hit" next time
-            // 1) if we can (because the oid and mode are the same)
-            // 2) and only if we need to (because other stats differ)
-            if (
-              stage &&
-              oid === stage.oid &&
-              (!filemode || stats.mode === stage.mode) &&
-              compareStats(stats, stage, filemode, trustino)
-            ) {
-              index.insert({
-                filepath: entry._fullpath,
-                stats,
-                oid: oid,
-              });
+      await GitIndexManager.acquire(
+        { fs, gitdir, cache },
+        async function (index) {
+          const stage = index.entriesMap.get(entry._fullpath);
+          const stats = await entry.stat();
+          const config = await self._getGitConfig(fs, gitdir);
+          const filemode = await config.get('core.filemode');
+          const trustino =
+            typeof process !== 'undefined'
+              ? !(process.platform === 'win32')
+              : true;
+          if (!stage || compareStats(stats, stage, filemode, trustino)) {
+            const content = await entry.content();
+            if (content === undefined) {
+              oid = undefined;
+            } else {
+              oid = await shasum(
+                GitObject.wrap({ type: 'blob', object: content })
+              );
+              // Update the stats in the index so we will get a "cache hit" next time
+              // 1) if we can (because the oid and mode are the same)
+              // 2) and only if we need to (because other stats differ)
+              if (
+                stage &&
+                oid === stage.oid &&
+                (!filemode || stats.mode === stage.mode) &&
+                compareStats(stats, stage, filemode, trustino)
+              ) {
+                index.insert({
+                  filepath: entry._fullpath,
+                  stats,
+                  oid,
+                });
+              }
             }
+          } else {
+            // Use the index SHA1 rather than compute it
+            oid = stage.oid;
           }
-        } else {
-          // Use the index SHA1 rather than compute it
-          oid = stage.oid;
         }
-      });
+      );
       entry._oid = oid;
     }
     return entry._oid
@@ -5371,7 +5464,7 @@ class GitWalkerFs {
 function WORKDIR() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, dir, gitdir, cache }) {
+    value: function ({ fs, dir, gitdir, cache }) {
       return new GitWalkerFs({ fs, dir, gitdir, cache })
     },
   });
@@ -5514,7 +5607,7 @@ async function _walk({
   const root = new Array(walkers.length).fill('.');
   const range = arrayRange(0, walkers.length);
   const unionWalkerFromReaddir = async entries => {
-    range.map(i => {
+    range.forEach(i => {
       const entry = entries[i];
       entries[i] = entry && new walkers[i].ConstructEntry(entry);
     });

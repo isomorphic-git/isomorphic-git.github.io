@@ -5,7 +5,6 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var pify = _interopDefault(require('pify'));
-var pathBrowserify = require('path-browserify');
 
 function compareStrings(a, b) {
   // https://stackoverflow.com/a/40355107/2168416
@@ -17,6 +16,104 @@ function dirname(path) {
   if (last === -1) return '.'
   if (last === 0) return '/'
   return path.slice(0, last)
+}
+
+/*!
+ * This code for `path.join` is directly copied from @zenfs/core/path for bundle size improvements.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * Copyright (c) James Prevett and other ZenFS contributors.
+ */
+
+function normalizeString(path, aar) {
+  let res = '';
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let char = '\x00';
+  for (let i = 0; i <= path.length; ++i) {
+    if (i < path.length) char = path[i];
+    else if (char === '/') break
+    else char = '/';
+
+    if (char === '/') {
+      if (lastSlash === i - 1 || dots === 1) {
+        // NOOP
+      } else if (dots === 2) {
+        if (
+          res.length < 2 ||
+          lastSegmentLength !== 2 ||
+          res.at(-1) !== '.' ||
+          res.at(-2) !== '.'
+        ) {
+          if (res.length > 2) {
+            const lastSlashIndex = res.lastIndexOf('/');
+            if (lastSlashIndex === -1) {
+              res = '';
+              lastSegmentLength = 0;
+            } else {
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
+            }
+            lastSlash = i;
+            dots = 0;
+            continue
+          } else if (res.length !== 0) {
+            res = '';
+            lastSegmentLength = 0;
+            lastSlash = i;
+            dots = 0;
+            continue
+          }
+        }
+        if (aar) {
+          res += res.length > 0 ? '/..' : '..';
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0) res += '/' + path.slice(lastSlash + 1, i);
+        else res = path.slice(lastSlash + 1, i);
+        lastSegmentLength = i - lastSlash - 1;
+      }
+      lastSlash = i;
+      dots = 0;
+    } else if (char === '.' && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res
+}
+
+function normalize(path) {
+  if (!path.length) return '.'
+
+  const isAbsolute = path[0] === '/';
+  const trailingSeparator = path.at(-1) === '/';
+
+  path = normalizeString(path, !isAbsolute);
+
+  if (!path.length) {
+    if (isAbsolute) return '/'
+    return trailingSeparator ? './' : '.'
+  }
+  if (trailingSeparator) path += '/';
+
+  return isAbsolute ? `/${path}` : path
+}
+
+function join(...args) {
+  if (args.length === 0) return '.'
+  let joined;
+  for (let i = 0; i < args.length; ++i) {
+    const arg = args[i];
+    if (arg.length > 0) {
+      if (joined === undefined) joined = arg;
+      else joined += '/' + arg;
+    }
+  }
+  if (joined === undefined) return '.'
+  return normalize(joined)
 }
 
 /**
@@ -34,7 +131,7 @@ async function rmRecursive(fs, filepath) {
   } else if (entries.length) {
     await Promise.all(
       entries.map(entry => {
-        const subpath = pathBrowserify.join(filepath, entry);
+        const subpath = join(filepath, entry);
         return fs.lstat(subpath).then(stat => {
           if (!stat) return
           return stat.isDirectory() ? rmRecursive(fs, subpath) : fs.rm(subpath)
@@ -197,7 +294,6 @@ class FileSystem {
   async write(filepath, contents, options = {}) {
     try {
       await this._writeFile(filepath, contents, options);
-      return
     } catch (err) {
       // Hmm. Let's try mkdirp and try again.
       await this.mkdir(dirname(filepath));
@@ -215,7 +311,6 @@ class FileSystem {
   async mkdir(filepath, _selfCall = false) {
     try {
       await this._mkdir(filepath);
-      return
     } catch (err) {
       // If err is null then operation succeeded!
       if (err === null) return

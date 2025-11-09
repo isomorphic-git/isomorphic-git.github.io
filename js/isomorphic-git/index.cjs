@@ -6,13 +6,11 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var AsyncLock = _interopDefault(require('async-lock'));
 var Hash = _interopDefault(require('sha.js/sha1.js'));
-var pathBrowserify = require('path-browserify');
 var crc32 = _interopDefault(require('crc-32'));
 var pako = _interopDefault(require('pako'));
 var pify = _interopDefault(require('pify'));
 var ignore = _interopDefault(require('ignore'));
 var cleanGitRef = _interopDefault(require('clean-git-ref'));
-var validRef = _interopDefault(require('is-git-ref-name-valid'));
 var diff3Merge = _interopDefault(require('diff3'));
 
 /**
@@ -850,7 +848,7 @@ class GitIndex {
       gid: stats.gid,
       size: stats.size,
       path: filepath,
-      oid: oid,
+      oid,
       flags: {
         assumeValid: false,
         extended: false,
@@ -1099,7 +1097,7 @@ type Node = {
 
 function flatFileListToDirectoryStructure(files) {
   const inodes = new Map();
-  const mkdir = function(name) {
+  const mkdir = function (name) {
     if (!inodes.has(name)) {
       const dir = {
         type: 'tree',
@@ -1118,13 +1116,13 @@ function flatFileListToDirectoryStructure(files) {
     return inodes.get(name)
   };
 
-  const mkfile = function(name, metadata) {
+  const mkfile = function (name, metadata) {
     if (!inodes.has(name)) {
       const file = {
         type: 'blob',
         fullpath: name,
         basename: basename(name),
-        metadata: metadata,
+        metadata,
         // This recursively generates any missing parent folders.
         parent: mkdir(dirname(name)),
         children: [],
@@ -1162,7 +1160,7 @@ class GitWalkerIndex {
   constructor({ fs, gitdir, cache }) {
     this.treePromise = GitIndexManager.acquire(
       { fs, gitdir, cache },
-      async function(index) {
+      async function (index) {
         return flatFileListToDirectoryStructure(index.entries)
       }
     );
@@ -1276,7 +1274,7 @@ const GitWalkSymbol = Symbol('GitWalkSymbol');
 function STAGE() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerIndex({ fs, gitdir, cache })
     },
   });
@@ -1406,13 +1404,8 @@ class GitRefSpec {
   }
 
   static from(refspec) {
-    const [
-      forceMatch,
-      remotePath,
-      remoteGlobMatch,
-      localPath,
-      localGlobMatch,
-    ] = refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
+    const [forceMatch, remotePath, remoteGlobMatch, localPath, localGlobMatch] =
+      refspec.match(/^(\+?)(.*?)(\*?):(.*?)(\*?)$/).slice(1);
     const force = forceMatch === '+';
     const remoteIsGlob = remoteGlobMatch === '*';
     const localIsGlob = localGlobMatch === '*';
@@ -1511,6 +1504,104 @@ function compareRefNames(a, b) {
     return a.endsWith('^{}') ? 1 : -1
   }
   return tmp
+}
+
+/*!
+ * This code for `path.join` is directly copied from @zenfs/core/path for bundle size improvements.
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ * Copyright (c) James Prevett and other ZenFS contributors.
+ */
+
+function normalizeString(path, aar) {
+  let res = '';
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let char = '\x00';
+  for (let i = 0; i <= path.length; ++i) {
+    if (i < path.length) char = path[i];
+    else if (char === '/') break
+    else char = '/';
+
+    if (char === '/') {
+      if (lastSlash === i - 1 || dots === 1) {
+        // NOOP
+      } else if (dots === 2) {
+        if (
+          res.length < 2 ||
+          lastSegmentLength !== 2 ||
+          res.at(-1) !== '.' ||
+          res.at(-2) !== '.'
+        ) {
+          if (res.length > 2) {
+            const lastSlashIndex = res.lastIndexOf('/');
+            if (lastSlashIndex === -1) {
+              res = '';
+              lastSegmentLength = 0;
+            } else {
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
+            }
+            lastSlash = i;
+            dots = 0;
+            continue
+          } else if (res.length !== 0) {
+            res = '';
+            lastSegmentLength = 0;
+            lastSlash = i;
+            dots = 0;
+            continue
+          }
+        }
+        if (aar) {
+          res += res.length > 0 ? '/..' : '..';
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0) res += '/' + path.slice(lastSlash + 1, i);
+        else res = path.slice(lastSlash + 1, i);
+        lastSegmentLength = i - lastSlash - 1;
+      }
+      lastSlash = i;
+      dots = 0;
+    } else if (char === '.' && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res
+}
+
+function normalize(path) {
+  if (!path.length) return '.'
+
+  const isAbsolute = path[0] === '/';
+  const trailingSeparator = path.at(-1) === '/';
+
+  path = normalizeString(path, !isAbsolute);
+
+  if (!path.length) {
+    if (isAbsolute) return '/'
+    return trailingSeparator ? './' : '.'
+  }
+  if (trailingSeparator) path += '/';
+
+  return isAbsolute ? `/${path}` : path
+}
+
+function join(...args) {
+  if (args.length === 0) return '.'
+  let joined;
+  for (let i = 0; i < args.length; ++i) {
+    const arg = args[i];
+    if (arg.length > 0) {
+      if (joined === undefined) joined = arg;
+      else joined += '/' + arg;
+    }
+  }
+  if (joined === undefined) return '.'
+  return normalize(joined)
 }
 
 // This is straight from parse_unit_factor in config.c of canonical git
@@ -1992,7 +2083,7 @@ class GitRefManager {
     // and .git/refs/remotes/origin/refs/merge-requests
     for (const [key, value] of actualRefsToWrite) {
       await acquireLock(key, async () =>
-        fs.write(pathBrowserify.join(gitdir, key), `${value.trim()}\n`, 'utf8')
+        fs.write(join(gitdir, key), `${value.trim()}\n`, 'utf8')
       );
     }
     return { pruned }
@@ -2015,7 +2106,7 @@ class GitRefManager {
       throw new InvalidOidError(value)
     }
     await acquireLock(ref, async () =>
-      fs.write(pathBrowserify.join(gitdir, ref), `${value.trim()}\n`, 'utf8')
+      fs.write(join(gitdir, ref), `${value.trim()}\n`, 'utf8')
     );
   }
 
@@ -2031,7 +2122,7 @@ class GitRefManager {
    */
   static async writeSymbolicRef({ fs, gitdir, ref, value }) {
     await acquireLock(ref, async () =>
-      fs.write(pathBrowserify.join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
+      fs.write(join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
     );
   }
 
@@ -2059,7 +2150,7 @@ class GitRefManager {
    */
   static async deleteRefs({ fs, gitdir, refs }) {
     // Delete regular ref
-    await Promise.all(refs.map(ref => fs.rm(pathBrowserify.join(gitdir, ref))));
+    await Promise.all(refs.map(ref => fs.rm(join(gitdir, ref))));
     // Delete any packed ref
     let text = await acquireLock('packed-refs', async () =>
       fs.read(`${gitdir}/packed-refs`, { encoding: 'utf8' })
@@ -3286,7 +3377,7 @@ async function readObjectPacked({
 }) {
   // Check to see if it's in a packfile.
   // Iterate through all the .idx files
-  let list = await fs.readdir(pathBrowserify.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -3858,8 +3949,8 @@ function parseAuthor(author) {
     /^(.*) <(.*)> (.*) (.*)$/
   );
   return {
-    name: name,
-    email: email,
+    name,
+    email,
     timestamp: Number(timestamp),
     timezoneOffset: parseTimezoneOffset(offset),
   }
@@ -4257,9 +4348,9 @@ class GitWalkerRepo {
     const tree = GitTree.from(object);
     // cache all entries
     for (const entry of tree) {
-      map.set(pathBrowserify.join(filepath, entry.path), entry);
+      map.set(join(filepath, entry.path), entry);
     }
-    return tree.entries().map(entry => pathBrowserify.join(filepath, entry.path))
+    return tree.entries().map(entry => join(filepath, entry.path))
   }
 
   async type(entry) {
@@ -4318,7 +4409,7 @@ class GitWalkerRepo {
 function TREE({ ref = 'HEAD' } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, gitdir, cache }) {
+    value: function ({ fs, gitdir, cache }) {
       return new GitWalkerRepo({ fs, gitdir, ref, cache })
     },
   });
@@ -4372,9 +4463,9 @@ class GitWalkerFs {
   async readdir(entry) {
     const filepath = entry._fullpath;
     const { fs, dir } = this;
-    const names = await fs.readdir(pathBrowserify.join(dir, filepath));
+    const names = await fs.readdir(join(dir, filepath));
     if (names === null) return null
-    return names.map(name => pathBrowserify.join(filepath, name))
+    return names.map(name => join(filepath, name))
   }
 
   async type(entry) {
@@ -4442,46 +4533,47 @@ class GitWalkerFs {
       const { fs, gitdir, cache } = this;
       let oid;
       // See if we can use the SHA1 hash in the index.
-      await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-        index
-      ) {
-        const stage = index.entriesMap.get(entry._fullpath);
-        const stats = await entry.stat();
-        const config = await self._getGitConfig(fs, gitdir);
-        const filemode = await config.get('core.filemode');
-        const trustino =
-          typeof process !== 'undefined'
-            ? !(process.platform === 'win32')
-            : true;
-        if (!stage || compareStats(stats, stage, filemode, trustino)) {
-          const content = await entry.content();
-          if (content === undefined) {
-            oid = undefined;
-          } else {
-            oid = await shasum(
-              GitObject.wrap({ type: 'blob', object: content })
-            );
-            // Update the stats in the index so we will get a "cache hit" next time
-            // 1) if we can (because the oid and mode are the same)
-            // 2) and only if we need to (because other stats differ)
-            if (
-              stage &&
-              oid === stage.oid &&
-              (!filemode || stats.mode === stage.mode) &&
-              compareStats(stats, stage, filemode, trustino)
-            ) {
-              index.insert({
-                filepath: entry._fullpath,
-                stats,
-                oid: oid,
-              });
+      await GitIndexManager.acquire(
+        { fs, gitdir, cache },
+        async function (index) {
+          const stage = index.entriesMap.get(entry._fullpath);
+          const stats = await entry.stat();
+          const config = await self._getGitConfig(fs, gitdir);
+          const filemode = await config.get('core.filemode');
+          const trustino =
+            typeof process !== 'undefined'
+              ? !(process.platform === 'win32')
+              : true;
+          if (!stage || compareStats(stats, stage, filemode, trustino)) {
+            const content = await entry.content();
+            if (content === undefined) {
+              oid = undefined;
+            } else {
+              oid = await shasum(
+                GitObject.wrap({ type: 'blob', object: content })
+              );
+              // Update the stats in the index so we will get a "cache hit" next time
+              // 1) if we can (because the oid and mode are the same)
+              // 2) and only if we need to (because other stats differ)
+              if (
+                stage &&
+                oid === stage.oid &&
+                (!filemode || stats.mode === stage.mode) &&
+                compareStats(stats, stage, filemode, trustino)
+              ) {
+                index.insert({
+                  filepath: entry._fullpath,
+                  stats,
+                  oid,
+                });
+              }
             }
+          } else {
+            // Use the index SHA1 rather than compute it
+            oid = stage.oid;
           }
-        } else {
-          // Use the index SHA1 rather than compute it
-          oid = stage.oid;
         }
-      });
+      );
       entry._oid = oid;
     }
     return entry._oid
@@ -4504,7 +4596,7 @@ class GitWalkerFs {
 function WORKDIR() {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
-    value: function({ fs, dir, gitdir, cache }) {
+    value: function ({ fs, dir, gitdir, cache }) {
       return new GitWalkerFs({ fs, dir, gitdir, cache })
     },
   });
@@ -4649,7 +4741,7 @@ async function _walk({
   const root = new Array(walkers.length).fill('.');
   const range = arrayRange(0, walkers.length);
   const unionWalkerFromReaddir = async entries => {
-    range.map(i => {
+    range.forEach(i => {
       const entry = entries[i];
       entries[i] = entry && new walkers[i].ConstructEntry(entry);
     });
@@ -4698,7 +4790,7 @@ async function rmRecursive(fs, filepath) {
   } else if (entries.length) {
     await Promise.all(
       entries.map(entry => {
-        const subpath = pathBrowserify.join(filepath, entry);
+        const subpath = join(filepath, entry);
         return fs.lstat(subpath).then(stat => {
           if (!stat) return
           return stat.isDirectory() ? rmRecursive(fs, subpath) : fs.rm(subpath)
@@ -4861,7 +4953,6 @@ class FileSystem {
   async write(filepath, contents, options = {}) {
     try {
       await this._writeFile(filepath, contents, options);
-      return
     } catch (err) {
       // Hmm. Let's try mkdirp and try again.
       await this.mkdir(dirname(filepath));
@@ -4879,7 +4970,6 @@ class FileSystem {
   async mkdir(filepath, _selfCall = false) {
     try {
       await this._mkdir(filepath);
-      return
     } catch (err) {
       // If err is null then operation succeeded!
       if (err === null) return
@@ -5085,7 +5175,7 @@ async function modified(entry, base) {
 async function abortMerge({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   commit = 'HEAD',
   cache = {},
 }) {
@@ -5098,9 +5188,12 @@ async function abortMerge({
     const trees = [TREE({ ref: commit }), WORKDIR(), STAGE()];
     let unmergedPaths = [];
 
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      unmergedPaths = index.unmergedPaths;
-    });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        unmergedPaths = index.unmergedPaths;
+      }
+    );
 
     const results = await _walk({
       fs,
@@ -5108,7 +5201,7 @@ async function abortMerge({
       dir,
       gitdir,
       trees,
-      map: async function(path, [head, workdir, index]) {
+      map: async function (path, [head, workdir, index]) {
         const staged = !(await modified(workdir, index));
         const unmerged = unmergedPaths.includes(path);
         const unmodified = !(await modified(index, head));
@@ -5130,31 +5223,36 @@ async function abortMerge({
       },
     });
 
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      // Reset paths in index and worktree, this can't be done in _walk because the
-      // STAGE walker acquires its own index lock.
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        // Reset paths in index and worktree, this can't be done in _walk because the
+        // STAGE walker acquires its own index lock.
 
-      for (const entry of results) {
-        if (entry === false) continue
+        for (const entry of results) {
+          if (entry === false) continue
 
-        // entry is not false, so from here we can assume index = workdir
-        if (!entry) {
-          await fs.rmdir(`${dir}/${entry.path}`, { recursive: true });
-          index.delete({ filepath: entry.path });
-          continue
-        }
+          // entry is not false, so from here we can assume index = workdir
+          if (!entry) {
+            await fs.rmdir(`${dir}/${entry.path}`, { recursive: true });
+            index.delete({ filepath: entry.path });
+            continue
+          }
 
-        if (entry.type === 'blob') {
-          const content = new TextDecoder().decode(entry.content);
-          await fs.write(`${dir}/${entry.path}`, content, { mode: entry.mode });
-          index.insert({
-            filepath: entry.path,
-            oid: entry.oid,
-            stage: 0,
-          });
+          if (entry.type === 'blob') {
+            const content = new TextDecoder().decode(entry.content);
+            await fs.write(`${dir}/${entry.path}`, content, {
+              mode: entry.mode,
+            });
+            index.insert({
+              filepath: entry.path,
+              oid: entry.oid,
+              stage: 0,
+            });
+          }
         }
       }
-    });
+    );
   } catch (err) {
     err.caller = 'git.abortMerge';
     throw err
@@ -5174,21 +5272,21 @@ class GitIgnoreManager {
    * @param {string} args.filepath - The path of the file to check.
    * @returns {Promise<boolean>} - `true` if the file is ignored, `false` otherwise.
    */
-  static async isIgnored({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), filepath }) {
+  static async isIgnored({ fs, dir, gitdir = join(dir, '.git'), filepath }) {
     // ALWAYS ignore ".git" folders.
     if (basename(filepath) === '.git') return true
     // '.' is not a valid gitignore entry, so '.' is never ignored
     if (filepath === '.') return false
     // Check and load exclusion rules from project exclude file (.git/info/exclude)
     let excludes = '';
-    const excludesFile = pathBrowserify.join(gitdir, 'info', 'exclude');
+    const excludesFile = join(gitdir, 'info', 'exclude');
     if (await fs.exists(excludesFile)) {
       excludes = await fs.read(excludesFile, 'utf8');
     }
     // Find all the .gitignore files that could affect this file
     const pairs = [
       {
-        gitignore: pathBrowserify.join(dir, '.gitignore'),
+        gitignore: join(dir, '.gitignore'),
         filepath,
       },
     ];
@@ -5197,7 +5295,7 @@ class GitIgnoreManager {
       const folder = pieces.slice(0, i).join('/');
       const file = pieces.slice(i).join('/');
       pairs.push({
-        gitignore: pathBrowserify.join(dir, folder, '.gitignore'),
+        gitignore: join(dir, folder, '.gitignore'),
         filepath: file,
       });
     }
@@ -5326,7 +5424,7 @@ function posixifyPathBuffer(buffer) {
 async function add({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
   force = false,
@@ -5381,18 +5479,18 @@ async function addToIndex({
       });
       if (ignored) return
     }
-    const stats = await fs.lstat(pathBrowserify.join(dir, currentFilepath));
+    const stats = await fs.lstat(join(dir, currentFilepath));
     if (!stats) throw new NotFoundError(currentFilepath)
 
     if (stats.isDirectory()) {
-      const children = await fs.readdir(pathBrowserify.join(dir, currentFilepath));
+      const children = await fs.readdir(join(dir, currentFilepath));
       if (parallel) {
         const promises = children.map(child =>
           addToIndex({
             dir,
             gitdir,
             fs,
-            filepath: [pathBrowserify.join(currentFilepath, child)],
+            filepath: [join(currentFilepath, child)],
             index,
             force,
             parallel,
@@ -5406,7 +5504,7 @@ async function addToIndex({
             dir,
             gitdir,
             fs,
-            filepath: [pathBrowserify.join(currentFilepath, child)],
+            filepath: [join(currentFilepath, child)],
             index,
             force,
             parallel,
@@ -5416,8 +5514,8 @@ async function addToIndex({
       }
     } else {
       const object = stats.isSymbolicLink()
-        ? await fs.readlink(pathBrowserify.join(dir, currentFilepath)).then(posixifyPathBuffer)
-        : await fs.read(pathBrowserify.join(dir, currentFilepath), { autocrlf });
+        ? await fs.readlink(join(dir, currentFilepath)).then(posixifyPathBuffer)
+        : await fs.read(join(dir, currentFilepath), { autocrlf });
       if (object === null) throw new NotFoundError(currentFilepath)
       const oid = await _writeObject({ fs, gitdir, type: 'blob', object });
       index.insert({ filepath: currentFilepath, stats, oid });
@@ -5716,7 +5814,7 @@ async function _commit({
 
   return GitIndexManager.acquire(
     { fs, gitdir, cache, allowUnmerged: false },
-    async function(index) {
+    async function (index) {
       const inodes = flatFileListToDirectoryStructure(index.entries);
       const inode = inodes.get('.');
       if (!tree) {
@@ -6080,7 +6178,7 @@ async function addNote({
   fs: _fs,
   onSign,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   note,
@@ -6130,6 +6228,22 @@ async function addNote({
   }
 }
 
+/*
+Adapted from is-git-ref-name-valid
+SPDX-License-Identifier: MIT
+Copyright © Vincent Weevers
+*/
+
+// eslint-disable-next-line no-control-regex
+const bad = /(^|[/.])([/.]|$)|^@$|@{|[\x00-\x20\x7f~^:?*[\\]|\.lock(\/|$)/;
+
+function isValidRef(name, onelevel) {
+  if (typeof name !== 'string')
+    throw new TypeError('Reference name must be a string')
+
+  return !bad.test(name) && (!!onelevel || name.includes('/'))
+}
+
 // @ts-check
 
 /**
@@ -6144,7 +6258,7 @@ async function addNote({
  *
  */
 async function _addRemote({ fs, gitdir, remote, url, force }) {
-  if (!validRef(remote, true)) {
+  if (!isValidRef(remote, true)) {
     throw new InvalidRefNameError(remote, cleanGitRef.clean(remote))
   }
   const config = await GitConfigManager.get({ fs, gitdir });
@@ -6195,7 +6309,7 @@ async function _addRemote({ fs, gitdir, remote, url, force }) {
 async function addRemote({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
   url,
   force = false,
@@ -6346,7 +6460,7 @@ async function annotatedTag({
   fs: _fs,
   onSign,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   tagger: _tagger,
   message = ref,
@@ -6416,7 +6530,7 @@ async function _branch({
   checkout = false,
   force = false,
 }) {
-  if (!validRef(ref, true)) {
+  if (!isValidRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
@@ -6477,7 +6591,7 @@ async function _branch({
 async function branch({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   object,
   checkout = false,
@@ -6656,63 +6770,69 @@ async function _checkout({
 
     let count = 0;
     const total = ops.length;
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      await Promise.all(
-        ops
-          .filter(
-            ([method]) => method === 'delete' || method === 'delete-index'
-          )
-          .map(async function([method, fullpath]) {
-            const filepath = `${dir}/${fullpath}`;
-            if (method === 'delete') {
-              await fs.rm(filepath);
-            }
-            index.delete({ filepath: fullpath });
-            if (onProgress) {
-              await onProgress({
-                phase: 'Updating workdir',
-                loaded: ++count,
-                total,
-              });
-            }
-          })
-      );
-    });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        await Promise.all(
+          ops
+            .filter(
+              ([method]) => method === 'delete' || method === 'delete-index'
+            )
+            .map(async function ([method, fullpath]) {
+              const filepath = `${dir}/${fullpath}`;
+              if (method === 'delete') {
+                await fs.rm(filepath);
+              }
+              index.delete({ filepath: fullpath });
+              if (onProgress) {
+                await onProgress({
+                  phase: 'Updating workdir',
+                  loaded: ++count,
+                  total,
+                });
+              }
+            })
+        );
+      }
+    );
 
     // Note: this is cannot be done naively in parallel
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      for (const [method, fullpath] of ops) {
-        if (method === 'rmdir' || method === 'rmdir-index') {
-          const filepath = `${dir}/${fullpath}`;
-          try {
-            if (method === 'rmdir') {
-              await fs.rmdir(filepath);
-            }
-            index.delete({ filepath: fullpath });
-            if (onProgress) {
-              await onProgress({
-                phase: 'Updating workdir',
-                loaded: ++count,
-                total,
-              });
-            }
-          } catch (e) {
-            if (e.code === 'ENOTEMPTY') {
-              console.log(
-                `Did not delete ${fullpath} because directory is not empty`
-              );
-            } else {
-              throw e
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        for (const [method, fullpath] of ops) {
+          if (method === 'rmdir' || method === 'rmdir-index') {
+            const filepath = `${dir}/${fullpath}`;
+            try {
+              if (method === 'rmdir') {
+                await fs.rmdir(filepath);
+              }
+              index.delete({ filepath: fullpath });
+              if (onProgress) {
+                await onProgress({
+                  phase: 'Updating workdir',
+                  loaded: ++count,
+                  total,
+                });
+              }
+            } catch (e) {
+              if (e.code === 'ENOTEMPTY') {
+                console.log(
+                  `Did not delete ${fullpath} because directory is not empty`
+                );
+              } else {
+                throw e
+              }
             }
           }
         }
       }
-    });
+    );
 
     await Promise.all(
       ops
         .filter(([method]) => method === 'mkdir' || method === 'mkdir-index')
-        .map(async function([_, fullpath]) {
+        .map(async function ([_, fullpath]) {
           const filepath = `${dir}/${fullpath}`;
           await fs.mkdir(filepath);
           if (onProgress) {
@@ -6737,14 +6857,16 @@ async function _checkout({
 
       const updateWorkingDirResults = await batchAllSettled(
         'Update Working Dir',
-        eligibleOps.map(([method, fullpath, oid, mode, chmod]) => () =>
-          updateWorkingDir({ fs, cache, gitdir, dir }, [
-            method,
-            fullpath,
-            oid,
-            mode,
-            chmod,
-          ])
+        eligibleOps.map(
+          ([method, fullpath, oid, mode, chmod]) =>
+            () =>
+              updateWorkingDir({ fs, cache, gitdir, dir }, [
+                method,
+                fullpath,
+                oid,
+                mode,
+                chmod,
+              ])
         ),
         onProgress,
         batchSize
@@ -6752,11 +6874,13 @@ async function _checkout({
 
       await GitIndexManager.acquire(
         { fs, gitdir, cache, allowUnmerged: true },
-        async function(index) {
+        async function (index) {
           await batchAllSettled(
             'Update Index',
-            updateWorkingDirResults.map(([fullpath, oid, stats]) => () =>
-              updateIndex({ index, fullpath, oid, stats })
+            updateWorkingDirResults.map(
+              ([fullpath, oid, stats]) =>
+                () =>
+                  updateIndex({ index, fullpath, oid, stats })
             ),
             onProgress,
             batchSize
@@ -6766,7 +6890,7 @@ async function _checkout({
     } else {
       await GitIndexManager.acquire(
         { fs, gitdir, cache, allowUnmerged: true },
-        async function(index) {
+        async function (index) {
           await Promise.all(
             ops
               .filter(
@@ -6776,7 +6900,7 @@ async function _checkout({
                   method === 'update' ||
                   method === 'mkdir-index'
               )
-              .map(async function([method, fullpath, oid, mode, chmod]) {
+              .map(async function ([method, fullpath, oid, mode, chmod]) {
                 const filepath = `${dir}/${fullpath}`;
                 try {
                   if (method !== 'create-index' && method !== 'mkdir-index') {
@@ -6885,7 +7009,7 @@ async function analyze({
     dir,
     gitdir,
     trees: [TREE({ ref }), WORKDIR(), STAGE()],
-    map: async function(fullpath, [commit, workdir, stage]) {
+    map: async function (fullpath, [commit, workdir, stage]) {
       if (fullpath === '.') return
       // match against base paths
       if (filepaths && !filepaths.some(base => worthWalking(fullpath, base))) {
@@ -7143,7 +7267,7 @@ async function analyze({
       }
     },
     // Modify the default flat mapping
-    reduce: async function(parent, children) {
+    reduce: async function (parent, children) {
       children = flat(children);
       if (!parent) {
         return children
@@ -7293,7 +7417,7 @@ async function checkout({
   onProgress,
   onPostCheckout,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote = 'origin',
   ref: _ref,
   filepaths,
@@ -7337,7 +7461,7 @@ async function checkout({
 }
 
 // @see https://git-scm.com/docs/git-rev-parse.html#_specifying_revisions
-const abbreviateRx = new RegExp('^refs/(heads/|tags/|remotes/)?(.*)');
+const abbreviateRx = /^refs\/(heads\/|tags\/|remotes\/)?(.*)/;
 
 function abbreviateRef(ref) {
   const match = abbreviateRx.exec(ref);
@@ -7944,9 +8068,9 @@ class GitShallowManager {
    */
   static async read({ fs, gitdir }) {
     if (lock$2 === null) lock$2 = new AsyncLock();
-    const filepath = pathBrowserify.join(gitdir, 'shallow');
+    const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$2.acquire(filepath, async function() {
+    await lock$2.acquire(filepath, async function () {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -7970,17 +8094,17 @@ class GitShallowManager {
    */
   static async write({ fs, gitdir, oids }) {
     if (lock$2 === null) lock$2 = new AsyncLock();
-    const filepath = pathBrowserify.join(gitdir, 'shallow');
+    const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$2.acquire(filepath, async function() {
+      await lock$2.acquire(filepath, async function () {
         await fs.rm(filepath);
       });
     }
@@ -8001,7 +8125,7 @@ async function hasObjectPacked({
 }) {
   // Check to see if it's in a packfile.
   // Iterate through all the .idx files
-  let list = await fs.readdir(pathBrowserify.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -8187,7 +8311,7 @@ class GitSideBand {
     const packfile = new FIFO();
     const progress = new FIFO();
     // TODO: Use a proper through stream?
-    const nextBit = async function() {
+    const nextBit = async function () {
       const line = await read();
       // Skip over flush packets
       if (line === null) return nextBit()
@@ -8734,7 +8858,7 @@ async function _fetch({
   // c) compare the computed SHA with the last 20 bytes of the stream before saving to disk, and throwing a "packfile got corrupted during download" error if the SHA doesn't match.
   if (packfileSha !== '' && !emptyPackfile(packfile)) {
     res.packfile = `objects/pack/pack-${packfileSha}.pack`;
-    const fullpath = pathBrowserify.join(gitdir, res.packfile);
+    const fullpath = join(gitdir, res.packfile);
     await fs.write(fullpath, packfile);
     const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
@@ -8764,7 +8888,7 @@ async function _init({
   fs,
   bare = false,
   dir,
-  gitdir = bare ? dir : pathBrowserify.join(dir, '.git'),
+  gitdir = bare ? dir : join(dir, '.git'),
   defaultBranch = 'master',
 }) {
   // Don't overwrite an existing config
@@ -8970,7 +9094,7 @@ async function clone({
   onAuthFailure,
   onPostCheckout,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   url,
   corsProxy = undefined,
   ref = undefined,
@@ -9077,7 +9201,7 @@ async function commit({
   fs: _fs,
   onSign,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   message,
   author,
   committer,
@@ -9149,7 +9273,7 @@ async function commit({
 async function currentBranch({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   fullname = false,
   test = false,
 }) {
@@ -9226,7 +9350,7 @@ async function _deleteBranch({ fs, gitdir, ref }) {
 async function deleteBranch({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
 }) {
   try {
@@ -9261,7 +9385,7 @@ async function deleteBranch({
  * console.log('done')
  *
  */
-async function deleteRef({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), ref }) {
+async function deleteRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
@@ -9309,7 +9433,7 @@ async function _deleteRemote({ fs, gitdir, remote }) {
 async function deleteRemote({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
 }) {
   try {
@@ -9366,7 +9490,7 @@ async function _deleteTag({ fs, gitdir, ref }) {
  * console.log('done')
  *
  */
-async function deleteTag({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), ref }) {
+async function deleteTag({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
@@ -9398,7 +9522,7 @@ async function expandOidPacked({
 }) {
   // Iterate through all the .pack files
   const results = [];
-  let list = await fs.readdir(pathBrowserify.join(gitdir, 'objects/pack'));
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
   list = list.filter(x => x.endsWith('.idx'));
   for (const filename of list) {
     const indexFile = `${gitdir}/objects/pack/${filename}`;
@@ -9468,7 +9592,7 @@ async function _expandOid({ fs, cache, gitdir, oid: short }) {
 async function expandOid({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -9506,7 +9630,7 @@ async function expandOid({
  * console.log(fullRef)
  *
  */
-async function expandRef({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), ref }) {
+async function expandRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -9646,7 +9770,7 @@ async function mergeTree({
   fs,
   cache,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   index,
   ourOid,
   baseOid,
@@ -9673,7 +9797,7 @@ async function mergeTree({
     dir,
     gitdir,
     trees: [ourTree, baseTree, theirTree],
-    map: async function(filepath, [ours, base, theirs]) {
+    map: async function (filepath, [ours, base, theirs]) {
       const path = basename(filepath);
       // What we did, what they did
       const ourChange = await modified(ours, base);
@@ -9910,7 +10034,7 @@ async function mergeTree({
         dir,
         gitdir,
         trees: [TREE({ ref: results.oid })],
-        map: async function(filepath, [entry]) {
+        map: async function (filepath, [entry]) {
           const path = `${dir}/${filepath}`;
           if ((await entry.type()) === 'blob') {
             const mode = await entry.mode();
@@ -10368,7 +10492,7 @@ async function fastForward({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   url,
   remote,
@@ -10487,7 +10611,7 @@ async function fetch({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   remote,
   remoteRef,
@@ -10556,7 +10680,7 @@ async function fetch({
 async function findMergeBase({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
   cache = {},
 }) {
@@ -10591,7 +10715,7 @@ async function findMergeBase({
  * @returns {Promise<string>} Resolves successfully with a root git directory path
  */
 async function _findRoot({ fs, filepath }) {
-  if (await fs.exists(pathBrowserify.join(filepath, '.git'))) {
+  if (await fs.exists(join(filepath, '.git'))) {
     return filepath
   } else {
     const parent = dirname(filepath);
@@ -10663,7 +10787,7 @@ async function findRoot({ fs, filepath }) {
  * console.log(value)
  *
  */
-async function getConfig({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), path }) {
+async function getConfig({ fs, dir, gitdir = join(dir, '.git'), path }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -10717,7 +10841,7 @@ async function _getConfigAll({ fs, gitdir, path }) {
 async function getConfigAll({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   path,
 }) {
   try {
@@ -11083,7 +11207,7 @@ async function _indexPack({
   filepath,
 }) {
   try {
-    filepath = pathBrowserify.join(dir, filepath);
+    filepath = join(dir, filepath);
     const pack = await fs.read(filepath);
     const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
     const idx = await GitPackIndex.fromPack({
@@ -11136,7 +11260,7 @@ async function indexPack({
   fs,
   onProgress,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -11182,7 +11306,7 @@ async function init({
   fs,
   bare = false,
   dir,
-  gitdir = bare ? dir : pathBrowserify.join(dir, '.git'),
+  gitdir = bare ? dir : join(dir, '.git'),
   defaultBranch = 'master',
 }) {
   try {
@@ -11303,7 +11427,7 @@ async function _isDescendent({
 async function isDescendent({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   ancestor,
   depth = -1,
@@ -11349,7 +11473,7 @@ async function isDescendent({
 async function isIgnored({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
 }) {
   try {
@@ -11402,7 +11526,7 @@ async function isIgnored({
 async function listBranches({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   remote,
 }) {
   try {
@@ -11445,11 +11569,12 @@ async function _listFiles({ fs, gitdir, ref, cache }) {
     });
     return filenames
   } else {
-    return GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-      index
-    ) {
-      return index.entries.map(x => x.path)
-    })
+    return GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        return index.entries.map(x => x.path)
+      }
+    )
   }
 }
 
@@ -11471,10 +11596,10 @@ async function accumulateFilesFromOid({
         gitdir,
         oid: entry.oid,
         filenames,
-        prefix: pathBrowserify.join(prefix, entry.path),
+        prefix: join(prefix, entry.path),
       });
     } else {
-      filenames.push(pathBrowserify.join(prefix, entry.path));
+      filenames.push(join(prefix, entry.path));
     }
   }
 }
@@ -11508,7 +11633,7 @@ async function accumulateFilesFromOid({
 async function listFiles({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   cache = {},
 }) {
@@ -11587,7 +11712,7 @@ async function _listNotes({ fs, cache, gitdir, ref }) {
 async function listNotes({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   cache = {},
 }) {
@@ -11629,7 +11754,7 @@ async function listNotes({
 async function listRefs({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
 }) {
   try {
@@ -11680,7 +11805,7 @@ async function _listRemotes({ fs, gitdir }) {
  * console.log(remotes)
  *
  */
-async function listRemotes({ fs, dir, gitdir = pathBrowserify.join(dir, '.git') }) {
+async function listRemotes({ fs, dir, gitdir = join(dir, '.git') }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11924,7 +12049,7 @@ async function listServerRefs({
  * console.log(tags)
  *
  */
-async function listTags({ fs, dir, gitdir = pathBrowserify.join(dir, '.git') }) {
+async function listTags({ fs, dir, gitdir = join(dir, '.git') }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -11979,10 +12104,10 @@ async function _resolveFileId({
   filepaths = [],
   parentPath = '',
 }) {
-  const walks = tree.entries().map(function(entry) {
+  const walks = tree.entries().map(function (entry) {
     let result;
     if (entry.oid === fileId) {
-      result = pathBrowserify.join(parentPath, entry.path);
+      result = join(parentPath, entry.path);
       filepaths.push(result);
     } else if (entry.type === 'tree') {
       result = _readObject({
@@ -11990,7 +12115,7 @@ async function _resolveFileId({
         cache,
         gitdir,
         oid: entry.oid,
-      }).then(function({ object }) {
+      }).then(function ({ object }) {
         return _resolveFileId({
           fs,
           cache,
@@ -11999,7 +12124,7 @@ async function _resolveFileId({
           fileId,
           oid,
           filepaths,
-          parentPath: pathBrowserify.join(parentPath, entry.path),
+          parentPath: join(parentPath, entry.path),
         })
       });
     }
@@ -12209,7 +12334,7 @@ async function _log({
 async function log({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   ref = 'HEAD',
   depth,
@@ -12358,7 +12483,7 @@ async function merge({
   fs: _fs,
   onSign,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ours,
   theirs,
   fastForward = true,
@@ -12446,7 +12571,7 @@ async function _pack({
   fs,
   cache,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
 }) {
   const hash = new Hash();
@@ -12522,7 +12647,7 @@ async function _packObjects({ fs, cache, gitdir, oids, write }) {
   const packfileSha = packfile.slice(-20).toString('hex');
   const filename = `pack-${packfileSha}.pack`;
   if (write) {
-    await fs.write(pathBrowserify.join(gitdir, `objects/pack/${filename}`), packfile);
+    await fs.write(join(gitdir, `objects/pack/${filename}`), packfile);
     return { filename }
   }
   return {
@@ -12567,7 +12692,7 @@ async function _packObjects({ fs, cache, gitdir, oids, write }) {
 async function packObjects({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
   write = false,
   cache = {},
@@ -12651,7 +12776,7 @@ async function pull({
   onAuthSuccess,
   onAuthFailure,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   url,
   remote,
@@ -12731,7 +12856,7 @@ async function listCommitsAndTags({
   fs,
   cache,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   start,
   finish,
 }) {
@@ -12794,7 +12919,7 @@ async function listObjects({
   fs,
   cache,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oids,
 }) {
   const visited = new Set();
@@ -13014,7 +13139,7 @@ async function _push({
     const hookCancel = await onPrePush({
       remote,
       url,
-      localRef: { ref: _delete ? '(delete)' : fullRef, oid: oid },
+      localRef: { ref: _delete ? '(delete)' : fullRef, oid },
       remoteRef: { ref: fullRemoteRef, oid: oldoid },
     });
     if (!hookCancel) throw new UserCanceledError()
@@ -13241,7 +13366,7 @@ async function push({
   onAuthFailure,
   onPrePush,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   remoteRef,
   remote = 'origin',
@@ -13376,7 +13501,7 @@ async function _readBlob({
 async function readBlob({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   filepath,
   cache = {},
@@ -13426,7 +13551,7 @@ async function readBlob({
 async function readCommit({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -13500,7 +13625,7 @@ async function _readNote({
 async function readNote({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   cache = {},
@@ -13717,7 +13842,7 @@ async function readNote({
 async function readObject({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   format = 'parsed',
   filepath = undefined,
@@ -13854,7 +13979,7 @@ async function _readTag({ fs, cache, gitdir, oid }) {
 async function readTag({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   cache = {},
 }) {
@@ -13904,7 +14029,7 @@ async function readTag({
 async function readTree({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   oid,
   filepath = undefined,
   cache = {},
@@ -13951,7 +14076,7 @@ async function readTree({
 async function remove({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -13962,7 +14087,7 @@ async function remove({
 
     await GitIndexManager.acquire(
       { fs: new FileSystem(_fs), gitdir, cache },
-      async function(index) {
+      async function (index) {
         index.delete({ filepath });
       }
     );
@@ -14087,7 +14212,7 @@ async function removeNote({
   fs: _fs,
   onSign,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'refs/notes/commits',
   oid,
   author: _author,
@@ -14151,11 +14276,11 @@ async function _renameBranch({
   ref,
   checkout = false,
 }) {
-  if (!validRef(ref, true)) {
+  if (!isValidRef(ref, true)) {
     throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
   }
 
-  if (!validRef(oldref, true)) {
+  if (!isValidRef(oldref, true)) {
     throw new InvalidRefNameError(oldref, cleanGitRef.clean(oldref))
   }
 
@@ -14219,7 +14344,7 @@ async function _renameBranch({
 async function renameBranch({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   oldref,
   checkout = false,
@@ -14271,7 +14396,7 @@ async function hashObject$1({ gitdir, type, object }) {
 async function resetIndex({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   ref,
   cache = {},
@@ -14326,7 +14451,7 @@ async function resetIndex({
       size: 0,
     };
     // If the file exists in the workdir...
-    const object = dir && (await fs.read(pathBrowserify.join(dir, filepath)));
+    const object = dir && (await fs.read(join(dir, filepath)));
     if (object) {
       // ... and has the same hash as the desired state...
       workdirOid = await hashObject$1({
@@ -14336,15 +14461,18 @@ async function resetIndex({
       });
       if (oid === workdirOid) {
         // ... use the workdir Stats object
-        stats = await fs.lstat(pathBrowserify.join(dir, filepath));
+        stats = await fs.lstat(join(dir, filepath));
       }
     }
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async function(index) {
-      index.delete({ filepath });
-      if (oid) {
-        index.insert({ filepath, stats, oid });
+    await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        index.delete({ filepath });
+        if (oid) {
+          index.insert({ filepath, stats, oid });
+        }
       }
-    });
+    );
   } catch (err) {
     err.caller = 'git.reset';
     throw err
@@ -14375,7 +14503,7 @@ async function resetIndex({
 async function resolveRef({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   depth,
 }) {
@@ -14444,7 +14572,7 @@ async function resolveRef({
 async function setConfig({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   path,
   value,
   append = false,
@@ -14542,7 +14670,7 @@ async function acquireLock$1(ref, callback) {
 
 // make sure filepath, blob type and blob object (from loose objects) plus oid are in sync and valid
 async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
-  const currentFilepath = pathBrowserify.join(dir, filepath);
+  const currentFilepath = join(dir, filepath);
   const stats = await fs.lstat(currentFilepath);
   if (!stats) throw new NotFoundError(currentFilepath)
   if (stats.isDirectory())
@@ -14758,7 +14886,7 @@ async function applyTreeChanges({
             stageUpdated.push({
               filepath,
               oid,
-              stats: await fs.lstat(pathBrowserify.join(dir, filepath)),
+              stats: await fs.lstat(join(dir, filepath)),
             });
           return {
             method: 'write',
@@ -14773,7 +14901,7 @@ async function applyTreeChanges({
   // apply the changes to work dir
   await acquireLock$1({ fs, gitdir, dirRemoved, ops }, async () => {
     for (const op of ops) {
-      const currentFilepath = pathBrowserify.join(dir, op.filepath);
+      const currentFilepath = join(dir, op.filepath);
       switch (op.method) {
         case 'rmdir':
           await fs.rmdir(currentFilepath);
@@ -14825,7 +14953,7 @@ class GitStashManager {
    * @param {string} args.dir - The working directory.
    * @param {string}[args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
    */
-  constructor({ fs, dir, gitdir = pathBrowserify.join(dir, '.git') }) {
+  constructor({ fs, dir, gitdir = join(dir, '.git') }) {
     Object.assign(this, {
       fs,
       dir,
@@ -14858,7 +14986,7 @@ class GitStashManager {
    * @returns {string} - The file path for the stash reference.
    */
   get refStashPath() {
-    return pathBrowserify.join(this.gitdir, GitStashManager.refStash)
+    return join(this.gitdir, GitStashManager.refStash)
   }
 
   /**
@@ -14867,7 +14995,7 @@ class GitStashManager {
    * @returns {string} - The file path for the stash reflogs.
    */
   get refLogsStashPath() {
-    return pathBrowserify.join(this.gitdir, GitStashManager.refLogsStash)
+    return join(this.gitdir, GitStashManager.refLogsStash)
   }
 
   /**
@@ -15210,9 +15338,8 @@ async function _stashDrop({ fs, dir, gitdir, refIdx = 0 }) {
         reflogEntries.reverse().join('\n') + '\n',
         'utf8'
       );
-      const lastStashCommit = reflogEntries[reflogEntries.length - 1].split(
-        ' '
-      )[1];
+      const lastStashCommit =
+        reflogEntries[reflogEntries.length - 1].split(' ')[1];
       await stashMgr.writeStashRef(lastStashCommit);
     } else {
       // remove the stash reflog file if no entry left
@@ -15308,7 +15435,7 @@ async function _stashPop({ fs, dir, gitdir, refIdx = 0 }) {
 async function stash({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   op = 'push',
   message = '',
   refIdx = 0,
@@ -15334,7 +15461,7 @@ async function stash({
     const _fs = new FileSystem(fs);
     const folders = ['refs', 'logs', 'logs/refs'];
     folders
-      .map(f => pathBrowserify.join(gitdir, f))
+      .map(f => join(gitdir, f))
       .forEach(async folder => {
         if (!(await _fs.exists(folder))) {
           await _fs.mkdir(folder);
@@ -15398,7 +15525,7 @@ async function stash({
 async function status({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   filepath,
   cache = {},
 }) {
@@ -15427,14 +15554,14 @@ async function status({
     });
     const indexEntry = await GitIndexManager.acquire(
       { fs, gitdir, cache },
-      async function(index) {
+      async function (index) {
         for (const entry of index) {
           if (entry.path === filepath) return entry
         }
         return null
       }
     );
-    const stats = await fs.lstat(pathBrowserify.join(dir, filepath));
+    const stats = await fs.lstat(join(dir, filepath));
 
     const H = treeOid !== null; // head
     const I = indexEntry !== null; // index
@@ -15444,7 +15571,7 @@ async function status({
       if (I && !compareStats(indexEntry, stats)) {
         return indexEntry.oid
       } else {
-        const object = await fs.read(pathBrowserify.join(dir, filepath));
+        const object = await fs.read(join(dir, filepath));
         const workdirOid = await hashObject$1({
           gitdir,
           type: 'blob',
@@ -15457,11 +15584,12 @@ async function status({
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
           if (stats.size !== -1) {
             // We don't await this so we can return faster for one-off cases.
-            GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-              index
-            ) {
-              index.insert({ filepath, stats, oid: workdirOid });
-            });
+            GitIndexManager.acquire(
+              { fs, gitdir, cache },
+              async function (index) {
+                index.insert({ filepath, stats, oid: workdirOid });
+              }
+            );
           }
         }
         return workdirOid
@@ -15706,7 +15834,7 @@ async function getHeadTree({ fs, cache, gitdir }) {
 async function statusMatrix({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref = 'HEAD',
   filepaths = ['.'],
   filter,
@@ -15725,7 +15853,7 @@ async function statusMatrix({
       dir,
       gitdir,
       trees: [TREE({ ref }), WORKDIR(), STAGE()],
-      map: async function(filepath, [head, workdir, stage]) {
+      map: async function (filepath, [head, workdir, stage]) {
         // Ignore ignored files, but only if they are not already tracked.
         if (!head && !stage && workdir) {
           if (!shouldIgnore) {
@@ -15816,7 +15944,7 @@ async function statusMatrix({
 async function tag({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   object,
   force = false,
@@ -15898,7 +16026,7 @@ async function tag({
 async function updateIndex$1({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   cache = {},
   filepath,
   oid,
@@ -15917,10 +16045,10 @@ async function updateIndex$1({
     if (remove) {
       return await GitIndexManager.acquire(
         { fs, gitdir, cache },
-        async function(index) {
+        async function (index) {
           if (!force) {
             // Check if the file is still present in the working directory
-            const fileStats = await fs.lstat(pathBrowserify.join(dir, filepath));
+            const fileStats = await fs.lstat(join(dir, filepath));
 
             if (fileStats) {
               if (fileStats.isDirectory()) {
@@ -15947,7 +16075,7 @@ async function updateIndex$1({
     let fileStats;
 
     if (!oid) {
-      fileStats = await fs.lstat(pathBrowserify.join(dir, filepath));
+      fileStats = await fs.lstat(join(dir, filepath));
 
       if (!fileStats) {
         throw new NotFoundError(
@@ -15960,54 +16088,55 @@ async function updateIndex$1({
       }
     }
 
-    return await GitIndexManager.acquire({ fs, gitdir, cache }, async function(
-      index
-    ) {
-      if (!add && !index.has({ filepath })) {
-        // If the index does not contain the filepath yet and `add` is not set, we should throw
-        throw new NotFoundError(
-          `file at "${filepath}" in index and "add" not set`
-        )
-      }
+    return await GitIndexManager.acquire(
+      { fs, gitdir, cache },
+      async function (index) {
+        if (!add && !index.has({ filepath })) {
+          // If the index does not contain the filepath yet and `add` is not set, we should throw
+          throw new NotFoundError(
+            `file at "${filepath}" in index and "add" not set`
+          )
+        }
 
-      let stats;
-      if (!oid) {
-        stats = fileStats;
+        let stats;
+        if (!oid) {
+          stats = fileStats;
 
-        // Write the file to the object database
-        const object = stats.isSymbolicLink()
-          ? await fs.readlink(pathBrowserify.join(dir, filepath))
-          : await fs.read(pathBrowserify.join(dir, filepath));
+          // Write the file to the object database
+          const object = stats.isSymbolicLink()
+            ? await fs.readlink(join(dir, filepath))
+            : await fs.read(join(dir, filepath));
 
-        oid = await _writeObject({
-          fs,
-          gitdir,
-          type: 'blob',
-          format: 'content',
-          object,
+          oid = await _writeObject({
+            fs,
+            gitdir,
+            type: 'blob',
+            format: 'content',
+            object,
+          });
+        } else {
+          // By default we use 0 for the stats of the index file
+          stats = {
+            ctime: new Date(0),
+            mtime: new Date(0),
+            dev: 0,
+            ino: 0,
+            mode,
+            uid: 0,
+            gid: 0,
+            size: 0,
+          };
+        }
+
+        index.insert({
+          filepath,
+          oid,
+          stats,
         });
-      } else {
-        // By default we use 0 for the stats of the index file
-        stats = {
-          ctime: new Date(0),
-          mtime: new Date(0),
-          dev: 0,
-          ino: 0,
-          mode,
-          uid: 0,
-          gid: 0,
-          size: 0,
-        };
+
+        return oid
       }
-
-      index.insert({
-        filepath,
-        oid: oid,
-        stats,
-      });
-
-      return oid
-    })
+    )
   } catch (err) {
     err.caller = 'git.updateIndex';
     throw err
@@ -16287,7 +16416,7 @@ function version() {
 async function walk({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   trees,
   map,
   reduce,
@@ -16339,7 +16468,7 @@ async function walk({
  * console.log('oid', oid) // should be 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
  *
  */
-async function writeBlob({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), blob }) {
+async function writeBlob({ fs, dir, gitdir = join(dir, '.git'), blob }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -16376,7 +16505,7 @@ async function writeBlob({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), b
 async function writeCommit({
   fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   commit,
 }) {
   try {
@@ -16465,7 +16594,7 @@ async function writeCommit({
 async function writeObject({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   type,
   object,
   format = 'parsed',
@@ -16547,7 +16676,7 @@ async function writeObject({
 async function writeRef({
   fs: _fs,
   dir,
-  gitdir = pathBrowserify.join(dir, '.git'),
+  gitdir = join(dir, '.git'),
   ref,
   value,
   force = false,
@@ -16561,7 +16690,7 @@ async function writeRef({
 
     const fs = new FileSystem(_fs);
 
-    if (!validRef(ref, true)) {
+    if (!isValidRef(ref, true)) {
       throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
     }
 
@@ -16657,7 +16786,7 @@ async function _writeTag({ fs, gitdir, tag }) {
  * console.log('tag', oid)
  *
  */
-async function writeTag({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), tag }) {
+async function writeTag({ fs, dir, gitdir = join(dir, '.git'), tag }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
@@ -16690,7 +16819,7 @@ async function writeTag({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), ta
  * @see TreeEntry
  *
  */
-async function writeTree({ fs, dir, gitdir = pathBrowserify.join(dir, '.git'), tree }) {
+async function writeTree({ fs, dir, gitdir = join(dir, '.git'), tree }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
