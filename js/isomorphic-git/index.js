@@ -4824,6 +4824,7 @@ function isPromiseFs(fs) {
 // List of commands all filesystems are expected to provide. `rm` is not
 // included since it may not exist and must be handled as a special case
 const commands = [
+  'cp',
   'readFile',
   'writeFile',
   'mkdir',
@@ -5116,6 +5117,51 @@ function assertParameter(name, value) {
   }
 }
 
+/**
+ * discoverGitdir
+ *
+ * When processing git commands on a submodule determine
+ * the actual git directory based on the contents of the .git file.
+ *
+ * Otherwise (if sent a directory) return that directory as-is.
+ *
+ * A decision has to be made "in what layer will submodules be interpreted,
+ * and then after that, where can the code can just stay exactly the same as before."
+ * This implementation processes submodules in the front-end location of src/api/.
+ * The backend of src/commands/ isn't modified. This keeps a clear division
+ * of responsibilities and should be maintained.
+ *
+ * A consequence is that __tests__ must occasionally be informed
+ * about submodules also, since those call src/commands/ directly.
+ *
+ *
+ */
+
+async function discoverGitdir({ fsp, dotgit }) {
+  assertParameter('fsp', fsp);
+  assertParameter('dotgit', dotgit);
+
+  const dotgitStat = await fsp
+    ._stat(dotgit)
+    .catch(() => ({ isFile: () => false, isDirectory: () => false }));
+  if (dotgitStat.isDirectory()) {
+    return dotgit
+  } else if (dotgitStat.isFile()) {
+    return fsp
+      ._readFile(dotgit, 'utf8')
+      .then(contents => contents.trimRight().substr(8))
+      .then(submoduleGitdir => {
+        const gitdir = join(dirname(dotgit), submoduleGitdir);
+        return gitdir
+      })
+  } else {
+    // Neither a file nor a directory. This correlates to a "git init" scenario where it's empty.
+    // This is the expected result for normal repos, and indeterminate for submodules, but
+    // would be unusual with submodules.
+    return dotgit
+  }
+}
+
 // @ts-check
 /**
  *
@@ -5182,8 +5228,9 @@ async function abortMerge({
     const trees = [TREE({ ref: commit }), WORKDIR(), STAGE()];
     let unmergedPaths = [];
 
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     await GitIndexManager.acquire(
-      { fs, gitdir, cache },
+      { fs, gitdir: updatedGitdir, cache },
       async function (index) {
         unmergedPaths = index.unmergedPaths;
       }
@@ -5193,7 +5240,7 @@ async function abortMerge({
       fs,
       cache,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       trees,
       map: async function (path, [head, workdir, index]) {
         const staged = !(await modified(workdir, index));
@@ -5218,7 +5265,7 @@ async function abortMerge({
     });
 
     await GitIndexManager.acquire(
-      { fs, gitdir, cache },
+      { fs, gitdir: updatedGitdir, cache },
       async function (index) {
         // Reset paths in index and worktree, this can't be done in _walk because the
         // STAGE walker acquires its own index lock.
@@ -5431,20 +5478,24 @@ async function add({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
-    await GitIndexManager.acquire({ fs, gitdir, cache }, async index => {
-      const config = await GitConfigManager.get({ fs, gitdir });
-      const autocrlf = await config.get('core.autocrlf');
-      return addToIndex({
-        dir,
-        gitdir,
-        fs,
-        filepath,
-        index,
-        force,
-        parallel,
-        autocrlf,
-      })
-    });
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
+    await GitIndexManager.acquire(
+      { fs, gitdir: updatedGitdir, cache },
+      async index => {
+        const config = await GitConfigManager.get({ fs, gitdir: updatedGitdir });
+        const autocrlf = await config.get('core.autocrlf');
+        return addToIndex({
+          dir,
+          gitdir: updatedGitdir,
+          fs,
+          filepath,
+          index,
+          force,
+          parallel,
+          autocrlf,
+        })
+      }
+    );
   } catch (err) {
     err.caller = 'git.add';
     throw err
@@ -6203,11 +6254,12 @@ async function addNote({
     });
     if (!committer) throw new MissingNameError('committer')
 
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     return await _addNote({
-      fs: new FileSystem(fs),
+      fs,
       cache,
       onSign,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       oid,
       note,
@@ -6313,9 +6365,11 @@ async function addRemote({
     assertParameter('gitdir', gitdir);
     assertParameter('remote', remote);
     assertParameter('url', url);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _addRemote({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       remote,
       url,
       force,
@@ -6472,16 +6526,21 @@ async function annotatedTag({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
     // Fill in missing arguments with default values
-    const tagger = await normalizeAuthorObject({ fs, gitdir, author: _tagger });
+    const tagger = await normalizeAuthorObject({
+      fs,
+      gitdir: updatedGitdir,
+      author: _tagger,
+    });
     if (!tagger) throw new MissingNameError('tagger')
 
     return await _annotatedTag({
       fs,
       cache,
       onSign,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       tagger,
       message,
@@ -6595,9 +6654,11 @@ async function branch({
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _branch({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
       object,
       checkout,
@@ -7430,13 +7491,15 @@ async function checkout({
     assertParameter('gitdir', gitdir);
 
     const ref = _ref || 'HEAD';
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _checkout({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       onProgress,
       onPostCheckout,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       remote,
       ref,
       filepaths,
@@ -9114,8 +9177,10 @@ async function clone({
     }
     assertParameter('url', url);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _clone({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       http,
       onProgress,
@@ -9125,7 +9190,7 @@ async function clone({
       onAuthFailure,
       onPostCheckout,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       url,
       corsProxy,
       ref,
@@ -9217,12 +9282,13 @@ async function commit({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
     return await _commit({
       fs,
       cache,
       onSign,
-      gitdir,
+      gitdir: updatedGitdir,
       message,
       author,
       committer,
@@ -9274,9 +9340,11 @@ async function currentBranch({
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _currentBranch({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       fullname,
       test,
     })
@@ -9350,9 +9418,11 @@ async function deleteBranch({
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _deleteBranch({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
     })
   } catch (err) {
@@ -9383,7 +9453,9 @@ async function deleteRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
-    await GitRefManager.deleteRef({ fs: new FileSystem(fs), gitdir, ref });
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
+    await GitRefManager.deleteRef({ fs: fsp, gitdir: updatedGitdir, ref });
   } catch (err) {
     err.caller = 'git.deleteRef';
     throw err
@@ -9433,9 +9505,11 @@ async function deleteRemote({
   try {
     assertParameter('fs', fs);
     assertParameter('remote', remote);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _deleteRemote({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       remote,
     })
   } catch (err) {
@@ -9488,9 +9562,11 @@ async function deleteTag({ fs, dir, gitdir = join(dir, '.git'), ref }) {
   try {
     assertParameter('fs', fs);
     assertParameter('ref', ref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _deleteTag({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
     })
   } catch (err) {
@@ -9594,10 +9670,12 @@ async function expandOid({
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _expandOid({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
     })
   } catch (err) {
@@ -9629,9 +9707,11 @@ async function expandRef({ fs, dir, gitdir = join(dir, '.git'), ref }) {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await GitRefManager.expand({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
     })
   } catch (err) {
@@ -10508,8 +10588,10 @@ async function fastForward({
       timezoneOffset: 0,
     };
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _pull({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       http,
       onProgress,
@@ -10518,7 +10600,7 @@ async function fastForward({
       onAuthSuccess,
       onAuthFailure,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       url,
       remote,
@@ -10627,8 +10709,10 @@ async function fetch({
     assertParameter('http', http);
     assertParameter('gitdir', gitdir);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _fetch({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       http,
       onProgress,
@@ -10636,7 +10720,7 @@ async function fetch({
       onAuth,
       onAuthSuccess,
       onAuthFailure,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       remote,
       remoteRef,
@@ -10683,10 +10767,12 @@ async function findMergeBase({
     assertParameter('gitdir', gitdir);
     assertParameter('oids', oids);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _findMergeBase({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oids,
     })
   } catch (err) {
@@ -10787,9 +10873,11 @@ async function getConfig({ fs, dir, gitdir = join(dir, '.git'), path }) {
     assertParameter('gitdir', gitdir);
     assertParameter('path', path);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _getConfig({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       path,
     })
   } catch (err) {
@@ -10843,9 +10931,11 @@ async function getConfigAll({
     assertParameter('gitdir', gitdir);
     assertParameter('path', path);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _getConfigAll({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       path,
     })
   } catch (err) {
@@ -11264,12 +11354,14 @@ async function indexPack({
     assertParameter('gitdir', dir);
     assertParameter('filepath', filepath);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _indexPack({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       onProgress,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       filepath,
     })
   } catch (err) {
@@ -11310,11 +11402,13 @@ async function init({
       assertParameter('dir', dir);
     }
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _init({
-      fs: new FileSystem(fs),
+      fs: fsp,
       bare,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       defaultBranch,
     })
   } catch (err) {
@@ -11433,10 +11527,12 @@ async function isDescendent({
     assertParameter('oid', oid);
     assertParameter('ancestor', ancestor);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _isDescendent({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
       ancestor,
       depth,
@@ -11476,10 +11572,12 @@ async function isIgnored({
     assertParameter('gitdir', gitdir);
     assertParameter('filepath', filepath);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return GitIgnoreManager.isIgnored({
-      fs: new FileSystem(fs),
+      fs: fsp,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       filepath,
     })
   } catch (err) {
@@ -11527,9 +11625,11 @@ async function listBranches({
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return GitRefManager.listBranches({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       remote,
     })
   } catch (err) {
@@ -11635,10 +11735,12 @@ async function listFiles({
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _listFiles({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
     })
   } catch (err) {
@@ -11715,10 +11817,12 @@ async function listNotes({
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _listNotes({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
     })
   } catch (err) {
@@ -11754,7 +11858,9 @@ async function listRefs({
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
-    return GitRefManager.listRefs({ fs: new FileSystem(fs), gitdir, filepath })
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
+    return GitRefManager.listRefs({ fs: fsp, gitdir: updatedGitdir, filepath })
   } catch (err) {
     err.caller = 'git.listRefs';
     throw err
@@ -11804,9 +11910,11 @@ async function listRemotes({ fs, dir, gitdir = join(dir, '.git') }) {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _listRemotes({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
     })
   } catch (err) {
     err.caller = 'git.listRemotes';
@@ -12047,7 +12155,9 @@ async function listTags({ fs, dir, gitdir = join(dir, '.git') }) {
   try {
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
-    return GitRefManager.listTags({ fs: new FileSystem(fs), gitdir })
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
+    return GitRefManager.listTags({ fs: fsp, gitdir: updatedGitdir })
   } catch (err) {
     err.caller = 'git.listTags';
     throw err
@@ -12342,10 +12452,12 @@ async function log({
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _log({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       filepath,
       ref,
       depth,
@@ -12499,15 +12611,20 @@ async function merge({
       assertParameter('onSign', onSign);
     }
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
-    const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
+    const author = await normalizeAuthorObject({
+      fs,
+      gitdir: updatedGitdir,
+      author: _author,
+    });
     if (!author && (!fastForwardOnly || !fastForward)) {
       throw new MissingNameError('author')
     }
 
     const committer = await normalizeCommitterObject({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       author,
       committer: _committer,
     });
@@ -12519,7 +12636,7 @@ async function merge({
       fs,
       cache,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       ours,
       theirs,
       fastForward,
@@ -12696,10 +12813,12 @@ async function packObjects({
     assertParameter('gitdir', gitdir);
     assertParameter('oids', oids);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _packObjects({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oids,
       write,
     })
@@ -12792,13 +12911,18 @@ async function pull({
     assertParameter('gitdir', gitdir);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
-    const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
+    const author = await normalizeAuthorObject({
+      fs,
+      gitdir: updatedGitdir,
+      author: _author,
+    });
     if (!author) throw new MissingNameError('author')
 
     const committer = await normalizeCommitterObject({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       author,
       committer: _committer,
     });
@@ -12814,7 +12938,7 @@ async function pull({
       onAuthSuccess,
       onAuthFailure,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       url,
       remote,
@@ -13376,8 +13500,10 @@ async function push({
     assertParameter('http', http);
     assertParameter('gitdir', gitdir);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _push({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       http,
       onProgress,
@@ -13386,7 +13512,7 @@ async function push({
       onAuthSuccess,
       onAuthFailure,
       onPrePush,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       remoteRef,
       remote,
@@ -13505,10 +13631,12 @@ async function readBlob({
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _readBlob({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
       filepath,
     })
@@ -13554,10 +13682,12 @@ async function readCommit({
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _readCommit({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
     })
   } catch (err) {
@@ -13630,10 +13760,12 @@ async function readNote({
     assertParameter('ref', ref);
     assertParameter('oid', oid);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _readNote({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       oid,
     })
@@ -13849,11 +13981,12 @@ async function readObject({
     assertParameter('oid', oid);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     if (filepath !== undefined) {
       oid = await resolveFilepath({
         fs,
         cache,
-        gitdir,
+        gitdir: updatedGitdir,
         oid,
         filepath,
       });
@@ -13863,7 +13996,7 @@ async function readObject({
     const result = await _readObject({
       fs,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
       format: _format,
     });
@@ -13982,10 +14115,12 @@ async function readTag({
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _readTag({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
     })
   } catch (err) {
@@ -14033,10 +14168,12 @@ async function readTree({
     assertParameter('gitdir', gitdir);
     assertParameter('oid', oid);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _readTree({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       oid,
       filepath,
     })
@@ -14079,8 +14216,10 @@ async function remove({
     assertParameter('gitdir', gitdir);
     assertParameter('filepath', filepath);
 
+    const fsp = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     await GitIndexManager.acquire(
-      { fs: new FileSystem(_fs), gitdir, cache },
+      { fs: fsp, gitdir: updatedGitdir, cache },
       async function (index) {
         index.delete({ filepath });
       }
@@ -14221,13 +14360,18 @@ async function removeNote({
     assertParameter('oid', oid);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
-    const author = await normalizeAuthorObject({ fs, gitdir, author: _author });
+    const author = await normalizeAuthorObject({
+      fs,
+      gitdir: updatedGitdir,
+      author: _author,
+    });
     if (!author) throw new MissingNameError('author')
 
     const committer = await normalizeCommitterObject({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       author,
       committer: _committer,
     });
@@ -14237,7 +14381,7 @@ async function removeNote({
       fs,
       cache,
       onSign,
-      gitdir,
+      gitdir: updatedGitdir,
       ref,
       oid,
       author,
@@ -14349,9 +14493,11 @@ async function renameBranch({
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
     assertParameter('oldref', oldref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _renameBranch({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
       oldref,
       checkout,
@@ -14402,13 +14548,18 @@ async function resetIndex({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
     let oid;
     let workdirOid;
 
     try {
       // Resolve commit
-      oid = await GitRefManager.resolve({ fs, gitdir, ref: ref || 'HEAD' });
+      oid = await GitRefManager.resolve({
+        fs,
+        gitdir: updatedGitdir,
+        ref: ref || 'HEAD',
+      });
     } catch (e) {
       if (ref) {
         // Only throw the error if a ref is explicitly provided
@@ -14424,7 +14575,7 @@ async function resetIndex({
         oid = await resolveFilepath({
           fs,
           cache,
-          gitdir,
+          gitdir: updatedGitdir,
           oid,
           filepath,
         });
@@ -14450,7 +14601,7 @@ async function resetIndex({
     if (object) {
       // ... and has the same hash as the desired state...
       workdirOid = await hashObject$1({
-        gitdir,
+        gitdir: updatedGitdir,
         type: 'blob',
         object,
       });
@@ -14460,7 +14611,7 @@ async function resetIndex({
       }
     }
     await GitIndexManager.acquire(
-      { fs, gitdir, cache },
+      { fs, gitdir: updatedGitdir, cache },
       async function (index) {
         index.delete({ filepath });
         if (oid) {
@@ -14506,10 +14657,12 @@ async function resolveRef({
     assertParameter('fs', fs);
     assertParameter('gitdir', gitdir);
     assertParameter('ref', ref);
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
 
     const oid = await GitRefManager.resolve({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       ref,
       depth,
     });
@@ -14579,13 +14732,14 @@ async function setConfig({
     // assertParameter('value', value) // We actually allow 'undefined' as a value to unset/delete
 
     const fs = new FileSystem(_fs);
-    const config = await GitConfigManager.get({ fs, gitdir });
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
+    const config = await GitConfigManager.get({ fs, gitdir: updatedGitdir });
     if (append) {
       await config.append(path, value);
     } else {
       await config.set(path, value);
     }
-    await GitConfigManager.save({ fs, gitdir, config });
+    await GitConfigManager.save({ fs, gitdir: updatedGitdir, config });
   } catch (err) {
     err.caller = 'git.setConfig';
     throw err
@@ -15454,9 +15608,10 @@ async function stash({
 
   try {
     const _fs = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp: _fs, dotgit: gitdir });
     const folders = ['refs', 'logs', 'logs/refs'];
     folders
-      .map(f => join(gitdir, f))
+      .map(f => join(updatedGitdir, f))
       .forEach(async folder => {
         if (!(await _fs.exists(folder))) {
           await _fs.mkdir(folder);
@@ -15471,7 +15626,13 @@ async function stash({
           'number that is in range of [0, num of stash pushed]'
         )
       }
-      return await opFunc({ fs: _fs, dir, gitdir, message, refIdx })
+      return await opFunc({
+        fs: _fs,
+        dir,
+        gitdir: updatedGitdir,
+        message,
+        refIdx,
+      })
     }
     throw new Error(`To be implemented: ${op}`)
   } catch (err) {
@@ -15530,25 +15691,26 @@ async function status({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     const ignored = await GitIgnoreManager.isIgnored({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       dir,
       filepath,
     });
     if (ignored) {
       return 'ignored'
     }
-    const headTree = await getHeadTree({ fs, cache, gitdir });
+    const headTree = await getHeadTree({ fs, cache, gitdir: updatedGitdir });
     const treeOid = await getOidAtPath({
       fs,
       cache,
-      gitdir,
+      gitdir: updatedGitdir,
       tree: headTree,
       path: filepath,
     });
     const indexEntry = await GitIndexManager.acquire(
-      { fs, gitdir, cache },
+      { fs, gitdir: updatedGitdir, cache },
       async function (index) {
         for (const entry of index) {
           if (entry.path === filepath) return entry
@@ -15568,7 +15730,7 @@ async function status({
       } else {
         const object = await fs.read(join(dir, filepath));
         const workdirOid = await hashObject$1({
-          gitdir,
+          gitdir: updatedGitdir,
           type: 'blob',
           object,
         });
@@ -15580,7 +15742,7 @@ async function status({
           if (stats.size !== -1) {
             // We don't await this so we can return faster for one-off cases.
             GitIndexManager.acquire(
-              { fs, gitdir, cache },
+              { fs, gitdir: updatedGitdir, cache },
               async function (index) {
                 index.insert({ filepath, stats, oid: workdirOid });
               }
@@ -15640,7 +15802,7 @@ async function status({
   }
 }
 
-async function getOidAtPath({ fs, cache, gitdir, tree, path }) {
+async function getOidAtPath({ fs, cache, gitdir: updatedGitdir, tree, path }) {
   if (typeof path === 'string') path = path.split('/');
   const dirname = path.shift();
   for (const entry of tree) {
@@ -15651,12 +15813,12 @@ async function getOidAtPath({ fs, cache, gitdir, tree, path }) {
       const { type, object } = await _readObject({
         fs,
         cache,
-        gitdir,
+        gitdir: updatedGitdir,
         oid: entry.oid,
       });
       if (type === 'tree') {
         const tree = GitTree.from(object);
-        return getOidAtPath({ fs, cache, gitdir, tree, path })
+        return getOidAtPath({ fs, cache, gitdir: updatedGitdir, tree, path })
       }
       if (type === 'blob') {
         throw new ObjectTypeError(entry.oid, type, 'blob', path.join('/'))
@@ -15666,18 +15828,22 @@ async function getOidAtPath({ fs, cache, gitdir, tree, path }) {
   return null
 }
 
-async function getHeadTree({ fs, cache, gitdir }) {
+async function getHeadTree({ fs, cache, gitdir: updatedGitdir }) {
   // Get the tree from the HEAD commit.
   let oid;
   try {
-    oid = await GitRefManager.resolve({ fs, gitdir, ref: 'HEAD' });
+    oid = await GitRefManager.resolve({
+      fs,
+      gitdir: updatedGitdir,
+      ref: 'HEAD',
+    });
   } catch (e) {
     // Handle fresh branches with no commits
     if (e instanceof NotFoundError) {
       return []
     }
   }
-  const { tree } = await _readTree({ fs, cache, gitdir, oid });
+  const { tree } = await _readTree({ fs, cache, gitdir: updatedGitdir, oid });
   return tree
 }
 
@@ -15842,11 +16008,12 @@ async function statusMatrix({
     assertParameter('ref', ref);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     return await _walk({
       fs,
       cache,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       trees: [TREE({ ref }), WORKDIR(), STAGE()],
       map: async function (filepath, [head, workdir, stage]) {
         // Ignore ignored files, but only if they are not already tracked.
@@ -15958,17 +16125,21 @@ async function tag({
     ref = ref.startsWith('refs/tags/') ? ref : `refs/tags/${ref}`;
 
     // Resolve passed object
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     const value = await GitRefManager.resolve({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       ref: object || 'HEAD',
     });
 
-    if (!force && (await GitRefManager.exists({ fs, gitdir, ref }))) {
+    if (
+      !force &&
+      (await GitRefManager.exists({ fs, gitdir: updatedGitdir, ref }))
+    ) {
       throw new AlreadyExistsError('tag', ref)
     }
 
-    await GitRefManager.writeRef({ fs, gitdir, ref, value });
+    await GitRefManager.writeRef({ fs, gitdir: updatedGitdir, ref, value });
   } catch (err) {
     err.caller = 'git.tag';
     throw err
@@ -16036,10 +16207,11 @@ async function updateIndex$1({
     assertParameter('filepath', filepath);
 
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
 
     if (remove) {
       return await GitIndexManager.acquire(
-        { fs, gitdir, cache },
+        { fs, gitdir: updatedGitdir, cache },
         async function (index) {
           if (!force) {
             // Check if the file is still present in the working directory
@@ -16084,7 +16256,7 @@ async function updateIndex$1({
     }
 
     return await GitIndexManager.acquire(
-      { fs, gitdir, cache },
+      { fs, gitdir: updatedGitdir, cache },
       async function (index) {
         if (!add && !index.has({ filepath })) {
           // If the index does not contain the filepath yet and `add` is not set, we should throw
@@ -16104,7 +16276,7 @@ async function updateIndex$1({
 
           oid = await _writeObject({
             fs,
-            gitdir,
+            gitdir: updatedGitdir,
             type: 'blob',
             format: 'content',
             object,
@@ -16423,11 +16595,13 @@ async function walk({
     assertParameter('gitdir', gitdir);
     assertParameter('trees', trees);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _walk({
-      fs: new FileSystem(fs),
+      fs: fsp,
       cache,
       dir,
-      gitdir,
+      gitdir: updatedGitdir,
       trees,
       map,
       reduce,
@@ -16469,9 +16643,11 @@ async function writeBlob({ fs, dir, gitdir = join(dir, '.git'), blob }) {
     assertParameter('gitdir', gitdir);
     assertParameter('blob', blob);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _writeObject({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       type: 'blob',
       object: blob,
       format: 'content',
@@ -16508,9 +16684,11 @@ async function writeCommit({
     assertParameter('gitdir', gitdir);
     assertParameter('commit', commit);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _writeCommit({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       commit,
     })
   } catch (err) {
@@ -16598,6 +16776,7 @@ async function writeObject({
 }) {
   try {
     const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
     // Convert object to buffer
     if (format === 'parsed') {
       switch (type) {
@@ -16621,7 +16800,7 @@ async function writeObject({
     }
     oid = await _writeObject({
       fs,
-      gitdir,
+      gitdir: updatedGitdir,
       type,
       object,
       oid,
@@ -16689,26 +16868,30 @@ async function writeRef({
       throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
     }
 
-    if (!force && (await GitRefManager.exists({ fs, gitdir, ref }))) {
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
+    if (
+      !force &&
+      (await GitRefManager.exists({ fs, gitdir: updatedGitdir, ref }))
+    ) {
       throw new AlreadyExistsError('ref', ref)
     }
 
     if (symbolic) {
       await GitRefManager.writeSymbolicRef({
         fs,
-        gitdir,
+        gitdir: updatedGitdir,
         ref,
         value,
       });
     } else {
       value = await GitRefManager.resolve({
         fs,
-        gitdir,
+        gitdir: updatedGitdir,
         ref: value,
       });
       await GitRefManager.writeRef({
         fs,
-        gitdir,
+        gitdir: updatedGitdir,
         ref,
         value,
       });
@@ -16787,9 +16970,11 @@ async function writeTag({ fs, dir, gitdir = join(dir, '.git'), tag }) {
     assertParameter('gitdir', gitdir);
     assertParameter('tag', tag);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _writeTag({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       tag,
     })
   } catch (err) {
@@ -16820,9 +17005,11 @@ async function writeTree({ fs, dir, gitdir = join(dir, '.git'), tree }) {
     assertParameter('gitdir', gitdir);
     assertParameter('tree', tree);
 
+    const fsp = new FileSystem(fs);
+    const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _writeTree({
-      fs: new FileSystem(fs),
-      gitdir,
+      fs: fsp,
+      gitdir: updatedGitdir,
       tree,
     })
   } catch (err) {
