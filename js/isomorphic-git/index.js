@@ -3537,6 +3537,38 @@ class CheckoutConflictError extends BaseError {
 /** @type {'CheckoutConflictError'} */
 CheckoutConflictError.code = 'CheckoutConflictError';
 
+class CherryPickMergeCommitError extends BaseError {
+  /**
+   * @param {string} oid
+   * @param {number} parentCount
+   */
+  constructor(oid, parentCount) {
+    super(
+      `Cannot cherry-pick merge commit ${oid}. ` +
+        `Merge commits have ${parentCount} parents and require specifying which parent to use as the base.`
+    );
+    this.code = this.name = CherryPickMergeCommitError.code;
+    this.data = { oid, parentCount };
+  }
+}
+/** @type {'CherryPickMergeCommitError'} */
+CherryPickMergeCommitError.code = 'CherryPickMergeCommitError';
+
+class CherryPickRootCommitError extends BaseError {
+  /**
+   * @param {string} oid
+   */
+  constructor(oid) {
+    super(
+      `Cannot cherry-pick root commit ${oid}. Root commits have no parents.`
+    );
+    this.code = this.name = CherryPickRootCommitError.code;
+    this.data = { oid };
+  }
+}
+/** @type {'CherryPickRootCommitError'} */
+CherryPickRootCommitError.code = 'CherryPickRootCommitError';
+
 class CommitNotFetchedError extends BaseError {
   /**
    * @param {string} ref
@@ -3868,6 +3900,8 @@ var Errors = /*#__PURE__*/Object.freeze({
   AlreadyExistsError: AlreadyExistsError,
   AmbiguousError: AmbiguousError,
   CheckoutConflictError: CheckoutConflictError,
+  CherryPickMergeCommitError: CherryPickMergeCommitError,
+  CherryPickRootCommitError: CherryPickRootCommitError,
   CommitNotFetchedError: CommitNotFetchedError,
   EmptyServerResponseError: EmptyServerResponseError,
   FastForwardError: FastForwardError,
@@ -7527,6 +7561,969 @@ async function checkout({
   }
 }
 
+const LINEBREAKS = /^.*(\r?\n|$)/gm;
+
+function mergeFile({ branches, contents }) {
+  const ourName = branches[1];
+  const theirName = branches[2];
+
+  const baseContent = contents[0];
+  const ourContent = contents[1];
+  const theirContent = contents[2];
+
+  const ours = ourContent.match(LINEBREAKS);
+  const base = baseContent.match(LINEBREAKS);
+  const theirs = theirContent.match(LINEBREAKS);
+
+  // Here we let the diff3 library do the heavy lifting.
+  const result = diff3Merge(ours, base, theirs);
+
+  const markerSize = 7;
+
+  // Here we note whether there are conflicts and format the results
+  let mergedText = '';
+  let cleanMerge = true;
+
+  for (const item of result) {
+    if (item.ok) {
+      mergedText += item.ok.join('');
+    }
+    if (item.conflict) {
+      cleanMerge = false;
+      mergedText += `${'<'.repeat(markerSize)} ${ourName}\n`;
+      mergedText += item.conflict.a.join('');
+
+      mergedText += `${'='.repeat(markerSize)}\n`;
+      mergedText += item.conflict.b.join('');
+      mergedText += `${'>'.repeat(markerSize)} ${theirName}\n`;
+    }
+  }
+  return { cleanMerge, mergedText }
+}
+
+// @ts-check
+
+/**
+ * Create a merged tree
+ *
+ * @param {Object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.ourOid - The SHA-1 object id of our tree
+ * @param {string} args.baseOid - The SHA-1 object id of the base tree
+ * @param {string} args.theirOid - The SHA-1 object id of their tree
+ * @param {string} [args.ourName='ours'] - The name to use in conflicted files for our hunks
+ * @param {string} [args.baseName='base'] - The name to use in conflicted files (in diff3 format) for the base hunks
+ * @param {string} [args.theirName='theirs'] - The name to use in conflicted files for their hunks
+ * @param {boolean} [args.dryRun=false]
+ * @param {boolean} [args.abortOnConflict=false]
+ * @param {MergeDriverCallback} [args.mergeDriver]
+ *
+ * @returns {Promise<string>} - The SHA-1 object id of the merged tree
+ *
+ */
+async function mergeTree({
+  fs,
+  cache,
+  dir,
+  gitdir = join(dir, '.git'),
+  index,
+  ourOid,
+  baseOid,
+  theirOid,
+  ourName = 'ours',
+  baseName = 'base',
+  theirName = 'theirs',
+  dryRun = false,
+  abortOnConflict = true,
+  mergeDriver,
+}) {
+  const ourTree = TREE({ ref: ourOid });
+  const baseTree = TREE({ ref: baseOid });
+  const theirTree = TREE({ ref: theirOid });
+
+  const unmergedFiles = [];
+  const bothModified = [];
+  const deleteByUs = [];
+  const deleteByTheirs = [];
+
+  const results = await _walk({
+    fs,
+    cache,
+    dir,
+    gitdir,
+    trees: [ourTree, baseTree, theirTree],
+    map: async function (filepath, [ours, base, theirs]) {
+      const path = basename(filepath);
+      // What we did, what they did
+      const ourChange = await modified(ours, base);
+      const theirChange = await modified(theirs, base);
+      switch (`${ourChange}-${theirChange}`) {
+        case 'false-false': {
+          return {
+            mode: await base.mode(),
+            path,
+            oid: await base.oid(),
+            type: await base.type(),
+          }
+        }
+        case 'false-true': {
+          // if directory is deleted in theirs but not in ours we return our directory
+          if (!theirs && (await ours.type()) === 'tree') {
+            return {
+              mode: await ours.mode(),
+              path,
+              oid: await ours.oid(),
+              type: await ours.type(),
+            }
+          }
+
+          return theirs
+            ? {
+                mode: await theirs.mode(),
+                path,
+                oid: await theirs.oid(),
+                type: await theirs.type(),
+              }
+            : undefined
+        }
+        case 'true-false': {
+          // if directory is deleted in ours but not in theirs we return their directory
+          if (!ours && (await theirs.type()) === 'tree') {
+            return {
+              mode: await theirs.mode(),
+              path,
+              oid: await theirs.oid(),
+              type: await theirs.type(),
+            }
+          }
+
+          return ours
+            ? {
+                mode: await ours.mode(),
+                path,
+                oid: await ours.oid(),
+                type: await ours.type(),
+              }
+            : undefined
+        }
+        case 'true-true': {
+          // Handle tree-tree merges (directories)
+          if (
+            ours &&
+            theirs &&
+            (await ours.type()) === 'tree' &&
+            (await theirs.type()) === 'tree'
+          ) {
+            return {
+              mode: await ours.mode(),
+              path,
+              oid: await ours.oid(),
+              type: 'tree',
+            }
+          }
+
+          // Modifications - both are blobs
+          if (
+            ours &&
+            theirs &&
+            (await ours.type()) === 'blob' &&
+            (await theirs.type()) === 'blob'
+          ) {
+            return mergeBlobs({
+              fs,
+              gitdir,
+              path,
+              ours,
+              base,
+              theirs,
+              ourName,
+              baseName,
+              theirName,
+              mergeDriver,
+            }).then(async r => {
+              if (!r.cleanMerge) {
+                unmergedFiles.push(filepath);
+                bothModified.push(filepath);
+                if (!abortOnConflict) {
+                  let baseOid = '';
+                  if (base && (await base.type()) === 'blob') {
+                    baseOid = await base.oid();
+                  }
+                  const ourOid = await ours.oid();
+                  const theirOid = await theirs.oid();
+
+                  index.delete({ filepath });
+
+                  if (baseOid) {
+                    index.insert({ filepath, oid: baseOid, stage: 1 });
+                  }
+                  index.insert({ filepath, oid: ourOid, stage: 2 });
+                  index.insert({ filepath, oid: theirOid, stage: 3 });
+                }
+              } else if (!abortOnConflict) {
+                index.insert({ filepath, oid: r.mergeResult.oid, stage: 0 });
+              }
+              return r.mergeResult
+            })
+          }
+
+          // deleted by us
+          if (
+            base &&
+            !ours &&
+            theirs &&
+            (await base.type()) === 'blob' &&
+            (await theirs.type()) === 'blob'
+          ) {
+            unmergedFiles.push(filepath);
+            deleteByUs.push(filepath);
+            if (!abortOnConflict) {
+              const baseOid = await base.oid();
+              const theirOid = await theirs.oid();
+
+              index.delete({ filepath });
+
+              index.insert({ filepath, oid: baseOid, stage: 1 });
+              index.insert({ filepath, oid: theirOid, stage: 3 });
+            }
+
+            return {
+              mode: await theirs.mode(),
+              oid: await theirs.oid(),
+              type: 'blob',
+              path,
+            }
+          }
+
+          // deleted by theirs
+          if (
+            base &&
+            ours &&
+            !theirs &&
+            (await base.type()) === 'blob' &&
+            (await ours.type()) === 'blob'
+          ) {
+            unmergedFiles.push(filepath);
+            deleteByTheirs.push(filepath);
+            if (!abortOnConflict) {
+              const baseOid = await base.oid();
+              const ourOid = await ours.oid();
+
+              index.delete({ filepath });
+
+              index.insert({ filepath, oid: baseOid, stage: 1 });
+              index.insert({ filepath, oid: ourOid, stage: 2 });
+            }
+
+            return {
+              mode: await ours.mode(),
+              oid: await ours.oid(),
+              type: 'blob',
+              path,
+            }
+          }
+
+          // deleted by both
+          if (
+            base &&
+            !ours &&
+            !theirs &&
+            ((await base.type()) === 'blob' || (await base.type()) === 'tree')
+          ) {
+            return undefined
+          }
+
+          // all other types of conflicts fail
+          // TODO: Merge conflicts involving additions
+          throw new MergeNotSupportedError()
+        }
+      }
+    },
+    /**
+     * @param {TreeEntry} [parent]
+     * @param {Array<TreeEntry>} children
+     */
+    reduce:
+      unmergedFiles.length !== 0 && (!dir || abortOnConflict)
+        ? undefined
+        : async (parent, children) => {
+            const entries = children.filter(Boolean); // remove undefineds
+
+            // if the parent was deleted, the children have to go
+            if (!parent) return
+
+            // automatically delete directories if they have been emptied
+            // except for the root directory
+            if (
+              parent &&
+              parent.type === 'tree' &&
+              entries.length === 0 &&
+              parent.path !== '.'
+            )
+              return
+
+            if (
+              entries.length > 0 ||
+              (parent.path === '.' && entries.length === 0)
+            ) {
+              const tree = new GitTree(entries);
+              const object = tree.toObject();
+              const oid = await _writeObject({
+                fs,
+                gitdir,
+                type: 'tree',
+                object,
+                dryRun,
+              });
+              parent.oid = oid;
+            }
+            return parent
+          },
+  });
+
+  if (unmergedFiles.length !== 0) {
+    if (dir && !abortOnConflict) {
+      await _walk({
+        fs,
+        cache,
+        dir,
+        gitdir,
+        trees: [TREE({ ref: results.oid })],
+        map: async function (filepath, [entry]) {
+          const path = `${dir}/${filepath}`;
+          if ((await entry.type()) === 'blob') {
+            const mode = await entry.mode();
+            const content = new TextDecoder().decode(await entry.content());
+            await fs.write(path, content, { mode });
+          }
+          return true
+        },
+      });
+    }
+    return new MergeConflictError(
+      unmergedFiles,
+      bothModified,
+      deleteByUs,
+      deleteByTheirs
+    )
+  }
+
+  return results.oid
+}
+
+/**
+ *
+ * @param {Object} args
+ * @param {import('../models/FileSystem').FileSystem} args.fs
+ * @param {string} args.gitdir
+ * @param {string} args.path
+ * @param {WalkerEntry} args.ours
+ * @param {WalkerEntry} args.base
+ * @param {WalkerEntry} args.theirs
+ * @param {string} [args.ourName]
+ * @param {string} [args.baseName]
+ * @param {string} [args.theirName]
+ * @param {boolean} [args.dryRun = false]
+ * @param {MergeDriverCallback} [args.mergeDriver]
+ *
+ */
+async function mergeBlobs({
+  fs,
+  gitdir,
+  path,
+  ours,
+  base,
+  theirs,
+  ourName,
+  theirName,
+  baseName,
+  dryRun,
+  mergeDriver = mergeFile,
+}) {
+  const type = 'blob';
+  // Compute the new mode.
+  // Since there are ONLY two valid blob modes ('100755' and '100644') it boils down to this
+  let baseMode = '100755';
+  let baseOid = '';
+  let baseContent = '';
+  if (base && (await base.type()) === 'blob') {
+    baseMode = await base.mode();
+    baseOid = await base.oid();
+    baseContent = Buffer.from(await base.content()).toString('utf8');
+  }
+  const mode =
+    baseMode === (await ours.mode()) ? await theirs.mode() : await ours.mode();
+  // The trivial case: nothing to merge except maybe mode
+  if ((await ours.oid()) === (await theirs.oid())) {
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await ours.oid(), type },
+    }
+  }
+  // if only one side made oid changes, return that side's oid
+  if ((await ours.oid()) === baseOid) {
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await theirs.oid(), type },
+    }
+  }
+  if ((await theirs.oid()) === baseOid) {
+    return {
+      cleanMerge: true,
+      mergeResult: { mode, path, oid: await ours.oid(), type },
+    }
+  }
+  // if both sides made changes do a merge
+  const ourContent = Buffer.from(await ours.content()).toString('utf8');
+  const theirContent = Buffer.from(await theirs.content()).toString('utf8');
+  const { mergedText, cleanMerge } = await mergeDriver({
+    branches: [baseName, ourName, theirName],
+    contents: [baseContent, ourContent, theirContent],
+    path,
+  });
+  const oid = await _writeObject({
+    fs,
+    gitdir,
+    type: 'blob',
+    object: Buffer.from(mergedText, 'utf8'),
+    dryRun,
+  });
+
+  return { cleanMerge, mergeResult: { mode, path, oid, type } }
+}
+
+const _TreeMap = {
+  stage: STAGE,
+  workdir: WORKDIR,
+};
+
+let lock$2;
+async function acquireLock$1(ref, callback) {
+  if (lock$2 === undefined) lock$2 = new AsyncLock();
+  return lock$2.acquire(ref, callback)
+}
+
+// make sure filepath, blob type and blob object (from loose objects) plus oid are in sync and valid
+async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
+  const currentFilepath = join(dir, filepath);
+  const stats = await fs.lstat(currentFilepath);
+  if (!stats) throw new NotFoundError(currentFilepath)
+  if (stats.isDirectory())
+    throw new InternalError(
+      `${currentFilepath}: file expected, but found directory`
+    )
+
+  // Look for it in the loose object directory.
+  const objContent = oid
+    ? await readObjectLoose({ fs, gitdir, oid })
+    : undefined;
+  let retOid = objContent ? oid : undefined;
+  if (!objContent) {
+    await acquireLock$1({ fs, gitdir, currentFilepath }, async () => {
+      const object = stats.isSymbolicLink()
+        ? await fs.readlink(currentFilepath).then(posixifyPathBuffer)
+        : await fs.read(currentFilepath);
+
+      if (object === null) throw new NotFoundError(currentFilepath)
+
+      retOid = await _writeObject({ fs, gitdir, type: 'blob', object });
+    });
+  }
+
+  return retOid
+}
+
+async function processTreeEntries({ fs, dir, gitdir, entries }) {
+  // make sure each tree entry has valid oid
+  async function processTreeEntry(entry) {
+    if (entry.type === 'tree') {
+      if (!entry.oid) {
+        // Process children entries if the current entry is a tree
+        const children = await Promise.all(entry.children.map(processTreeEntry));
+        // Write the tree with the processed children
+        entry.oid = await _writeTree({
+          fs,
+          gitdir,
+          tree: children,
+        });
+        entry.mode = 0o40000; // directory
+      }
+    } else if (entry.type === 'blob') {
+      entry.oid = await checkAndWriteBlob(
+        fs,
+        gitdir,
+        dir,
+        entry.path,
+        entry.oid
+      );
+      entry.mode = 0o100644; // file
+    }
+
+    // remove path from entry.path
+    entry.path = entry.path.split('/').pop();
+    return entry
+  }
+
+  return Promise.all(entries.map(processTreeEntry))
+}
+
+async function writeTreeChanges({
+  fs,
+  dir,
+  gitdir,
+  treePair, // [TREE({ ref: 'HEAD' }), 'STAGE'] would be the equivalent of `git write-tree`
+}) {
+  const isStage = treePair[1] === 'stage';
+  const trees = treePair.map(t => (typeof t === 'string' ? _TreeMap[t]() : t));
+
+  const changedEntries = [];
+  // transform WalkerEntry objects into the desired format
+  const map = async (filepath, [head, stage]) => {
+    if (
+      filepath === '.' ||
+      (await GitIgnoreManager.isIgnored({ fs, dir, gitdir, filepath }))
+    ) {
+      return
+    }
+
+    if (stage) {
+      if (
+        !head ||
+        ((await head.oid()) !== (await stage.oid()) &&
+          (await stage.oid()) !== undefined)
+      ) {
+        changedEntries.push([head, stage]);
+      }
+      return {
+        mode: await stage.mode(),
+        path: filepath,
+        oid: await stage.oid(),
+        type: await stage.type(),
+      }
+    }
+  };
+
+  // combine mapped entries with their parent results
+  const reduce = async (parent, children) => {
+    children = children.filter(Boolean); // Remove undefined entries
+    if (!parent) {
+      return children.length > 0 ? children : undefined
+    } else {
+      parent.children = children;
+      return parent
+    }
+  };
+
+  // if parent is skipped, skip the children
+  const iterate = async (walk, children) => {
+    const filtered = [];
+    for (const child of children) {
+      const [head, stage] = child;
+      if (isStage) {
+        if (stage) {
+          // for deleted file in work dir, it also needs to be added on stage
+          if (await fs.exists(`${dir}/${stage.toString()}`)) {
+            filtered.push(child);
+          } else {
+            changedEntries.push([null, stage]); // record the change (deletion) while stop the iteration
+          }
+        }
+      } else if (head) {
+        // for deleted file in workdir, "stage" (workdir in our case) will be undefined
+        if (!stage) {
+          changedEntries.push([head, null]); // record the change (deletion) while stop the iteration
+        } else {
+          filtered.push(child); // workdir, tracked only
+        }
+      }
+    }
+    return filtered.length ? Promise.all(filtered.map(walk)) : []
+  };
+
+  const entries = await _walk({
+    fs,
+    cache: {},
+    dir,
+    gitdir,
+    trees,
+    map,
+    reduce,
+    iterate,
+  });
+
+  if (changedEntries.length === 0 || entries.length === 0) {
+    return null // no changes found to stash
+  }
+
+  const processedEntries = await processTreeEntries({
+    fs,
+    dir,
+    gitdir,
+    entries,
+  });
+
+  const treeEntries = processedEntries.filter(Boolean).map(entry => ({
+    mode: entry.mode,
+    path: entry.path,
+    oid: entry.oid,
+    type: entry.type,
+  }));
+
+  return _writeTree({ fs, gitdir, tree: treeEntries })
+}
+
+async function applyTreeChanges({
+  fs,
+  dir,
+  gitdir,
+  stashCommit,
+  parentCommit,
+  wasStaged,
+}) {
+  const dirRemoved = [];
+  const stageUpdated = [];
+
+  // analyze the changes
+  const ops = await _walk({
+    fs,
+    cache: {},
+    dir,
+    gitdir,
+    trees: [TREE({ ref: parentCommit }), TREE({ ref: stashCommit })],
+    map: async (filepath, [parent, stash]) => {
+      if (
+        filepath === '.' ||
+        (await GitIgnoreManager.isIgnored({ fs, dir, gitdir, filepath }))
+      ) {
+        return
+      }
+      const type = stash ? await stash.type() : await parent.type();
+      if (type !== 'tree' && type !== 'blob') {
+        return
+      }
+
+      // deleted tree or blob
+      if (!stash && parent) {
+        const method = type === 'tree' ? 'rmdir' : 'rm';
+        if (type === 'tree') dirRemoved.push(filepath);
+        if (type === 'blob' && wasStaged)
+          stageUpdated.push({ filepath, oid: await parent.oid() }); // stats is undefined, will stage the deletion with index.insert
+        return { method, filepath }
+      }
+
+      const oid = await stash.oid();
+      if (!parent || (await parent.oid()) !== oid) {
+        // only apply changes if changed from the parent commit or doesn't exist in the parent commit
+        if (type === 'tree') {
+          return { method: 'mkdir', filepath }
+        } else {
+          if (wasStaged)
+            stageUpdated.push({
+              filepath,
+              oid,
+              stats: await fs.lstat(join(dir, filepath)),
+            });
+          return {
+            method: 'write',
+            filepath,
+            oid,
+          }
+        }
+      }
+    },
+  });
+
+  // apply the changes to work dir
+  await acquireLock$1({ fs, gitdir, dirRemoved, ops }, async () => {
+    for (const op of ops) {
+      const currentFilepath = join(dir, op.filepath);
+      switch (op.method) {
+        case 'rmdir':
+          await fs.rmdir(currentFilepath);
+          break
+        case 'mkdir':
+          await fs.mkdir(currentFilepath);
+          break
+        case 'rm':
+          await fs.rm(currentFilepath);
+          break
+        case 'write':
+          // only writes if file is not in the removedDirs
+          if (
+            !dirRemoved.some(removedDir =>
+              currentFilepath.startsWith(removedDir)
+            )
+          ) {
+            const { object } = await _readObject({
+              fs,
+              cache: {},
+              gitdir,
+              oid: op.oid,
+            });
+            // just like checkout, since mode only applicable to create, not update, delete first
+            if (await fs.exists(currentFilepath)) {
+              await fs.rm(currentFilepath);
+            }
+            await fs.write(currentFilepath, object); // only handles regular files for now
+          }
+          break
+      }
+    }
+  });
+
+  // update the stage
+  await GitIndexManager.acquire({ fs, gitdir, cache: {} }, async index => {
+    stageUpdated.forEach(({ filepath, stats, oid }) => {
+      index.insert({ filepath, stats, oid });
+    });
+  });
+}
+
+// @ts-check
+
+/**
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {object} args.cache
+ * @param {string} args.dir
+ * @param {string} args.gitdir
+ * @param {string} args.oid - The commit to cherry-pick
+ * @param {boolean} args.dryRun
+ * @param {boolean} args.noUpdateBranch
+ * @param {boolean} args.abortOnConflict
+ * @param {Object} [args.committer]
+ * @param {string} [args.committer.name]
+ * @param {string} [args.committer.email]
+ * @param {number} [args.committer.timestamp]
+ * @param {number} [args.committer.timezoneOffset]
+ * @param {MergeDriverCallback} [args.mergeDriver]
+ *
+ * @returns {Promise<string>} - The OID of the newly created commit
+ */
+async function _cherryPick({
+  fs,
+  cache,
+  dir,
+  gitdir,
+  oid,
+  dryRun = false,
+  noUpdateBranch = false,
+  abortOnConflict = true,
+  committer,
+  mergeDriver,
+}) {
+  // Commit to cherry-pick
+  const { commit: cherryCommit, oid: cherryOid } = await _readCommit({
+    fs,
+    cache,
+    gitdir,
+    oid,
+  });
+
+  // Validate it's not a merge commit (>1 parent)
+  if (cherryCommit.parent.length > 1) {
+    throw new CherryPickMergeCommitError(cherryOid, cherryCommit.parent.length)
+  }
+
+  // Validate it's not an initial commit (0 parents)
+  if (cherryCommit.parent.length === 0) {
+    throw new CherryPickRootCommitError(cherryOid)
+  }
+
+  // Get current HEAD
+  const currentOid = await GitRefManager.resolve({
+    fs,
+    gitdir,
+    ref: 'HEAD',
+  });
+
+  const { commit: currentCommit } = await _readCommit({
+    fs,
+    cache,
+    gitdir,
+    oid: currentOid,
+  });
+
+  // Get parent of cherry-picked commit (the "base" for three-way merge)
+  const cherryParentOid = cherryCommit.parent[0];
+  const { commit: cherryParent } = await _readCommit({
+    fs,
+    cache,
+    gitdir,
+    oid: cherryParentOid,
+  });
+
+  // Three-way merge
+  // - ourOid: current HEAD tree
+  // - baseOid: parent of commit being cherry-picked
+  // - theirOid: the commit being cherry-picked
+  const mergedTreeOid = await GitIndexManager.acquire(
+    { fs, gitdir, cache, allowUnmerged: false },
+    async index => {
+      return mergeTree({
+        fs,
+        cache,
+        dir,
+        gitdir,
+        index,
+        ourOid: currentCommit.tree,
+        baseOid: cherryParent.tree,
+        theirOid: cherryCommit.tree,
+        ourName: 'HEAD',
+        baseName: `parent of ${cherryOid.slice(0, 7)}`,
+        theirName: cherryOid.slice(0, 7),
+        dryRun,
+        abortOnConflict,
+        mergeDriver,
+      })
+    }
+  );
+
+  if (mergedTreeOid instanceof MergeConflictError) {
+    throw mergedTreeOid
+  }
+
+  // Create new commit with single parent
+  const newOid = await _commit({
+    fs,
+    cache,
+    gitdir,
+    message: cherryCommit.message,
+    tree: mergedTreeOid,
+    parent: [currentOid], // Single parent: current HEAD
+    author: cherryCommit.author, // Preserve original author
+    committer, // New committer
+    dryRun,
+    noUpdateBranch,
+  });
+
+  // If we actually updated the branch (not a dryRun and branch pointer updated),
+  // make the working tree and index match the newly created commit so there are
+  // no staged/unstaged changes left after a successful cherry-pick.
+  // Skip it when `noUpdateBranch` is true.
+  if (dir && !dryRun && !noUpdateBranch) {
+    await applyTreeChanges({
+      fs,
+      dir,
+      gitdir,
+      stashCommit: newOid,
+      parentCommit: currentOid,
+      wasStaged: true,
+    });
+  }
+
+  return newOid
+}
+
+// @ts-check
+
+/**
+ * Cherry-pick a commit onto the current branch
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system implementation
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.oid - The commit to cherry-pick
+ * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {object} [args.committer] - The details about the commit committer. If not specified, uses user.name and user.email config with current timestamp.
+ * @param {string} [args.committer.name] - Default is `user.name` config.
+ * @param {string} [args.committer.email] - Default is `user.email` config.
+ * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
+ * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
+ * @param {boolean} [args.dryRun=false] - If true, simulates cherry-picking so you can test whether it would succeed. Implies `noUpdateBranch`.
+ * @param {boolean} [args.noUpdateBranch=false] - If true, does not update the branch pointer after creating the commit.
+ * @param {boolean} [args.abortOnConflict=true] - If true, merges with conflicts will throw a `MergeConflictError`. If false, merge conflicts will leave conflict markers in the working directory and index.
+ * @param {MergeDriverCallback} [args.mergeDriver] - A custom merge driver for handling conflicts.
+ *
+ * @returns {Promise<string>} Resolves successfully with the SHA-1 object id of the newly created commit
+ *
+ * @example
+ * let oid = await git.cherryPick({
+ *   fs,
+ *   dir: '/tutorial',
+ *   oid: 'e10ebb90d03eaacca84de1af0a59b444232da99e'
+ * })
+ * console.log(oid)
+ *
+ */
+async function cherryPick({
+  fs: _fs,
+  dir,
+  gitdir = join(dir, '.git'),
+  oid,
+  cache = {},
+  committer,
+  dryRun = false,
+  noUpdateBranch = false,
+  abortOnConflict = true,
+  mergeDriver,
+}) {
+  try {
+    assertParameter('fs', _fs);
+    assertParameter('gitdir', gitdir);
+    assertParameter('oid', oid);
+
+    const fs = new FileSystem(_fs);
+    const updatedGitdir = await discoverGitdir({ fsp: fs, dotgit: gitdir });
+
+    // Read the commit to be cherry-picked
+    const { commit: cherryCommit } = await _readCommit({
+      fs,
+      cache,
+      gitdir: updatedGitdir,
+      oid,
+    });
+
+    // If the target is a merge commit, let the command layer handle rejecting it
+    // (so tests expecting a CherryPickMergeCommitError still work). Only enforce
+    // a committer when we are actually going to create a commit.
+    if (cherryCommit.parent && cherryCommit.parent.length > 1) {
+      return await _cherryPick({
+        fs,
+        cache,
+        dir,
+        gitdir: updatedGitdir,
+        oid,
+        dryRun,
+        noUpdateBranch,
+        abortOnConflict,
+        committer: undefined,
+        mergeDriver,
+      })
+    }
+
+    // Use provided committer, not the original commit's committer
+    const normalizedCommitter = await normalizeCommitterObject({
+      fs,
+      gitdir: updatedGitdir,
+      committer,
+    });
+    if (!normalizedCommitter) {
+      throw new MissingNameError('committer')
+    }
+
+    return await _cherryPick({
+      fs,
+      cache,
+      dir,
+      gitdir: updatedGitdir,
+      oid,
+      dryRun,
+      noUpdateBranch,
+      abortOnConflict,
+      committer: normalizedCommitter,
+      mergeDriver,
+    })
+  } catch (err) {
+    err.caller = 'git.cherryPick';
+    throw err
+  }
+}
+
 // @see https://git-scm.com/docs/git-rev-parse.html#_specifying_revisions
 const abbreviateRx = /^refs\/(heads\/|tags\/|remotes\/)?(.*)/;
 
@@ -8122,7 +9119,7 @@ function parseRemoteUrl({ url }) {
   }
 }
 
-let lock$2 = null;
+let lock$3 = null;
 
 class GitShallowManager {
   /**
@@ -8134,10 +9131,10 @@ class GitShallowManager {
    * @returns {Promise<Set<string>>} - A set of shallow object IDs.
    */
   static async read({ fs, gitdir }) {
-    if (lock$2 === null) lock$2 = new AsyncLock();
+    if (lock$3 === null) lock$3 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$2.acquire(filepath, async function () {
+    await lock$3.acquire(filepath, async function () {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -8160,18 +9157,18 @@ class GitShallowManager {
    * @returns {Promise<void>}
    */
   static async write({ fs, gitdir, oids }) {
-    if (lock$2 === null) lock$2 = new AsyncLock();
+    if (lock$3 === null) lock$3 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$2.acquire(filepath, async function () {
+      await lock$3.acquire(filepath, async function () {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$2.acquire(filepath, async function () {
+      await lock$3.acquire(filepath, async function () {
         await fs.rm(filepath);
       });
     }
@@ -9785,440 +10782,6 @@ async function _findMergeBase({ fs, cache, gitdir, oids }) {
     heads = Array.from(newheads.values());
   }
   return []
-}
-
-const LINEBREAKS = /^.*(\r?\n|$)/gm;
-
-function mergeFile({ branches, contents }) {
-  const ourName = branches[1];
-  const theirName = branches[2];
-
-  const baseContent = contents[0];
-  const ourContent = contents[1];
-  const theirContent = contents[2];
-
-  const ours = ourContent.match(LINEBREAKS);
-  const base = baseContent.match(LINEBREAKS);
-  const theirs = theirContent.match(LINEBREAKS);
-
-  // Here we let the diff3 library do the heavy lifting.
-  const result = diff3Merge(ours, base, theirs);
-
-  const markerSize = 7;
-
-  // Here we note whether there are conflicts and format the results
-  let mergedText = '';
-  let cleanMerge = true;
-
-  for (const item of result) {
-    if (item.ok) {
-      mergedText += item.ok.join('');
-    }
-    if (item.conflict) {
-      cleanMerge = false;
-      mergedText += `${'<'.repeat(markerSize)} ${ourName}\n`;
-      mergedText += item.conflict.a.join('');
-
-      mergedText += `${'='.repeat(markerSize)}\n`;
-      mergedText += item.conflict.b.join('');
-      mergedText += `${'>'.repeat(markerSize)} ${theirName}\n`;
-    }
-  }
-  return { cleanMerge, mergedText }
-}
-
-// @ts-check
-
-/**
- * Create a merged tree
- *
- * @param {Object} args
- * @param {import('../models/FileSystem.js').FileSystem} args.fs
- * @param {object} args.cache
- * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
- * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} args.ourOid - The SHA-1 object id of our tree
- * @param {string} args.baseOid - The SHA-1 object id of the base tree
- * @param {string} args.theirOid - The SHA-1 object id of their tree
- * @param {string} [args.ourName='ours'] - The name to use in conflicted files for our hunks
- * @param {string} [args.baseName='base'] - The name to use in conflicted files (in diff3 format) for the base hunks
- * @param {string} [args.theirName='theirs'] - The name to use in conflicted files for their hunks
- * @param {boolean} [args.dryRun=false]
- * @param {boolean} [args.abortOnConflict=false]
- * @param {MergeDriverCallback} [args.mergeDriver]
- *
- * @returns {Promise<string>} - The SHA-1 object id of the merged tree
- *
- */
-async function mergeTree({
-  fs,
-  cache,
-  dir,
-  gitdir = join(dir, '.git'),
-  index,
-  ourOid,
-  baseOid,
-  theirOid,
-  ourName = 'ours',
-  baseName = 'base',
-  theirName = 'theirs',
-  dryRun = false,
-  abortOnConflict = true,
-  mergeDriver,
-}) {
-  const ourTree = TREE({ ref: ourOid });
-  const baseTree = TREE({ ref: baseOid });
-  const theirTree = TREE({ ref: theirOid });
-
-  const unmergedFiles = [];
-  const bothModified = [];
-  const deleteByUs = [];
-  const deleteByTheirs = [];
-
-  const results = await _walk({
-    fs,
-    cache,
-    dir,
-    gitdir,
-    trees: [ourTree, baseTree, theirTree],
-    map: async function (filepath, [ours, base, theirs]) {
-      const path = basename(filepath);
-      // What we did, what they did
-      const ourChange = await modified(ours, base);
-      const theirChange = await modified(theirs, base);
-      switch (`${ourChange}-${theirChange}`) {
-        case 'false-false': {
-          return {
-            mode: await base.mode(),
-            path,
-            oid: await base.oid(),
-            type: await base.type(),
-          }
-        }
-        case 'false-true': {
-          // if directory is deleted in theirs but not in ours we return our directory
-          if (!theirs && (await ours.type()) === 'tree') {
-            return {
-              mode: await ours.mode(),
-              path,
-              oid: await ours.oid(),
-              type: await ours.type(),
-            }
-          }
-
-          return theirs
-            ? {
-                mode: await theirs.mode(),
-                path,
-                oid: await theirs.oid(),
-                type: await theirs.type(),
-              }
-            : undefined
-        }
-        case 'true-false': {
-          // if directory is deleted in ours but not in theirs we return their directory
-          if (!ours && (await theirs.type()) === 'tree') {
-            return {
-              mode: await theirs.mode(),
-              path,
-              oid: await theirs.oid(),
-              type: await theirs.type(),
-            }
-          }
-
-          return ours
-            ? {
-                mode: await ours.mode(),
-                path,
-                oid: await ours.oid(),
-                type: await ours.type(),
-              }
-            : undefined
-        }
-        case 'true-true': {
-          // Handle tree-tree merges (directories)
-          if (
-            ours &&
-            theirs &&
-            (await ours.type()) === 'tree' &&
-            (await theirs.type()) === 'tree'
-          ) {
-            return {
-              mode: await ours.mode(),
-              path,
-              oid: await ours.oid(),
-              type: 'tree',
-            }
-          }
-
-          // Modifications - both are blobs
-          if (
-            ours &&
-            theirs &&
-            (await ours.type()) === 'blob' &&
-            (await theirs.type()) === 'blob'
-          ) {
-            return mergeBlobs({
-              fs,
-              gitdir,
-              path,
-              ours,
-              base,
-              theirs,
-              ourName,
-              baseName,
-              theirName,
-              mergeDriver,
-            }).then(async r => {
-              if (!r.cleanMerge) {
-                unmergedFiles.push(filepath);
-                bothModified.push(filepath);
-                if (!abortOnConflict) {
-                  let baseOid = '';
-                  if (base && (await base.type()) === 'blob') {
-                    baseOid = await base.oid();
-                  }
-                  const ourOid = await ours.oid();
-                  const theirOid = await theirs.oid();
-
-                  index.delete({ filepath });
-
-                  if (baseOid) {
-                    index.insert({ filepath, oid: baseOid, stage: 1 });
-                  }
-                  index.insert({ filepath, oid: ourOid, stage: 2 });
-                  index.insert({ filepath, oid: theirOid, stage: 3 });
-                }
-              } else if (!abortOnConflict) {
-                index.insert({ filepath, oid: r.mergeResult.oid, stage: 0 });
-              }
-              return r.mergeResult
-            })
-          }
-
-          // deleted by us
-          if (
-            base &&
-            !ours &&
-            theirs &&
-            (await base.type()) === 'blob' &&
-            (await theirs.type()) === 'blob'
-          ) {
-            unmergedFiles.push(filepath);
-            deleteByUs.push(filepath);
-            if (!abortOnConflict) {
-              const baseOid = await base.oid();
-              const theirOid = await theirs.oid();
-
-              index.delete({ filepath });
-
-              index.insert({ filepath, oid: baseOid, stage: 1 });
-              index.insert({ filepath, oid: theirOid, stage: 3 });
-            }
-
-            return {
-              mode: await theirs.mode(),
-              oid: await theirs.oid(),
-              type: 'blob',
-              path,
-            }
-          }
-
-          // deleted by theirs
-          if (
-            base &&
-            ours &&
-            !theirs &&
-            (await base.type()) === 'blob' &&
-            (await ours.type()) === 'blob'
-          ) {
-            unmergedFiles.push(filepath);
-            deleteByTheirs.push(filepath);
-            if (!abortOnConflict) {
-              const baseOid = await base.oid();
-              const ourOid = await ours.oid();
-
-              index.delete({ filepath });
-
-              index.insert({ filepath, oid: baseOid, stage: 1 });
-              index.insert({ filepath, oid: ourOid, stage: 2 });
-            }
-
-            return {
-              mode: await ours.mode(),
-              oid: await ours.oid(),
-              type: 'blob',
-              path,
-            }
-          }
-
-          // deleted by both
-          if (
-            base &&
-            !ours &&
-            !theirs &&
-            ((await base.type()) === 'blob' || (await base.type()) === 'tree')
-          ) {
-            return undefined
-          }
-
-          // all other types of conflicts fail
-          // TODO: Merge conflicts involving additions
-          throw new MergeNotSupportedError()
-        }
-      }
-    },
-    /**
-     * @param {TreeEntry} [parent]
-     * @param {Array<TreeEntry>} children
-     */
-    reduce:
-      unmergedFiles.length !== 0 && (!dir || abortOnConflict)
-        ? undefined
-        : async (parent, children) => {
-            const entries = children.filter(Boolean); // remove undefineds
-
-            // if the parent was deleted, the children have to go
-            if (!parent) return
-
-            // automatically delete directories if they have been emptied
-            // except for the root directory
-            if (
-              parent &&
-              parent.type === 'tree' &&
-              entries.length === 0 &&
-              parent.path !== '.'
-            )
-              return
-
-            if (
-              entries.length > 0 ||
-              (parent.path === '.' && entries.length === 0)
-            ) {
-              const tree = new GitTree(entries);
-              const object = tree.toObject();
-              const oid = await _writeObject({
-                fs,
-                gitdir,
-                type: 'tree',
-                object,
-                dryRun,
-              });
-              parent.oid = oid;
-            }
-            return parent
-          },
-  });
-
-  if (unmergedFiles.length !== 0) {
-    if (dir && !abortOnConflict) {
-      await _walk({
-        fs,
-        cache,
-        dir,
-        gitdir,
-        trees: [TREE({ ref: results.oid })],
-        map: async function (filepath, [entry]) {
-          const path = `${dir}/${filepath}`;
-          if ((await entry.type()) === 'blob') {
-            const mode = await entry.mode();
-            const content = new TextDecoder().decode(await entry.content());
-            await fs.write(path, content, { mode });
-          }
-          return true
-        },
-      });
-    }
-    return new MergeConflictError(
-      unmergedFiles,
-      bothModified,
-      deleteByUs,
-      deleteByTheirs
-    )
-  }
-
-  return results.oid
-}
-
-/**
- *
- * @param {Object} args
- * @param {import('../models/FileSystem').FileSystem} args.fs
- * @param {string} args.gitdir
- * @param {string} args.path
- * @param {WalkerEntry} args.ours
- * @param {WalkerEntry} args.base
- * @param {WalkerEntry} args.theirs
- * @param {string} [args.ourName]
- * @param {string} [args.baseName]
- * @param {string} [args.theirName]
- * @param {boolean} [args.dryRun = false]
- * @param {MergeDriverCallback} [args.mergeDriver]
- *
- */
-async function mergeBlobs({
-  fs,
-  gitdir,
-  path,
-  ours,
-  base,
-  theirs,
-  ourName,
-  theirName,
-  baseName,
-  dryRun,
-  mergeDriver = mergeFile,
-}) {
-  const type = 'blob';
-  // Compute the new mode.
-  // Since there are ONLY two valid blob modes ('100755' and '100644') it boils down to this
-  let baseMode = '100755';
-  let baseOid = '';
-  let baseContent = '';
-  if (base && (await base.type()) === 'blob') {
-    baseMode = await base.mode();
-    baseOid = await base.oid();
-    baseContent = Buffer.from(await base.content()).toString('utf8');
-  }
-  const mode =
-    baseMode === (await ours.mode()) ? await theirs.mode() : await ours.mode();
-  // The trivial case: nothing to merge except maybe mode
-  if ((await ours.oid()) === (await theirs.oid())) {
-    return {
-      cleanMerge: true,
-      mergeResult: { mode, path, oid: await ours.oid(), type },
-    }
-  }
-  // if only one side made oid changes, return that side's oid
-  if ((await ours.oid()) === baseOid) {
-    return {
-      cleanMerge: true,
-      mergeResult: { mode, path, oid: await theirs.oid(), type },
-    }
-  }
-  if ((await theirs.oid()) === baseOid) {
-    return {
-      cleanMerge: true,
-      mergeResult: { mode, path, oid: await ours.oid(), type },
-    }
-  }
-  // if both sides made changes do a merge
-  const ourContent = Buffer.from(await ours.content()).toString('utf8');
-  const theirContent = Buffer.from(await theirs.content()).toString('utf8');
-  const { mergedText, cleanMerge } = await mergeDriver({
-    branches: [baseName, ourName, theirName],
-    contents: [baseContent, ourContent, theirContent],
-    path,
-  });
-  const oid = await _writeObject({
-    fs,
-    gitdir,
-    type: 'blob',
-    object: Buffer.from(mergedText, 'utf8'),
-    dryRun,
-  });
-
-  return { cleanMerge, mergeResult: { mode, path, oid, type } }
 }
 
 // @ts-check
@@ -14816,293 +15379,6 @@ class GitRefStash {
   }
 }
 
-const _TreeMap = {
-  stage: STAGE,
-  workdir: WORKDIR,
-};
-
-let lock$3;
-async function acquireLock$1(ref, callback) {
-  if (lock$3 === undefined) lock$3 = new AsyncLock();
-  return lock$3.acquire(ref, callback)
-}
-
-// make sure filepath, blob type and blob object (from loose objects) plus oid are in sync and valid
-async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
-  const currentFilepath = join(dir, filepath);
-  const stats = await fs.lstat(currentFilepath);
-  if (!stats) throw new NotFoundError(currentFilepath)
-  if (stats.isDirectory())
-    throw new InternalError(
-      `${currentFilepath}: file expected, but found directory`
-    )
-
-  // Look for it in the loose object directory.
-  const objContent = oid
-    ? await readObjectLoose({ fs, gitdir, oid })
-    : undefined;
-  let retOid = objContent ? oid : undefined;
-  if (!objContent) {
-    await acquireLock$1({ fs, gitdir, currentFilepath }, async () => {
-      const object = stats.isSymbolicLink()
-        ? await fs.readlink(currentFilepath).then(posixifyPathBuffer)
-        : await fs.read(currentFilepath);
-
-      if (object === null) throw new NotFoundError(currentFilepath)
-
-      retOid = await _writeObject({ fs, gitdir, type: 'blob', object });
-    });
-  }
-
-  return retOid
-}
-
-async function processTreeEntries({ fs, dir, gitdir, entries }) {
-  // make sure each tree entry has valid oid
-  async function processTreeEntry(entry) {
-    if (entry.type === 'tree') {
-      if (!entry.oid) {
-        // Process children entries if the current entry is a tree
-        const children = await Promise.all(entry.children.map(processTreeEntry));
-        // Write the tree with the processed children
-        entry.oid = await _writeTree({
-          fs,
-          gitdir,
-          tree: children,
-        });
-        entry.mode = 0o40000; // directory
-      }
-    } else if (entry.type === 'blob') {
-      entry.oid = await checkAndWriteBlob(
-        fs,
-        gitdir,
-        dir,
-        entry.path,
-        entry.oid
-      );
-      entry.mode = 0o100644; // file
-    }
-
-    // remove path from entry.path
-    entry.path = entry.path.split('/').pop();
-    return entry
-  }
-
-  return Promise.all(entries.map(processTreeEntry))
-}
-
-async function writeTreeChanges({
-  fs,
-  dir,
-  gitdir,
-  treePair, // [TREE({ ref: 'HEAD' }), 'STAGE'] would be the equivalent of `git write-tree`
-}) {
-  const isStage = treePair[1] === 'stage';
-  const trees = treePair.map(t => (typeof t === 'string' ? _TreeMap[t]() : t));
-
-  const changedEntries = [];
-  // transform WalkerEntry objects into the desired format
-  const map = async (filepath, [head, stage]) => {
-    if (
-      filepath === '.' ||
-      (await GitIgnoreManager.isIgnored({ fs, dir, gitdir, filepath }))
-    ) {
-      return
-    }
-
-    if (stage) {
-      if (
-        !head ||
-        ((await head.oid()) !== (await stage.oid()) &&
-          (await stage.oid()) !== undefined)
-      ) {
-        changedEntries.push([head, stage]);
-      }
-      return {
-        mode: await stage.mode(),
-        path: filepath,
-        oid: await stage.oid(),
-        type: await stage.type(),
-      }
-    }
-  };
-
-  // combine mapped entries with their parent results
-  const reduce = async (parent, children) => {
-    children = children.filter(Boolean); // Remove undefined entries
-    if (!parent) {
-      return children.length > 0 ? children : undefined
-    } else {
-      parent.children = children;
-      return parent
-    }
-  };
-
-  // if parent is skipped, skip the children
-  const iterate = async (walk, children) => {
-    const filtered = [];
-    for (const child of children) {
-      const [head, stage] = child;
-      if (isStage) {
-        if (stage) {
-          // for deleted file in work dir, it also needs to be added on stage
-          if (await fs.exists(`${dir}/${stage.toString()}`)) {
-            filtered.push(child);
-          } else {
-            changedEntries.push([null, stage]); // record the change (deletion) while stop the iteration
-          }
-        }
-      } else if (head) {
-        // for deleted file in workdir, "stage" (workdir in our case) will be undefined
-        if (!stage) {
-          changedEntries.push([head, null]); // record the change (deletion) while stop the iteration
-        } else {
-          filtered.push(child); // workdir, tracked only
-        }
-      }
-    }
-    return filtered.length ? Promise.all(filtered.map(walk)) : []
-  };
-
-  const entries = await _walk({
-    fs,
-    cache: {},
-    dir,
-    gitdir,
-    trees,
-    map,
-    reduce,
-    iterate,
-  });
-
-  if (changedEntries.length === 0 || entries.length === 0) {
-    return null // no changes found to stash
-  }
-
-  const processedEntries = await processTreeEntries({
-    fs,
-    dir,
-    gitdir,
-    entries,
-  });
-
-  const treeEntries = processedEntries.filter(Boolean).map(entry => ({
-    mode: entry.mode,
-    path: entry.path,
-    oid: entry.oid,
-    type: entry.type,
-  }));
-
-  return _writeTree({ fs, gitdir, tree: treeEntries })
-}
-
-async function applyTreeChanges({
-  fs,
-  dir,
-  gitdir,
-  stashCommit,
-  parentCommit,
-  wasStaged,
-}) {
-  const dirRemoved = [];
-  const stageUpdated = [];
-
-  // analyze the changes
-  const ops = await _walk({
-    fs,
-    cache: {},
-    dir,
-    gitdir,
-    trees: [TREE({ ref: parentCommit }), TREE({ ref: stashCommit })],
-    map: async (filepath, [parent, stash]) => {
-      if (
-        filepath === '.' ||
-        (await GitIgnoreManager.isIgnored({ fs, dir, gitdir, filepath }))
-      ) {
-        return
-      }
-      const type = stash ? await stash.type() : await parent.type();
-      if (type !== 'tree' && type !== 'blob') {
-        return
-      }
-
-      // deleted tree or blob
-      if (!stash && parent) {
-        const method = type === 'tree' ? 'rmdir' : 'rm';
-        if (type === 'tree') dirRemoved.push(filepath);
-        if (type === 'blob' && wasStaged)
-          stageUpdated.push({ filepath, oid: await parent.oid() }); // stats is undefined, will stage the deletion with index.insert
-        return { method, filepath }
-      }
-
-      const oid = await stash.oid();
-      if (!parent || (await parent.oid()) !== oid) {
-        // only apply changes if changed from the parent commit or doesn't exist in the parent commit
-        if (type === 'tree') {
-          return { method: 'mkdir', filepath }
-        } else {
-          if (wasStaged)
-            stageUpdated.push({
-              filepath,
-              oid,
-              stats: await fs.lstat(join(dir, filepath)),
-            });
-          return {
-            method: 'write',
-            filepath,
-            oid,
-          }
-        }
-      }
-    },
-  });
-
-  // apply the changes to work dir
-  await acquireLock$1({ fs, gitdir, dirRemoved, ops }, async () => {
-    for (const op of ops) {
-      const currentFilepath = join(dir, op.filepath);
-      switch (op.method) {
-        case 'rmdir':
-          await fs.rmdir(currentFilepath);
-          break
-        case 'mkdir':
-          await fs.mkdir(currentFilepath);
-          break
-        case 'rm':
-          await fs.rm(currentFilepath);
-          break
-        case 'write':
-          // only writes if file is not in the removedDirs
-          if (
-            !dirRemoved.some(removedDir =>
-              currentFilepath.startsWith(removedDir)
-            )
-          ) {
-            const { object } = await _readObject({
-              fs,
-              cache: {},
-              gitdir,
-              oid: op.oid,
-            });
-            // just like checkout, since mode only applicable to create, not update, delete first
-            if (await fs.exists(currentFilepath)) {
-              await fs.rm(currentFilepath);
-            }
-            await fs.write(currentFilepath, object); // only handles regular files for now
-          }
-          break
-      }
-    }
-  });
-
-  // update the stage
-  await GitIndexManager.acquire({ fs, gitdir, cache: {} }, async index => {
-    stageUpdated.forEach(({ filepath, stats, oid }) => {
-      index.insert({ filepath, stats, oid });
-    });
-  });
-}
-
 class GitStashManager {
   /**
    * Creates an instance of GitStashManager.
@@ -17040,6 +17316,7 @@ var index = {
   addRemote,
   annotatedTag,
   branch,
+  cherryPick,
   checkout,
   clone,
   commit,
@@ -17103,4 +17380,4 @@ var index = {
 };
 
 export default index;
-export { Errors, STAGE, TREE, WORKDIR, abortMerge, add, addNote, addRemote, annotatedTag, branch, checkout, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRefs, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, stash, status, statusMatrix, tag, updateIndex$1 as updateIndex, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };
+export { Errors, STAGE, TREE, WORKDIR, abortMerge, add, addNote, addRemote, annotatedTag, branch, checkout, cherryPick, clone, commit, currentBranch, deleteBranch, deleteRef, deleteRemote, deleteTag, expandOid, expandRef, fastForward, fetch, findMergeBase, findRoot, getConfig, getConfigAll, getRemoteInfo, getRemoteInfo2, hashBlob, indexPack, init, isDescendent, isIgnored, listBranches, listFiles, listNotes, listRefs, listRemotes, listServerRefs, listTags, log, merge, packObjects, pull, push, readBlob, readCommit, readNote, readObject, readTag, readTree, remove, removeNote, renameBranch, resetIndex, resolveRef, setConfig, stash, status, statusMatrix, tag, updateIndex$1 as updateIndex, version, walk, writeBlob, writeCommit, writeObject, writeRef, writeTag, writeTree };

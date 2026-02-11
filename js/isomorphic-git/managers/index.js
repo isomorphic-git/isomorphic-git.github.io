@@ -4925,6 +4925,38 @@ class CheckoutConflictError extends BaseError {
 /** @type {'CheckoutConflictError'} */
 CheckoutConflictError.code = 'CheckoutConflictError';
 
+class CherryPickMergeCommitError extends BaseError {
+  /**
+   * @param {string} oid
+   * @param {number} parentCount
+   */
+  constructor(oid, parentCount) {
+    super(
+      `Cannot cherry-pick merge commit ${oid}. ` +
+        `Merge commits have ${parentCount} parents and require specifying which parent to use as the base.`
+    );
+    this.code = this.name = CherryPickMergeCommitError.code;
+    this.data = { oid, parentCount };
+  }
+}
+/** @type {'CherryPickMergeCommitError'} */
+CherryPickMergeCommitError.code = 'CherryPickMergeCommitError';
+
+class CherryPickRootCommitError extends BaseError {
+  /**
+   * @param {string} oid
+   */
+  constructor(oid) {
+    super(
+      `Cannot cherry-pick root commit ${oid}. Root commits have no parents.`
+    );
+    this.code = this.name = CherryPickRootCommitError.code;
+    this.data = { oid };
+  }
+}
+/** @type {'CherryPickRootCommitError'} */
+CherryPickRootCommitError.code = 'CherryPickRootCommitError';
+
 class CommitNotFetchedError extends BaseError {
   /**
    * @param {string} ref

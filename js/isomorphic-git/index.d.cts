@@ -630,6 +630,8 @@ export var Errors: Readonly<{
     AlreadyExistsError: typeof AlreadyExistsError;
     AmbiguousError: typeof AmbiguousError;
     CheckoutConflictError: typeof CheckoutConflictError;
+    CherryPickMergeCommitError: typeof CherryPickMergeCommitError;
+    CherryPickRootCommitError: typeof CherryPickRootCommitError;
     CommitNotFetchedError: typeof CommitNotFetchedError;
     EmptyServerResponseError: typeof EmptyServerResponseError;
     FastForwardError: typeof FastForwardError;
@@ -977,6 +979,53 @@ export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, 
     batchSize?: number | undefined;
 }): Promise<void>;
 /**
+ * Cherry-pick a commit onto the current branch
+ *
+ * @param {object} args
+ * @param {FsClient} args.fs - a file system implementation
+ * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
+ * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+ * @param {string} args.oid - The commit to cherry-pick
+ * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {object} [args.committer] - The details about the commit committer. If not specified, uses user.name and user.email config with current timestamp.
+ * @param {string} [args.committer.name] - Default is `user.name` config.
+ * @param {string} [args.committer.email] - Default is `user.email` config.
+ * @param {number} [args.committer.timestamp=Math.floor(Date.now()/1000)] - Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).
+ * @param {number} [args.committer.timezoneOffset] - Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is `(new Date()).getTimezoneOffset()`.
+ * @param {boolean} [args.dryRun=false] - If true, simulates cherry-picking so you can test whether it would succeed. Implies `noUpdateBranch`.
+ * @param {boolean} [args.noUpdateBranch=false] - If true, does not update the branch pointer after creating the commit.
+ * @param {boolean} [args.abortOnConflict=true] - If true, merges with conflicts will throw a `MergeConflictError`. If false, merge conflicts will leave conflict markers in the working directory and index.
+ * @param {MergeDriverCallback} [args.mergeDriver] - A custom merge driver for handling conflicts.
+ *
+ * @returns {Promise<string>} Resolves successfully with the SHA-1 object id of the newly created commit
+ *
+ * @example
+ * let oid = await git.cherryPick({
+ *   fs,
+ *   dir: '/tutorial',
+ *   oid: 'e10ebb90d03eaacca84de1af0a59b444232da99e'
+ * })
+ * console.log(oid)
+ *
+ */
+export function cherryPick({ fs: _fs, dir, gitdir, oid, cache, committer, dryRun, noUpdateBranch, abortOnConflict, mergeDriver, }: {
+    fs: FsClient;
+    dir?: string | undefined;
+    gitdir?: string | undefined;
+    oid: string;
+    cache?: object;
+    committer?: {
+        name?: string | undefined;
+        email?: string | undefined;
+        timestamp?: number | undefined;
+        timezoneOffset?: number | undefined;
+    } | undefined;
+    dryRun?: boolean | undefined;
+    noUpdateBranch?: boolean | undefined;
+    abortOnConflict?: boolean | undefined;
+    mergeDriver?: MergeDriverCallback | undefined;
+}): Promise<string>;
+/**
  * Clone a repository
  *
  * @param {object} args
@@ -1160,6 +1209,7 @@ declare namespace index {
     export { addRemote };
     export { annotatedTag };
     export { branch };
+    export { cherryPick };
     export { checkout };
     export { clone };
     export { commit };
@@ -3912,6 +3962,38 @@ declare namespace CheckoutConflictError {
     let code_2: "CheckoutConflictError";
     export { code_2 as code };
 }
+declare class CherryPickMergeCommitError extends BaseError {
+    /**
+     * @param {string} oid
+     * @param {number} parentCount
+     */
+    constructor(oid: string, parentCount: number);
+    code: "CherryPickMergeCommitError";
+    name: "CherryPickMergeCommitError";
+    data: {
+        oid: string;
+        parentCount: number;
+    };
+}
+declare namespace CherryPickMergeCommitError {
+    let code_3: "CherryPickMergeCommitError";
+    export { code_3 as code };
+}
+declare class CherryPickRootCommitError extends BaseError {
+    /**
+     * @param {string} oid
+     */
+    constructor(oid: string);
+    code: "CherryPickRootCommitError";
+    name: "CherryPickRootCommitError";
+    data: {
+        oid: string;
+    };
+}
+declare namespace CherryPickRootCommitError {
+    let code_4: "CherryPickRootCommitError";
+    export { code_4 as code };
+}
 declare class CommitNotFetchedError extends BaseError {
     /**
      * @param {string} ref
@@ -3926,8 +4008,8 @@ declare class CommitNotFetchedError extends BaseError {
     };
 }
 declare namespace CommitNotFetchedError {
-    let code_3: "CommitNotFetchedError";
-    export { code_3 as code };
+    let code_5: "CommitNotFetchedError";
+    export { code_5 as code };
 }
 declare class EmptyServerResponseError extends BaseError {
     constructor();
@@ -3936,8 +4018,8 @@ declare class EmptyServerResponseError extends BaseError {
     data: {};
 }
 declare namespace EmptyServerResponseError {
-    let code_4: "EmptyServerResponseError";
-    export { code_4 as code };
+    let code_6: "EmptyServerResponseError";
+    export { code_6 as code };
 }
 declare class FastForwardError extends BaseError {
     constructor();
@@ -3946,8 +4028,8 @@ declare class FastForwardError extends BaseError {
     data: {};
 }
 declare namespace FastForwardError {
-    let code_5: "FastForwardError";
-    export { code_5 as code };
+    let code_7: "FastForwardError";
+    export { code_7 as code };
 }
 declare class GitPushError extends BaseError {
     /**
@@ -3963,8 +4045,8 @@ declare class GitPushError extends BaseError {
     };
 }
 declare namespace GitPushError {
-    let code_6: "GitPushError";
-    export { code_6 as code };
+    let code_8: "GitPushError";
+    export { code_8 as code };
 }
 declare class HttpError extends BaseError {
     /**
@@ -3982,8 +4064,8 @@ declare class HttpError extends BaseError {
     };
 }
 declare namespace HttpError {
-    let code_7: "HttpError";
-    export { code_7 as code };
+    let code_9: "HttpError";
+    export { code_9 as code };
 }
 declare class InternalError extends BaseError {
     /**
@@ -3997,8 +4079,8 @@ declare class InternalError extends BaseError {
     };
 }
 declare namespace InternalError {
-    let code_8: "InternalError";
-    export { code_8 as code };
+    let code_10: "InternalError";
+    export { code_10 as code };
 }
 declare class InvalidFilepathError extends BaseError {
     /**
@@ -4012,8 +4094,8 @@ declare class InvalidFilepathError extends BaseError {
     };
 }
 declare namespace InvalidFilepathError {
-    let code_9: "InvalidFilepathError";
-    export { code_9 as code };
+    let code_11: "InvalidFilepathError";
+    export { code_11 as code };
 }
 declare class InvalidOidError extends BaseError {
     /**
@@ -4027,8 +4109,8 @@ declare class InvalidOidError extends BaseError {
     };
 }
 declare namespace InvalidOidError {
-    let code_10: "InvalidOidError";
-    export { code_10 as code };
+    let code_12: "InvalidOidError";
+    export { code_12 as code };
 }
 declare class InvalidRefNameError extends BaseError {
     /**
@@ -4045,8 +4127,8 @@ declare class InvalidRefNameError extends BaseError {
     };
 }
 declare namespace InvalidRefNameError {
-    let code_11: "InvalidRefNameError";
-    export { code_11 as code };
+    let code_13: "InvalidRefNameError";
+    export { code_13 as code };
 }
 declare class MaxDepthError extends BaseError {
     /**
@@ -4060,8 +4142,8 @@ declare class MaxDepthError extends BaseError {
     };
 }
 declare namespace MaxDepthError {
-    let code_12: "MaxDepthError";
-    export { code_12 as code };
+    let code_14: "MaxDepthError";
+    export { code_14 as code };
 }
 declare class MergeNotSupportedError extends BaseError {
     constructor();
@@ -4070,8 +4152,8 @@ declare class MergeNotSupportedError extends BaseError {
     data: {};
 }
 declare namespace MergeNotSupportedError {
-    let code_13: "MergeNotSupportedError";
-    export { code_13 as code };
+    let code_15: "MergeNotSupportedError";
+    export { code_15 as code };
 }
 declare class MergeConflictError extends BaseError {
     /**
@@ -4091,8 +4173,8 @@ declare class MergeConflictError extends BaseError {
     };
 }
 declare namespace MergeConflictError {
-    let code_14: "MergeConflictError";
-    export { code_14 as code };
+    let code_16: "MergeConflictError";
+    export { code_16 as code };
 }
 declare class MissingNameError extends BaseError {
     /**
@@ -4106,8 +4188,8 @@ declare class MissingNameError extends BaseError {
     };
 }
 declare namespace MissingNameError {
-    let code_15: "MissingNameError";
-    export { code_15 as code };
+    let code_17: "MissingNameError";
+    export { code_17 as code };
 }
 declare class MissingParameterError extends BaseError {
     /**
@@ -4121,8 +4203,8 @@ declare class MissingParameterError extends BaseError {
     };
 }
 declare namespace MissingParameterError {
-    let code_16: "MissingParameterError";
-    export { code_16 as code };
+    let code_18: "MissingParameterError";
+    export { code_18 as code };
 }
 declare class MultipleGitError extends BaseError {
     /**
@@ -4138,8 +4220,8 @@ declare class MultipleGitError extends BaseError {
     errors: Error[];
 }
 declare namespace MultipleGitError {
-    let code_17: "MultipleGitError";
-    export { code_17 as code };
+    let code_19: "MultipleGitError";
+    export { code_19 as code };
 }
 declare class NoRefspecError extends BaseError {
     /**
@@ -4153,8 +4235,8 @@ declare class NoRefspecError extends BaseError {
     };
 }
 declare namespace NoRefspecError {
-    let code_18: "NoRefspecError";
-    export { code_18 as code };
+    let code_20: "NoRefspecError";
+    export { code_20 as code };
 }
 declare class NotFoundError extends BaseError {
     /**
@@ -4168,8 +4250,8 @@ declare class NotFoundError extends BaseError {
     };
 }
 declare namespace NotFoundError {
-    let code_19: "NotFoundError";
-    export { code_19 as code };
+    let code_21: "NotFoundError";
+    export { code_21 as code };
 }
 declare class ObjectTypeError extends BaseError {
     /**
@@ -4189,8 +4271,8 @@ declare class ObjectTypeError extends BaseError {
     };
 }
 declare namespace ObjectTypeError {
-    let code_20: "ObjectTypeError";
-    export { code_20 as code };
+    let code_22: "ObjectTypeError";
+    export { code_22 as code };
 }
 declare class ParseError extends BaseError {
     /**
@@ -4206,8 +4288,8 @@ declare class ParseError extends BaseError {
     };
 }
 declare namespace ParseError {
-    let code_21: "ParseError";
-    export { code_21 as code };
+    let code_23: "ParseError";
+    export { code_23 as code };
 }
 declare class PushRejectedError extends BaseError {
     /**
@@ -4221,8 +4303,8 @@ declare class PushRejectedError extends BaseError {
     };
 }
 declare namespace PushRejectedError {
-    let code_22: "PushRejectedError";
-    export { code_22 as code };
+    let code_24: "PushRejectedError";
+    export { code_24 as code };
 }
 declare class RemoteCapabilityError extends BaseError {
     /**
@@ -4238,8 +4320,8 @@ declare class RemoteCapabilityError extends BaseError {
     };
 }
 declare namespace RemoteCapabilityError {
-    let code_23: "RemoteCapabilityError";
-    export { code_23 as code };
+    let code_25: "RemoteCapabilityError";
+    export { code_25 as code };
 }
 declare class SmartHttpError extends BaseError {
     /**
@@ -4255,8 +4337,8 @@ declare class SmartHttpError extends BaseError {
     };
 }
 declare namespace SmartHttpError {
-    let code_24: "SmartHttpError";
-    export { code_24 as code };
+    let code_26: "SmartHttpError";
+    export { code_26 as code };
 }
 declare class UnknownTransportError extends BaseError {
     /**
@@ -4274,8 +4356,8 @@ declare class UnknownTransportError extends BaseError {
     };
 }
 declare namespace UnknownTransportError {
-    let code_25: "UnknownTransportError";
-    export { code_25 as code };
+    let code_27: "UnknownTransportError";
+    export { code_27 as code };
 }
 declare class UnsafeFilepathError extends BaseError {
     /**
@@ -4289,8 +4371,8 @@ declare class UnsafeFilepathError extends BaseError {
     };
 }
 declare namespace UnsafeFilepathError {
-    let code_26: "UnsafeFilepathError";
-    export { code_26 as code };
+    let code_28: "UnsafeFilepathError";
+    export { code_28 as code };
 }
 declare class UrlParseError extends BaseError {
     /**
@@ -4304,8 +4386,8 @@ declare class UrlParseError extends BaseError {
     };
 }
 declare namespace UrlParseError {
-    let code_27: "UrlParseError";
-    export { code_27 as code };
+    let code_29: "UrlParseError";
+    export { code_29 as code };
 }
 declare class UserCanceledError extends BaseError {
     constructor();
@@ -4314,8 +4396,8 @@ declare class UserCanceledError extends BaseError {
     data: {};
 }
 declare namespace UserCanceledError {
-    let code_28: "UserCanceledError";
-    export { code_28 as code };
+    let code_30: "UserCanceledError";
+    export { code_30 as code };
 }
 declare class UnmergedPathsError extends BaseError {
     /**
@@ -4329,8 +4411,8 @@ declare class UnmergedPathsError extends BaseError {
     };
 }
 declare namespace UnmergedPathsError {
-    let code_29: "UnmergedPathsError";
-    export { code_29 as code };
+    let code_31: "UnmergedPathsError";
+    export { code_31 as code };
 }
 declare class IndexResetError extends BaseError {
     /**
@@ -4344,8 +4426,8 @@ declare class IndexResetError extends BaseError {
     };
 }
 declare namespace IndexResetError {
-    let code_30: "IndexResetError";
-    export { code_30 as code };
+    let code_32: "IndexResetError";
+    export { code_32 as code };
 }
 declare class NoCommitError extends BaseError {
     /**
@@ -4359,8 +4441,8 @@ declare class NoCommitError extends BaseError {
     };
 }
 declare namespace NoCommitError {
-    let code_31: "NoCommitError";
-    export { code_31 as code };
+    let code_33: "NoCommitError";
+    export { code_33 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent
