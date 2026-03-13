@@ -3273,12 +3273,13 @@ class GitPackIndex {
       0b1100000: 'ofs_delta',
       0b1110000: 'ref_delta',
     };
-    if (!this.pack) {
+    const pack = await this.pack;
+    if (!pack) {
       throw new InternalError(
-        'Tried to read from a GitPackIndex with no packfile loaded into memory'
+        'Could not read packfile data. The packfile may be missing, corrupted, or too large to read into memory.'
       )
     }
-    const raw = (await this.pack).slice(start);
+    const raw = pack.slice(start);
     const reader = new BufferCursor(raw);
     const byte = reader.readUInt8();
     // Object type is encoded in bits 654
@@ -3390,12 +3391,18 @@ async function readObjectPacked({
     if (p.error) throw new InternalError(p.error)
     // If the packfile DOES have the oid we're looking for...
     if (p.offsets.has(oid)) {
-      // Get the resolved git object from the packfile
+      // Derive the .pack path from the .idx path
+      const packFile = indexFile.replace(/idx$/, 'pack');
       if (!p.pack) {
-        const packFile = indexFile.replace(/idx$/, 'pack');
         p.pack = fs.read(packFile);
       }
       const pack = await p.pack;
+      if (!pack) {
+        p.pack = null;
+        throw new InternalError(
+          `Could not read packfile at ${packFile}. The file may be missing, corrupted, or too large to read into memory.`
+        )
+      }
 
       // === Packfile Integrity Verification ===
       // Performance optimization: use _checksumVerified flag to verify only once per packfile
