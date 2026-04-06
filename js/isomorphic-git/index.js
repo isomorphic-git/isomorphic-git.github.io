@@ -3362,6 +3362,13 @@ function readPackIndex({
   return p
 }
 
+async function shasumRange(
+  buffer,
+  { start = 0, end = buffer.length } = {}
+) {
+  return shasum(buffer.subarray(start, end))
+}
+
 async function readObjectPacked({
   fs,
   cache,
@@ -3415,11 +3422,12 @@ async function readObjectPacked({
           )
         }
 
-        // 2. Deep Integrity Check: Calculate actual SHA-1 of packfile payload
-        // This ensures true data integrity by verifying the entire packfile content
-        // Use subarray for zero-copy reading of large files
-        const payload = pack.subarray(0, -20);
-        const actualPayloadSha = await shasum(payload);
+        // 2. Deep Integrity Check: Calculate actual SHA-1 of packfile payload.
+        // The Node package build swaps in a chunked implementation for large packs.
+        const actualPayloadSha = await shasumRange(pack, {
+          start: 0,
+          end: pack.length - 20,
+        });
         if (actualPayloadSha !== expectedShaFromIndex) {
           throw new InternalError(
             `Packfile payload corrupted: calculated ${actualPayloadSha} but expected ${expectedShaFromIndex}. The packfile may have been tampered with.`

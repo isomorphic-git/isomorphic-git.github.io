@@ -8,6 +8,7 @@ var AsyncLock = _interopDefault(require('async-lock'));
 var Hash = _interopDefault(require('sha.js/sha1.js'));
 var crc32 = _interopDefault(require('crc-32'));
 var pako = _interopDefault(require('pako'));
+var crypto$1 = require('crypto');
 var pify = _interopDefault(require('pify'));
 var ignore = _interopDefault(require('ignore'));
 var cleanGitRef = _interopDefault(require('clean-git-ref'));
@@ -3368,6 +3369,19 @@ function readPackIndex({
   return p
 }
 
+const SHA1_CHUNK_SIZE = 8 * 1024 * 1024;
+
+async function shasumRange(
+  buffer,
+  { start = 0, end = buffer.length } = {}
+) {
+  const hash = crypto$1.createHash('sha1');
+  for (let i = start; i < end; i += SHA1_CHUNK_SIZE) {
+    hash.update(buffer.subarray(i, Math.min(i + SHA1_CHUNK_SIZE, end)));
+  }
+  return hash.digest('hex')
+}
+
 async function readObjectPacked({
   fs,
   cache,
@@ -3421,11 +3435,12 @@ async function readObjectPacked({
           )
         }
 
-        // 2. Deep Integrity Check: Calculate actual SHA-1 of packfile payload
-        // This ensures true data integrity by verifying the entire packfile content
-        // Use subarray for zero-copy reading of large files
-        const payload = pack.subarray(0, -20);
-        const actualPayloadSha = await shasum(payload);
+        // 2. Deep Integrity Check: Calculate actual SHA-1 of packfile payload.
+        // The Node package build swaps in a chunked implementation for large packs.
+        const actualPayloadSha = await shasumRange(pack, {
+          start: 0,
+          end: pack.length - 20,
+        });
         if (actualPayloadSha !== expectedShaFromIndex) {
           throw new InternalError(
             `Packfile payload corrupted: calculated ${actualPayloadSha} but expected ${expectedShaFromIndex}. The packfile may have been tampered with.`
