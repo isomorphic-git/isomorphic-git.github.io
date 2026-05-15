@@ -747,9 +747,15 @@ export function TREE({ ref }?: {
     ref?: string | undefined;
 }): Walker;
 /**
+ * @param {object} [opts]
+ * @param {boolean} [opts.refresh=true] - When false, suppress the stat-cache
+ *   refresh that would rewrite `.git/index` when a working-tree file's stat
+ *   info has drifted but its content still matches the staged blob.
  * @returns {Walker}
  */
-export function WORKDIR(): Walker;
+export function WORKDIR({ refresh }?: {
+    refresh?: boolean | undefined;
+}): Walker;
 /**
  * Abort a merge in progress.
  *
@@ -3172,6 +3178,11 @@ export function stash({ fs, dir, gitdir, op, message, refIdx, }: {
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to query
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.refresh = true] - when false, do not refresh the
+ *   `.git/index` stat cache when the working-tree file's contents still match
+ *   the staged blob. The call becomes read-only with respect to the index, at
+ *   the cost of recomputing the SHA1 on subsequent calls for files whose
+ *   stat info has drifted.
  *
  * @returns {Promise<'ignored'|'unmodified'|'*modified'|'*deleted'|'*added'|'absent'|'modified'|'deleted'|'added'|'*unmodified'|'*absent'|'*undeleted'|'*undeletemodified'>} Resolves successfully with the file's git status
  *
@@ -3180,12 +3191,13 @@ export function stash({ fs, dir, gitdir, op, message, refIdx, }: {
  * console.log(status)
  *
  */
-export function status({ fs: _fs, dir, gitdir, filepath, cache, }: {
+export function status({ fs: _fs, dir, gitdir, filepath, cache, refresh, }: {
     fs: FsClient;
     dir: string;
     gitdir?: string | undefined;
     filepath: string;
     cache?: object;
+    refresh?: boolean | undefined;
 }): Promise<"ignored" | "unmodified" | "*modified" | "*deleted" | "*added" | "absent" | "modified" | "deleted" | "added" | "*unmodified" | "*absent" | "*undeleted" | "*undeletemodified">;
 /**
  * Efficiently get the status of multiple files at once.
@@ -3326,11 +3338,16 @@ export function status({ fs: _fs, dir, gitdir, filepath, cache, }: {
  * @param {function(string): boolean} [args.filter] - Filter the results to only those whose filepath matches a function.
  * @param {object} [args.cache] - a [cache](cache.md) object
  * @param {boolean} [args.ignored = false] - include ignored files in the result
+ * @param {boolean} [args.refresh = true] - when false, do not refresh the
+ *   `.git/index` stat cache for files whose contents still match the staged
+ *   blob. The call becomes read-only with respect to the index, at the cost
+ *   of recomputing the SHA1 on subsequent calls for files whose stat info
+ *   has drifted.
  *
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
  */
-export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cache, ignored: shouldIgnore, }: {
+export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cache, ignored: shouldIgnore, refresh, }: {
     fs: FsClient;
     dir: string;
     gitdir?: string | undefined;
@@ -3339,6 +3356,7 @@ export function statusMatrix({ fs: _fs, dir, gitdir, ref, filepaths, filter, cac
     filter?: ((arg0: string) => boolean) | undefined;
     cache?: object;
     ignored?: boolean | undefined;
+    refresh?: boolean | undefined;
 }): Promise<Array<StatusRow>>;
 /**
  * Create a lightweight tag

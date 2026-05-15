@@ -5382,11 +5382,12 @@ function TREE({ ref = 'HEAD' } = {}) {
 }
 
 class GitWalkerFs {
-  constructor({ fs, dir, gitdir, cache }) {
+  constructor({ fs, dir, gitdir, cache, refresh = true }) {
     this.fs = fs;
     this.cache = cache;
     this.dir = dir;
     this.gitdir = gitdir;
+    this.refresh = refresh;
 
     this.config = null;
     const walker = this;
@@ -5522,7 +5523,9 @@ class GitWalkerFs {
               // Update the stats in the index so we will get a "cache hit" next time
               // 1) if we can (because the oid and mode are the same)
               // 2) and only if we need to (because other stats differ)
+              // 3) and only if the caller opted in to refreshing the index
               if (
+                self.refresh &&
                 stage &&
                 oid === stage.oid &&
                 (!filemode || stats.mode === stage.mode) &&
@@ -5558,13 +5561,17 @@ class GitWalkerFs {
 // @ts-check
 
 /**
+ * @param {object} [opts]
+ * @param {boolean} [opts.refresh=true] - When false, suppress the stat-cache
+ *   refresh that would rewrite `.git/index` when a working-tree file's stat
+ *   info has drifted but its content still matches the staged blob.
  * @returns {Walker}
  */
-function WORKDIR() {
+function WORKDIR({ refresh = true } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
     value: function ({ fs, dir, gitdir, cache }) {
-      return new GitWalkerFs({ fs, dir, gitdir, cache })
+      return new GitWalkerFs({ fs, dir, gitdir, cache, refresh })
     },
   });
   Object.freeze(o);

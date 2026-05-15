@@ -4510,11 +4510,12 @@ function TREE({ ref = 'HEAD' } = {}) {
 // @ts-check
 
 class GitWalkerFs {
-  constructor({ fs, dir, gitdir, cache }) {
+  constructor({ fs, dir, gitdir, cache, refresh = true }) {
     this.fs = fs;
     this.cache = cache;
     this.dir = dir;
     this.gitdir = gitdir;
+    this.refresh = refresh;
 
     this.config = null;
     const walker = this;
@@ -4650,7 +4651,9 @@ class GitWalkerFs {
               // Update the stats in the index so we will get a "cache hit" next time
               // 1) if we can (because the oid and mode are the same)
               // 2) and only if we need to (because other stats differ)
+              // 3) and only if the caller opted in to refreshing the index
               if (
+                self.refresh &&
                 stage &&
                 oid === stage.oid &&
                 (!filemode || stats.mode === stage.mode) &&
@@ -4686,13 +4689,17 @@ class GitWalkerFs {
 // @ts-check
 
 /**
+ * @param {object} [opts]
+ * @param {boolean} [opts.refresh=true] - When false, suppress the stat-cache
+ *   refresh that would rewrite `.git/index` when a working-tree file's stat
+ *   info has drifted but its content still matches the staged blob.
  * @returns {Walker}
  */
-function WORKDIR() {
+function WORKDIR({ refresh = true } = {}) {
   const o = Object.create(null);
   Object.defineProperty(o, GitWalkSymbol, {
     value: function ({ fs, dir, gitdir, cache }) {
-      return new GitWalkerFs({ fs, dir, gitdir, cache })
+      return new GitWalkerFs({ fs, dir, gitdir, cache, refresh })
     },
   });
   Object.freeze(o);
@@ -16044,6 +16051,11 @@ async function stash({
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} args.filepath - The path to the file to query
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {boolean} [args.refresh = true] - when false, do not refresh the
+ *   `.git/index` stat cache when the working-tree file's contents still match
+ *   the staged blob. The call becomes read-only with respect to the index, at
+ *   the cost of recomputing the SHA1 on subsequent calls for files whose
+ *   stat info has drifted.
  *
  * @returns {Promise<'ignored'|'unmodified'|'*modified'|'*deleted'|'*added'|'absent'|'modified'|'deleted'|'added'|'*unmodified'|'*absent'|'*undeleted'|'*undeletemodified'>} Resolves successfully with the file's git status
  *
@@ -16058,6 +16070,7 @@ async function status({
   gitdir = join(dir, '.git'),
   filepath,
   cache = {},
+  refresh = true,
 }) {
   try {
     assertParameter('fs', _fs);
@@ -16109,7 +16122,7 @@ async function status({
           object,
         });
         // If the oid in the index === working dir oid but stats differed update cache
-        if (I && indexEntry.oid === workdirOid) {
+        if (refresh && I && indexEntry.oid === workdirOid) {
           // and as long as our fs.stats aren't bad.
           // size of -1 happens over a BrowserFS HTTP Backend that doesn't serve Content-Length headers
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
@@ -16362,6 +16375,11 @@ async function getHeadTree({ fs, cache, gitdir: updatedGitdir }) {
  * @param {function(string): boolean} [args.filter] - Filter the results to only those whose filepath matches a function.
  * @param {object} [args.cache] - a [cache](cache.md) object
  * @param {boolean} [args.ignored = false] - include ignored files in the result
+ * @param {boolean} [args.refresh = true] - when false, do not refresh the
+ *   `.git/index` stat cache for files whose contents still match the staged
+ *   blob. The call becomes read-only with respect to the index, at the cost
+ *   of recomputing the SHA1 on subsequent calls for files whose stat info
+ *   has drifted.
  *
  * @returns {Promise<Array<StatusRow>>} Resolves with a status matrix, described below.
  * @see StatusRow
@@ -16375,6 +16393,7 @@ async function statusMatrix({
   filter,
   cache = {},
   ignored: shouldIgnore = false,
+  refresh = true,
 }) {
   try {
     assertParameter('fs', _fs);
@@ -16388,7 +16407,7 @@ async function statusMatrix({
       cache,
       dir,
       gitdir: updatedGitdir,
-      trees: [TREE({ ref }), WORKDIR(), STAGE()],
+      trees: [TREE({ ref }), WORKDIR({ refresh }), STAGE()],
       map: async function (filepath, [head, workdir, stage]) {
         // Ignore ignored files, but only if they are not already tracked.
         if (!head && !stage && workdir) {
