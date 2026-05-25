@@ -1,4 +1,4 @@
-/* List of projects/orgs using your project for the users page */
+https://github.com/isomorphic-git/isomorphic-git/issues/2195#issue-3383237469/* List of projects/orgs using your project for the users page */
 const users = [
   {
     caption: 'Antora',
