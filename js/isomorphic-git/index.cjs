@@ -9331,6 +9331,16 @@ async function hasObject({
   return result
 }
 
+function addCredentialUsername({ config, onAuth }) {
+  if (!onAuth) return onAuth
+
+  return async (url, auth) => {
+    const username =
+      auth.username || (await config.get(`credential.${url}.username`));
+    return onAuth(url, username ? { ...auth, username } : auth)
+  }
+}
+
 // TODO: make a function that just returns obCount. then emptyPackfile = () => sizePack(pack) === 0
 function emptyPackfile(pack) {
   const pheader = '5041434b';
@@ -9765,9 +9775,9 @@ async function _fetch({
   const GitRemoteHTTP = GitRemoteManager.getRemoteHelperFor({ url });
   const remoteHTTP = await GitRemoteHTTP.discover({
     http,
-    onAuth,
+    onAuth: addCredentialUsername({ config, onAuth }),
     onAuthSuccess,
-    onAuthFailure,
+    onAuthFailure: addCredentialUsername({ config, onAuth: onAuthFailure }),
     corsProxy,
     service: 'git-upload-pack',
     url,
@@ -13886,9 +13896,9 @@ async function _push({
   const GitRemoteHTTP = GitRemoteManager.getRemoteHelperFor({ url });
   const httpRemote = await GitRemoteHTTP.discover({
     http,
-    onAuth,
+    onAuth: addCredentialUsername({ config, onAuth }),
     onAuthSuccess,
-    onAuthFailure,
+    onAuthFailure: addCredentialUsername({ config, onAuth: onAuthFailure }),
     corsProxy,
     service: 'git-receive-pack',
     url,
