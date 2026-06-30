@@ -2074,7 +2074,13 @@ class GitRefManager {
    * @param {number} [args.depth = undefined] - The maximum depth to resolve symbolic refs.
    * @returns {Promise<string>} - The resolved object ID.
    */
-  static async resolve({ fs, gitdir, ref, depth = undefined }) {
+  static async resolve({
+    fs,
+    gitdir,
+    ref,
+    depth = undefined,
+    visited = new Set(),
+  }) {
     if (depth !== undefined) {
       depth--;
       if (depth === -1) {
@@ -2085,7 +2091,7 @@ class GitRefManager {
     // Is it a ref pointer?
     if (ref.startsWith('ref: ')) {
       ref = ref.slice('ref: '.length);
-      return GitRefManager.resolve({ fs, gitdir, ref, depth })
+      return GitRefManager.resolve({ fs, gitdir, ref, depth, visited })
     }
     // Is it a complete and valid SHA?
     if (ref.length === 40 && /[0-9a-f]{40}/.test(ref)) {
@@ -2104,7 +2110,21 @@ class GitRefManager {
           packedMap.get(ref)
       );
       if (sha) {
-        return GitRefManager.resolve({ fs, gitdir, ref: sha.trim(), depth })
+        // Guard against circular symbolic references (e.g. a -> b -> a). Without
+        // tracking visited refs this recursion would not terminate.
+        if (visited.has(ref)) {
+          throw new InternalError(
+            `Circular reference detected while resolving ref "${ref}"`
+          )
+        }
+        visited.add(ref);
+        return GitRefManager.resolve({
+          fs,
+          gitdir,
+          ref: sha.trim(),
+          depth,
+          visited,
+        })
       }
     }
     // Do we give up?
@@ -3619,21 +3639,26 @@ function applyDelta(delta, source) {
   if (firstOp.byteLength === targetSize) {
     target = firstOp;
   } else {
-    // Otherwise, allocate a fresh buffer and slices
-    target = Buffer.alloc(targetSize);
-    const writer = new BufferCursor(target);
-    writer.copy(firstOp);
+    // Build the result from the delta ops instead of pre-allocating `targetSize`.
+    // `targetSize` comes from the delta header and may not match the actual op output,
+    // so allocating it up front can reserve far more memory than the ops produce.
+    // Building from the ops bounds memory to the real output size; the size check below
+    // still validates the total before concatenating.
+    const chunks = [firstOp];
+    let tell = firstOp.byteLength;
 
     while (!reader.eof()) {
-      writer.copy(readOp(reader, source));
+      const op = readOp(reader, source);
+      chunks.push(op);
+      tell += op.byteLength;
     }
 
-    const tell = writer.tell();
     if (targetSize !== tell) {
       throw new InternalError(
         `applyDelta expected target buffer to be ${targetSize} bytes but the resulting buffer was ${tell} bytes`
       )
     }
+    target = Buffer.concat(chunks, targetSize);
   }
   return target
 }
@@ -4890,8 +4915,25 @@ function parseBuffer(buffer) {
     const type = mode2type$1(mode);
     const path = buffer.slice(space + 1, nullchar).toString('utf8');
 
-    // Prevent malicious git repos from writing to "..\foo" on clone etc
-    if (path.includes('\\') || path.includes('/')) {
+    // Reject reserved entry names, matching git's verify_path(): path separators,
+    // "." and ".." (which resolve outside the working directory), and ".git" (which git
+    // disallows as a path component). Checks mirror git's is_ntfs_dotgit() and
+    // is_hfs_dotgit(): case-insensitive, trailing dots/spaces stripped (NTFS),
+    // NTFS 8.3 short name aliases (git~1..git~9), and HFS+ ignorable Unicode
+    // characters stripped (zero-width joiners, directional marks, BOM, etc.).
+    const hfsClean = path.replace(
+      /[\u200C-\u200F\u202A-\u202E\u206A-\u206F\uFEFF]/g,
+      ''
+    );
+    const normalized = hfsClean.toLowerCase().replace(/[. ]+$/, '');
+    if (
+      path.includes('\\') ||
+      path.includes('/') ||
+      hfsClean === '.' ||
+      hfsClean === '..' ||
+      normalized === '.git' ||
+      /^\.?git~[1-9]$/.test(normalized)
+    ) {
       throw new UnsafeFilepathError(path)
     }
 

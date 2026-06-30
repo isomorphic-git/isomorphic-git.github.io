@@ -568,7 +568,7 @@ export class GitRefManager {
      * @param {number} [args.depth = undefined] - The maximum depth to resolve symbolic refs.
      * @returns {Promise<string>} - The resolved object ID.
      */
-    static resolve({ fs, gitdir, ref, depth }: {
+    static resolve({ fs, gitdir, ref, depth, visited, }: {
         fs: FSClient;
         gitdir?: string | undefined;
         ref: string;
