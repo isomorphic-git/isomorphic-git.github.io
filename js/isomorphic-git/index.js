@@ -6877,23 +6877,11 @@ async function branch({
   }
 }
 
-const worthWalking = (filepath, root) => {
-  if (filepath === '.' || root == null || root.length === 0 || root === '.') {
-    return true
-  }
-  if (root.length >= filepath.length) {
-    return root.startsWith(filepath)
-  } else {
-    return filepath.startsWith(root)
-  }
-};
-
-// @ts-check
-
 /**
- * Throw if any leading directory component of `fullpath` (relative to `dir`) is a symbolic
- * link. git does not follow symlinks in the leading path when writing working-tree files;
- * matching that avoids writing through a symlinked parent into a location outside `dir`.
+ * Refuse to materialize a working-tree entry whose parent path traverses a
+ * symbolic link. A leading component that is a symlink could otherwise redirect
+ * a write or mkdir outside the working tree. git applies the same check: it does
+ * not follow symlinks in the leading path when writing working-tree files.
  *
  * @param {import('../models/FileSystem.js').FileSystem} fs
  * @param {string} dir
@@ -6913,6 +6901,19 @@ async function assertNoSymlinkInLeadingPath(fs, dir, fullpath) {
     }
   }
 }
+
+const worthWalking = (filepath, root) => {
+  if (filepath === '.' || root == null || root.length === 0 || root === '.') {
+    return true
+  }
+  if (root.length >= filepath.length) {
+    return root.startsWith(filepath)
+  } else {
+    return filepath.startsWith(root)
+  }
+};
+
+// @ts-check
 
 /**
  * @param {object} args
@@ -8455,6 +8456,11 @@ async function applyTreeChanges({
           await fs.rmdir(currentFilepath);
           break
         case 'mkdir':
+          // Don't mkdir through a symlinked leading path: a parent component that
+          // is a symlink could otherwise redirect the directory creation outside
+          // the working tree. git applies the same check (it does not follow
+          // symlinks here) — see checkout.
+          await assertNoSymlinkInLeadingPath(fs, dir, op.filepath);
           await fs.mkdir(currentFilepath);
           break
         case 'rm':
@@ -8467,6 +8473,10 @@ async function applyTreeChanges({
               currentFilepath.startsWith(removedDir)
             )
           ) {
+            // Don't write through a symlinked leading path (see checkout): a
+            // parent component that is a symlink could redirect the write to a
+            // location outside the working tree.
+            await assertNoSymlinkInLeadingPath(fs, dir, op.filepath);
             const { object } = await _readObject({
               fs,
               cache: {},

@@ -5855,6 +5855,31 @@ async function _writeTree({ fs, gitdir, tree }) {
   return oid
 }
 
+/**
+ * Refuse to materialize a working-tree entry whose parent path traverses a
+ * symbolic link. A leading component that is a symlink could otherwise redirect
+ * a write or mkdir outside the working tree. git applies the same check: it does
+ * not follow symlinks in the leading path when writing working-tree files.
+ *
+ * @param {import('../models/FileSystem.js').FileSystem} fs
+ * @param {string} dir
+ * @param {string} fullpath
+ */
+async function assertNoSymlinkInLeadingPath(fs, dir, fullpath) {
+  const parts = fullpath.split('/');
+  parts.pop(); // the final segment is the entry being written, not a leading dir
+  let current = dir;
+  for (const part of parts) {
+    if (part === '' || part === '.') continue
+    current = `${current}/${part}`;
+    const stats = await fs.lstat(current);
+    // lstat returns null when the path doesn't exist yet (nothing to traverse).
+    if (stats && stats.isSymbolicLink()) {
+      throw new UnsafeFilepathError(fullpath)
+    }
+  }
+}
+
 function posixifyPathBuffer(buffer) {
   let idx;
   while (~(idx = buffer.indexOf(92))) buffer[idx] = 47;
@@ -6111,6 +6136,11 @@ async function applyTreeChanges({
           await fs.rmdir(currentFilepath);
           break
         case 'mkdir':
+          // Don't mkdir through a symlinked leading path: a parent component that
+          // is a symlink could otherwise redirect the directory creation outside
+          // the working tree. git applies the same check (it does not follow
+          // symlinks here) — see checkout.
+          await assertNoSymlinkInLeadingPath(fs, dir, op.filepath);
           await fs.mkdir(currentFilepath);
           break
         case 'rm':
@@ -6123,6 +6153,10 @@ async function applyTreeChanges({
               currentFilepath.startsWith(removedDir)
             )
           ) {
+            // Don't write through a symlinked leading path (see checkout): a
+            // parent component that is a symlink could redirect the write to a
+            // location outside the working tree.
+            await assertNoSymlinkInLeadingPath(fs, dir, op.filepath);
             const { object } = await _readObject({
               fs,
               cache: {},
