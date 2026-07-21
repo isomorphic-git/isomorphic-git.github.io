@@ -5522,6 +5522,7 @@ class GitWalkerFs {
   }
 
   async readdir(entry) {
+    if ((await entry.type()) !== 'tree') return null
     const filepath = entry._fullpath;
     const { fs, dir } = this;
     const names = await fs.readdir(join(dir, filepath));
