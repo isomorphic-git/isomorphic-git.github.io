@@ -66,6 +66,7 @@ var diff3Merge = _interopDefault(require('diff3'));
  * @property {string} message Commit message
  * @property {string} tree SHA-1 object id of corresponding file tree
  * @property {string[]} parent an array of zero or more SHA-1 object ids
+ * @property {Array.<Array.<string|null>>} [changes] Changed files as `[newOid, oldOid, filepath]`; present when `log` is called with `includeChanges: true`.
  * @property {Object} author
  * @property {string} author.name The author's name
  * @property {string} author.email The author's email
@@ -13097,7 +13098,7 @@ async function _resolveFileId({
  * @param {number|void} args.depth
  * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
  * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
- * @param {boolean=} args.follow Continue listing the history of a file beyond renames (works only for a single file). defaults to false
+ * @param {boolean=} [args.includeChanges=false] Include changed file object ids for each commit.
  *
  * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
  * @see ReadCommitResult
@@ -13118,6 +13119,7 @@ async function _log({
   since,
   force,
   follow,
+  includeChanges,
 }) {
   const sinceTimestamp =
     typeof since === 'undefined'
@@ -13245,7 +13247,55 @@ async function _log({
     // Process tips in order by age
     tips.sort((a, b) => compareAge(a.commit, b.commit));
   }
+  if (includeChanges) {
+    for (const commit of commits) {
+      commit.commit.changes = await getChanges({
+        fs,
+        cache,
+        gitdir,
+        commit,
+        shallow: shallowCommits.has(commit.oid),
+      });
+    }
+  }
   return commits
+}
+
+async function getChanges({ fs, cache, gitdir, commit, shallow }) {
+  const parent =
+    shallow || !commit.commit.parent[0]
+      ? '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
+      : commit.commit.parent[0];
+  return _walk({
+    fs,
+    cache,
+    gitdir,
+    trees: [TREE({ ref: commit.oid }), TREE({ ref: parent })],
+    map: async (filepath, [current, previous]) => {
+      const [currentType, previousType] = await Promise.all([
+        current && current.type(),
+        previous && previous.type(),
+      ]);
+      if (currentType === 'tree') {
+        if (previousType && previousType !== 'tree') {
+          return [null, await previous.oid(), filepath]
+        }
+        return
+      }
+      if (previousType === 'tree') {
+        if (currentType) {
+          return [await current.oid(), null, filepath]
+        }
+        return
+      }
+      const [newOid, oldOid] = await Promise.all([
+        current ? current.oid() : null,
+        previous ? previous.oid() : null,
+      ]);
+      if (newOid === oldOid) return
+      return [newOid, oldOid, filepath]
+    },
+  })
 }
 
 // @ts-check
@@ -13263,6 +13313,7 @@ async function _log({
  * @param {Date} [args.since] - Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.
  * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
  * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
+ * @param {boolean=} [args.includeChanges=false] Include changed file object ids for each commit. Each tuple is `[newOid, oldOid, filepath]`; an added or removed file has a null old or new oid, respectively.
  * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
@@ -13289,6 +13340,7 @@ async function log({
   since, // Date
   force,
   follow,
+  includeChanges = false,
   cache = {},
 }) {
   try {
@@ -13308,6 +13360,7 @@ async function log({
       since,
       force,
       follow,
+      includeChanges,
     })
   } catch (err) {
     err.caller = 'git.log';

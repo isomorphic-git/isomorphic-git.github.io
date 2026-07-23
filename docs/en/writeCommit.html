@@ -72,6 +72,7 @@
   message: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// Commit message</span>
   tree: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// SHA-1 object id of corresponding file tree</span>
   parent: <span class="hljs-built_in">Array</span>&lt;<span class="hljs-built_in">string</span>&gt;; <span class="hljs-comment">// an array of zero or more SHA-1 object ids</span>
+  changes?: <span class="hljs-built_in">Array</span>&lt;<span class="hljs-built_in">Array</span>&lt;(<span class="hljs-built_in">string</span>|<span class="hljs-literal">null</span>)&gt;&gt;; <span class="hljs-comment">// Changed files as `[newOid, oldOid, filepath]`; present when `log` is called with `includeChanges: true`.</span>
   author: {
     name: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// The author's name</span>
     email: <span class="hljs-built_in">string</span>; <span class="hljs-comment">// The author's email</span>

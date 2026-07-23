@@ -103,6 +103,10 @@ export type CommitObject = {
      * an array of zero or more SHA-1 object ids
      */
     parent: string[];
+    /**
+     * Changed files as `[newOid, oldOid, filepath]`; present when `log` is called with `includeChanges: true`.
+     */
+    changes?: (string | null)[][] | undefined;
     author: {
         name: string;
         email: string;

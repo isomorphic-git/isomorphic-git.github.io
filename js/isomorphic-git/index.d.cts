@@ -354,6 +354,10 @@ export type CommitObject = {
      * an array of zero or more SHA-1 object ids
      */
     parent: string[];
+    /**
+     * Changed files as `[newOid, oldOid, filepath]`; present when `log` is called with `includeChanges: true`.
+     */
+    changes?: (string | null)[][] | undefined;
     author: {
         name: string;
         email: string;
@@ -2181,6 +2185,7 @@ export function listTags({ fs, dir, gitdir }: {
  * @param {Date} [args.since] - Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.
  * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
  * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
+ * @param {boolean=} [args.includeChanges=false] Include changed file object ids for each commit. Each tuple is `[newOid, oldOid, filepath]`; an added or removed file has a null old or new oid, respectively.
  * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<Array<ReadCommitResult>>} Resolves to an array of ReadCommitResult objects
@@ -2197,7 +2202,7 @@ export function listTags({ fs, dir, gitdir }: {
  * console.log(commits)
  *
  */
-export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follow, cache, }: {
+export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follow, includeChanges, cache, }: {
     fs: FsClient;
     dir?: string | undefined;
     gitdir?: string | undefined;
@@ -2207,6 +2212,7 @@ export function log({ fs, dir, gitdir, filepath, ref, depth, since, force, follo
     since?: Date | undefined;
     force?: boolean | undefined;
     follow?: boolean | undefined;
+    includeChanges?: boolean | undefined;
     cache?: object;
 }): Promise<Array<ReadCommitResult>>;
 /**
@@ -4521,6 +4527,7 @@ declare namespace NoCommitError {
  * @property {string} message Commit message
  * @property {string} tree SHA-1 object id of corresponding file tree
  * @property {string[]} parent an array of zero or more SHA-1 object ids
+ * @property {Array.<Array.<string|null>>} [changes] Changed files as `[newOid, oldOid, filepath]`; present when `log` is called with `includeChanges: true`.
  * @property {Object} author
  * @property {string} author.name The author's name
  * @property {string} author.email The author's email
