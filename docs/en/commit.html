@@ -79,6 +79,7 @@
 <tr><td>amend</td><td>boolean = false</td><td>If true, replaces the last commit pointed to by <code>ref</code> with a new commit.</td></tr>
 <tr><td>dryRun</td><td>boolean = false</td><td>If true, simulates making a commit so you can test whether it would succeed. Implies <code>noUpdateBranch</code>.</td></tr>
 <tr><td>noUpdateBranch</td><td>boolean = false</td><td>If true, does not update the branch pointer after creating the commit.</td></tr>
+<tr><td>disallowEmpty</td><td>boolean = false</td><td>If true, throws an error instead of creating a commit with no staged changes.</td></tr>
 <tr><td>ref</td><td>string</td><td>The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)</td></tr>
 <tr><td>parent</td><td>Array&lt;string&gt;</td><td>The SHA-1 object ids of the commits to use as parents. If not specified, the commit pointed to by <code>ref</code> is used.</td></tr>
 <tr><td>tree</td><td>string</td><td>The SHA-1 object id of the tree to use. If not specified, a new tree object is created from the current git index.</td></tr>

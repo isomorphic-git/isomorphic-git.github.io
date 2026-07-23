@@ -3732,6 +3732,16 @@ class CommitNotFetchedError extends BaseError {
 /** @type {'CommitNotFetchedError'} */
 CommitNotFetchedError.code = 'CommitNotFetchedError';
 
+class EmptyCommitError extends BaseError {
+  constructor() {
+    super('Cannot create an empty commit when disallowEmpty is true.');
+    this.code = this.name = EmptyCommitError.code;
+    this.data = {};
+  }
+}
+/** @type {'EmptyCommitError'} */
+EmptyCommitError.code = 'EmptyCommitError';
+
 class EmptyServerResponseError extends BaseError {
   constructor() {
     super(`Empty response from git server.`);
@@ -4050,6 +4060,7 @@ var Errors = /*#__PURE__*/Object.freeze({
   CherryPickMergeCommitError: CherryPickMergeCommitError,
   CherryPickRootCommitError: CherryPickRootCommitError,
   CommitNotFetchedError: CommitNotFetchedError,
+  EmptyCommitError: EmptyCommitError,
   EmptyServerResponseError: EmptyServerResponseError,
   FastForwardError: FastForwardError,
   GitPushError: GitPushError,
@@ -5963,6 +5974,8 @@ async function _readCommit({ fs, cache, gitdir, oid }) {
 
 // @ts-check
 
+const EMPTY_TREE_OID = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
 /**
  *
  * @param {Object} args
@@ -5985,6 +5998,7 @@ async function _readCommit({ fs, cache, gitdir, oid }) {
  * @param {boolean} [args.amend = false]
  * @param {boolean} [args.dryRun = false]
  * @param {boolean} [args.noUpdateBranch = false]
+ * @param {boolean} [args.disallowEmpty = false]
  * @param {string} [args.ref]
  * @param {string[]} [args.parent]
  * @param {string} [args.tree]
@@ -6003,6 +6017,7 @@ async function _commit({
   amend = false,
   dryRun = false,
   noUpdateBranch = false,
+  disallowEmpty = false,
   ref,
   parent,
   tree,
@@ -6088,6 +6103,15 @@ async function _commit({
             return GitRefManager.resolve({ fs, gitdir, ref: p })
           })
         );
+      }
+
+      if (
+        disallowEmpty &&
+        !amend &&
+        ((initialCommit && tree === EMPTY_TREE_OID) ||
+          (!initialCommit && tree === refCommit.commit.tree))
+      ) {
+        throw new EmptyCommitError()
       }
 
       // Determine message of this commit
@@ -10474,6 +10498,7 @@ async function clone({
  * @param {boolean} [args.amend = false] - If true, replaces the last commit pointed to by `ref` with a new commit.
  * @param {boolean} [args.dryRun = false] - If true, simulates making a commit so you can test whether it would succeed. Implies `noUpdateBranch`.
  * @param {boolean} [args.noUpdateBranch = false] - If true, does not update the branch pointer after creating the commit.
+ * @param {boolean} [args.disallowEmpty = false] - If true, throws an error instead of creating a commit with no staged changes.
  * @param {string} [args.ref] - The fully expanded name of the branch to commit to. Default is the current branch pointed to by HEAD. (TODO: fix it so it can expand branch names without throwing if the branch doesn't exist yet.)
  * @param {string[]} [args.parent] - The SHA-1 object ids of the commits to use as parents. If not specified, the commit pointed to by `ref` is used.
  * @param {string} [args.tree] - The SHA-1 object id of the tree to use. If not specified, a new tree object is created from the current git index.
@@ -10506,6 +10531,7 @@ async function commit({
   amend = false,
   dryRun = false,
   noUpdateBranch = false,
+  disallowEmpty = false,
   ref,
   parent,
   tree,
@@ -10534,6 +10560,7 @@ async function commit({
       amend,
       dryRun,
       noUpdateBranch,
+      disallowEmpty,
       ref,
       parent,
       tree,

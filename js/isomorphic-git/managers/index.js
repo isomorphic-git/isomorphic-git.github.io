@@ -5120,6 +5120,16 @@ class CommitNotFetchedError extends BaseError {
 /** @type {'CommitNotFetchedError'} */
 CommitNotFetchedError.code = 'CommitNotFetchedError';
 
+class EmptyCommitError extends BaseError {
+  constructor() {
+    super('Cannot create an empty commit when disallowEmpty is true.');
+    this.code = this.name = EmptyCommitError.code;
+    this.data = {};
+  }
+}
+/** @type {'EmptyCommitError'} */
+EmptyCommitError.code = 'EmptyCommitError';
+
 class FastForwardError extends BaseError {
   constructor() {
     super(`A simple fast-forward merge was not possible.`);
