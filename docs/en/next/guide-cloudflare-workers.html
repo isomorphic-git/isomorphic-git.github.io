@@ -1,0 +1,250 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Using isomorphic-git in Cloudflare Workers · isomorphic-git</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Cloudflare Workers is a popular edge computing platform that runs JavaScript in a V8"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Using isomorphic-git in Cloudflare Workers · isomorphic-git"/><meta property="og:type" content="website"/><meta property="og:url" content="https://isomorphic-git.org/"/><meta property="og:description" content="Cloudflare Workers is a popular edge computing platform that runs JavaScript in a V8"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://isomorphic-git.org/img/favicon/android-chrome-192x192.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="alternate" type="application/atom+xml" href="https://isomorphic-git.org/blog/atom.xml" title="isomorphic-git Blog ATOM Feed"/><link rel="alternate" type="application/rss+xml" href="https://isomorphic-git.org/blog/feed.xml" title="isomorphic-git Blog RSS Feed"/><script type="text/javascript" src="/js/announcement.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/en"><img class="logo" src="/img/isomorphic-git-logo.svg" alt="isomorphic-git"/><h2 class="headerTitleWithLogo">isomorphic-git</h2></a><a href="/en/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/docs/en/next/alphabetic" target="_self">API Docs</a></li><li class=""><a href="/docs/en/next/quickstart" target="_self">Guide</a></li><li class=""><a href="/blog/" target="_self">Blog</a></li><li class=""><a href="https://github.com/isomorphic-git/isomorphic-git" target="_self">GitHub</a></li><li class=""><a href="https://npmjs.com/package/isomorphic-git" target="_self">npm</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/isomorphic-git/isomorphic-git/edit/main/docs/guide-cloudflare-workers.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Using isomorphic-git in Cloudflare Workers</h1></header><article><div><span><p>Cloudflare Workers is a popular edge computing platform that runs JavaScript in a V8
+isolate environment. It does <strong>not</strong> support IndexedDB — which is the storage backend
+used by <code>@isomorphic-git/lightning-fs</code> by default.</p>
+<p>This guide explains how to use <code>isomorphic-git</code> inside a Cloudflare Worker using
+<code>LightningFS</code>'s pluggable backend system.</p>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="why-does-lightningfs-need-a-custom-backend"></a><a href="#why-does-lightningfs-need-a-custom-backend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Why does LightningFS need a custom backend?</h2>
+<p><code>LightningFS</code> separates the <strong>filesystem logic</strong> (directory trees, stat objects, path
+resolution) from the <strong>storage layer</strong>. The storage layer is a plain object that
+implements five methods:</p>
+<table>
+<thead>
+<tr><th>Method</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>saveSuperblock(superblock)</code></td><td>Persist the serialised directory tree</td></tr>
+<tr><td><code>loadSuperblock()</code></td><td>Load the directory tree on startup</td></tr>
+<tr><td><code>readFile(inode)</code></td><td>Read raw file bytes by inode key</td></tr>
+<tr><td><code>writeFile(inode, data)</code></td><td>Write raw file bytes by inode key</td></tr>
+<tr><td><code>unlink(inode)</code></td><td>Delete a file by inode key</td></tr>
+</tbody>
+</table>
+<p>The default storage layer (<code>IdbBackend</code>) uses IndexedDB. Swap it out and you can
+run LightningFS — and therefore <code>isomorphic-git</code> — anywhere.</p>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="option-1-ephemeral-in-memory-memorybackend"></a><a href="#option-1-ephemeral-in-memory-memorybackend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Option 1 — Ephemeral in-memory (MemoryBackend)</h2>
+<p>For workflows that only need to run Git operations within a <strong>single request</strong> (e.g.
+clone a repo, read a file, return a response), an in-memory backend is ideal:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// MemoryBackend.js</span>
+<span class="hljs-keyword">export</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MemoryBackend</span> </span>{
+  <span class="hljs-keyword">constructor</span>() {
+    <span class="hljs-keyword">this</span>._map = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Map</span>()
+  }
+  saveSuperblock(superblock) { <span class="hljs-keyword">this</span>._map.set(<span class="hljs-string">'!root'</span>, superblock) }
+  loadSuperblock()           { <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._map.get(<span class="hljs-string">'!root'</span>) || <span class="hljs-literal">null</span> }
+  readFile(inode)            { <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._map.get(inode) || <span class="hljs-literal">null</span> }
+  writeFile(inode, data)     { <span class="hljs-keyword">this</span>._map.set(inode, data) }
+  unlink(inode)              { <span class="hljs-keyword">this</span>._map.delete(inode) }
+  <span class="hljs-keyword">async</span> wipe()               { <span class="hljs-keyword">this</span>._map.clear() }
+}
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> <code>MemoryBackend</code> is tracked for inclusion in <code>@isomorphic-git/lightning-fs</code>
+as a first-class export. Until then, paste the class above into your project.</p>
+</blockquote>
+<p>Use it with LightningFS and isomorphic-git:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// worker.js</span>
+<span class="hljs-keyword">import</span> LightningFS <span class="hljs-keyword">from</span> <span class="hljs-string">'@isomorphic-git/lightning-fs'</span>
+<span class="hljs-keyword">import</span> git <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git'</span>
+<span class="hljs-keyword">import</span> http <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git/http/web'</span>
+<span class="hljs-keyword">import</span> { MemoryBackend } <span class="hljs-keyword">from</span> <span class="hljs-string">'./MemoryBackend.js'</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
+  <span class="hljs-keyword">async</span> fetch(request, env) {
+    <span class="hljs-comment">// Each request gets a fresh in-memory filesystem</span>
+    <span class="hljs-keyword">const</span> fs = <span class="hljs-keyword">new</span> LightningFS(<span class="hljs-string">'mem'</span>, { <span class="hljs-attr">backend</span>: <span class="hljs-keyword">new</span> MemoryBackend() })
+
+    <span class="hljs-keyword">await</span> git.clone({
+      fs,
+      http,
+      <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span>,
+      <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/isomorphic-git/isomorphic-git'</span>,
+      <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span>,
+    })
+
+    <span class="hljs-keyword">const</span> commits = <span class="hljs-keyword">await</span> git.log({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">5</span> })
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Response(<span class="hljs-built_in">JSON</span>.stringify(commits, <span class="hljs-literal">null</span>, <span class="hljs-number">2</span>), {
+      <span class="hljs-attr">headers</span>: { <span class="hljs-string">'content-type'</span>: <span class="hljs-string">'application/json'</span> },
+    })
+  },
+}
+</code></pre>
+<p>This is perfect for:</p>
+<ul>
+<li>Cloning a repo to read a config file at the edge</li>
+<li>Rendering markdown from a git tree</li>
+<li>Running <code>git log</code> / <code>git diff</code> in response to a webhook</li>
+<li>Building a static site at the edge on every deploy</li>
+</ul>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="option-2-zenfs-inmemory-backend"></a><a href="#option-2-zenfs-inmemory-backend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Option 2 — ZenFS InMemory backend</h2>
+<p><a href="https://github.com/zen-fs/core">ZenFS</a> is a separate library that also provides an
+<code>InMemory</code> backend and implements the full <code>fs.promises</code> API without going through
+LightningFS:</p>
+<pre><code class="hljs css language-toml"><span class="hljs-comment"># wrangler.toml</span>
+<span class="hljs-attr">compatibility_date</span> = <span class="hljs-string">"2024-01-01"</span>
+<span class="hljs-attr">compatibility_flags</span> = [<span class="hljs-string">"nodejs_compat"</span>]
+</code></pre>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">import</span> { fs, configureSingle } <span class="hljs-keyword">from</span> <span class="hljs-string">'@zenfs/core'</span>
+<span class="hljs-keyword">import</span> { InMemory } <span class="hljs-keyword">from</span> <span class="hljs-string">'@zenfs/core'</span>
+<span class="hljs-keyword">import</span> git <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git'</span>
+<span class="hljs-keyword">import</span> http <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git/http/web'</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
+  <span class="hljs-keyword">async</span> fetch(request) {
+    <span class="hljs-keyword">await</span> configureSingle({ <span class="hljs-attr">backend</span>: InMemory })
+
+    <span class="hljs-keyword">await</span> git.clone({ fs, http, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span>, <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/example/repo'</span>, <span class="hljs-attr">singleBranch</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span> })
+
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Response(<span class="hljs-string">'ok'</span>)
+  },
+}
+</code></pre>
+<blockquote>
+<p><strong>Warning:</strong> <code>configureSingle</code> sets a global filesystem. If requests run concurrently
+in the same isolate, they share state. Prefer <code>MemoryBackend</code> with LightningFS if you
+need per-request isolation.</p>
+</blockquote>
+<hr>
+<p><a id="option-3"></a></p>
+<h2><a class="anchor" aria-hidden="true" id="option-3-persistent-storage-durable-objects-backend"></a><a href="#option-3-persistent-storage-durable-objects-backend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Option 3 — Persistent storage (Durable Objects backend)</h2>
+<p>If the repository must <strong>survive across requests</strong>, replace <code>MemoryBackend</code> with a backend
+that persists to <a href="https://developers.cloudflare.com/durable-objects/">Durable Object storage</a>.
+The five-method interface is the same — only the storage medium changes:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// DurableBackend.js</span>
+<span class="hljs-keyword">export</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DurableBackend</span> </span>{
+  <span class="hljs-keyword">constructor</span>(storage) {
+    <span class="hljs-comment">// `storage` is `this.ctx.storage` from inside a Durable Object</span>
+    <span class="hljs-keyword">this</span>._storage = storage
+  }
+  <span class="hljs-keyword">async</span> saveSuperblock(superblock) { <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.put(<span class="hljs-string">'!root'</span>, superblock) }
+  <span class="hljs-keyword">async</span> loadSuperblock()           { <span class="hljs-keyword">return</span> (<span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.get(<span class="hljs-string">'!root'</span>)) || <span class="hljs-literal">null</span> }
+  <span class="hljs-keyword">async</span> readFile(inode)            { <span class="hljs-keyword">return</span> (<span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.get(<span class="hljs-built_in">String</span>(inode))) || <span class="hljs-literal">null</span> }
+  <span class="hljs-keyword">async</span> writeFile(inode, data)     { <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.put(<span class="hljs-built_in">String</span>(inode), data) }
+  <span class="hljs-keyword">async</span> unlink(inode)              { <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.delete(<span class="hljs-built_in">String</span>(inode)) }
+  <span class="hljs-keyword">async</span> wipe()                     { <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>._storage.deleteAll() }
+}
+</code></pre>
+<p>Use it inside a Durable Object class:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// GitRepository.js — the Durable Object</span>
+<span class="hljs-keyword">import</span> LightningFS <span class="hljs-keyword">from</span> <span class="hljs-string">'@isomorphic-git/lightning-fs'</span>
+<span class="hljs-keyword">import</span> git <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git'</span>
+<span class="hljs-keyword">import</span> http <span class="hljs-keyword">from</span> <span class="hljs-string">'isomorphic-git/http/web'</span>
+<span class="hljs-keyword">import</span> { DurableBackend } <span class="hljs-keyword">from</span> <span class="hljs-string">'./DurableBackend.js'</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GitRepository</span> </span>{
+  <span class="hljs-keyword">constructor</span>(state, env) {
+    <span class="hljs-keyword">this</span>.ctx = state
+  }
+
+  <span class="hljs-keyword">async</span> fetch(request) {
+    <span class="hljs-keyword">const</span> fs = <span class="hljs-keyword">new</span> LightningFS(<span class="hljs-string">'repo'</span>, { <span class="hljs-attr">backend</span>: <span class="hljs-keyword">new</span> DurableBackend(<span class="hljs-keyword">this</span>.ctx.storage) })
+    <span class="hljs-keyword">const</span> url = <span class="hljs-keyword">new</span> URL(request.url)
+
+    <span class="hljs-keyword">if</span> (url.pathname === <span class="hljs-string">'/init'</span>) {
+      <span class="hljs-keyword">await</span> git.init({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span> })
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Response(<span class="hljs-string">'initialized'</span>)
+    }
+    <span class="hljs-keyword">if</span> (url.pathname === <span class="hljs-string">'/log'</span>) {
+      <span class="hljs-keyword">const</span> log = <span class="hljs-keyword">await</span> git.log({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">10</span> })
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Response(<span class="hljs-built_in">JSON</span>.stringify(log), { <span class="hljs-attr">headers</span>: { <span class="hljs-string">'content-type'</span>: <span class="hljs-string">'application/json'</span> } })
+    }
+
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Response(<span class="hljs-string">'not found'</span>, { <span class="hljs-attr">status</span>: <span class="hljs-number">404</span> })
+  }
+}
+
+<span class="hljs-comment">// worker.js</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
+  <span class="hljs-keyword">async</span> fetch(request, env) {
+    <span class="hljs-keyword">const</span> id = env.GIT_REPO.idFromName(<span class="hljs-string">'my-repo'</span>)
+    <span class="hljs-keyword">return</span> env.GIT_REPO.get(id).fetch(request)
+  },
+}
+</code></pre>
+<pre><code class="hljs css language-toml"><span class="hljs-comment"># wrangler.toml</span>
+<span class="hljs-attr">name</span> = <span class="hljs-string">"git-worker"</span>
+<span class="hljs-attr">main</span> = <span class="hljs-string">"worker.js"</span>
+<span class="hljs-attr">compatibility_date</span> = <span class="hljs-string">"2024-01-01"</span>
+<span class="hljs-section">
+[[durable_objects.bindings]]</span>
+<span class="hljs-attr">name</span> = <span class="hljs-string">"GIT_REPO"</span>
+<span class="hljs-attr">class_name</span> = <span class="hljs-string">"GitRepository"</span>
+<span class="hljs-section">
+[[migrations]]</span>
+<span class="hljs-attr">tag</span> = <span class="hljs-string">"v1"</span>
+<span class="hljs-attr">new_sqlite_classes</span> = [<span class="hljs-string">"GitRepository"</span>]
+</code></pre>
+<blockquote>
+<p><strong>Storage limits:</strong> For legacy KV-backed Durable Objects, values have a <strong>128 KiB</strong> limit per key.
+SQLite-backed Durable Objects (recommended for all new namespaces) allow up to <strong>2 MB</strong> per combined key/value pair
+and 10 GB total per Durable Object. For repositories with large binary blobs exceeding these limits, store file data
+in <a href="https://developers.cloudflare.com/r2/">R2</a> and keep only the superblock + inode metadata in Durable Object storage.</p>
+</blockquote>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="troubleshooting"></a><a href="#troubleshooting" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Troubleshooting</h2>
+<h3><a class="anchor" aria-hidden="true" id="referenceerror-indexeddb-is-not-defined"></a><a href="#referenceerror-indexeddb-is-not-defined" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>ReferenceError: indexedDB is not defined</code></h3>
+<p>You are using the default <code>LightningFS</code> without a custom <code>backend</code>. Pass
+<code>{ backend: new MemoryBackend() }</code> as shown above.</p>
+<h3><a class="anchor" aria-hidden="true" id="referenceerror-buffer-is-not-defined"></a><a href="#referenceerror-buffer-is-not-defined" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>ReferenceError: Buffer is not defined</code></h3>
+<p>Add <code>nodejs_compat</code> to <code>wrangler.toml</code>:</p>
+<pre><code class="hljs css language-toml"><span class="hljs-attr">compatibility_flags</span> = [<span class="hljs-string">"nodejs_compat"</span>]
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="typeerror-failed-to-fetch-on-clone"></a><a href="#typeerror-failed-to-fetch-on-clone" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>TypeError: Failed to fetch</code> on clone</h3>
+<p>Remove <code>corsProxy</code> — Cloudflare Workers can make cross-origin <code>fetch</code> requests natively.</p>
+<h3><a class="anchor" aria-hidden="true" id="cloning-a-private-repo"></a><a href="#cloning-a-private-repo" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Cloning a private repo</h3>
+<p>Pass credentials via <code>onAuth</code>:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> git.clone({
+  fs, http, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/'</span>,
+  <span class="hljs-attr">url</span>: <span class="hljs-string">'https://github.com/org/private-repo'</span>,
+  <span class="hljs-attr">onAuth</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> ({ <span class="hljs-attr">username</span>: <span class="hljs-string">'token'</span>, <span class="hljs-attr">password</span>: env.GITHUB_TOKEN }),
+})
+</code></pre>
+<hr>
+<h2><a class="anchor" aria-hidden="true" id="summary"></a><a href="#summary" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Summary</h2>
+<table>
+<thead>
+<tr><th>Goal</th><th>Recommended approach</th></tr>
+</thead>
+<tbody>
+<tr><td>Read-only, single request</td><td>LightningFS + <code>MemoryBackend</code></td></tr>
+<tr><td>Read-write, single request</td><td>LightningFS + <code>MemoryBackend</code></td></tr>
+<tr><td>Persistent across requests</td><td>LightningFS + <code>DurableBackend</code></td></tr>
+</tbody>
+</table>
+<p>Further reading:</p>
+<ul>
+<li><a href="/docs/en/next/fs">fs documentation</a> — the <code>fs.promises</code> interface and custom backend docs</li>
+<li><a href="https://developers.cloudflare.com/durable-objects/">Cloudflare Durable Objects</a></li>
+<li><a href="https://github.com/isomorphic-git/lightning-fs">LightningFS custom backends</a></li>
+</ul>
+</span></div></article></div><div class="docs-prevnext"></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
+void async function() {
+  const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
+    headers: { accept: 'application/vnd.github.v3+json' }
+  })
+  const data = await response.json()
+  document.querySelector('#gitHubStars').textContent = '(' + data.stargazers_count + '⭐)'
+}()
+</script></div></div><div><h5>More</h5><a href="/docs/en/in-the-news">In The News</a><a href="/blog">Blog</a></div></section><script type="text/javascript">let el = document.querySelector('.navListItemActive'); if (el) el.scrollIntoView({ block: 'nearest' })</script><script type="text/javascript" src="/js/gitter.js"></script><script type="text/javascript" src="/js/sidecar.v1.js"></script><script type="text/javascript" src="/js/codemirrorify.js"></script><script type="text/javascript" src="https://unpkg.com/@isomorphic-git/lightning-fs"></script><script type="text/javascript" src="/js/isomorphic-git/index.umd.min.js"></script><script type="module" src="/js/tutorial.js"></script><script type="module" src="/js/try-it-out-giturl.js"></script><script type="text/javascript" src="https://unpkg.com/@webcomponents/shadydom"></script><script type="text/javascript" src="/js/object-inspector.min.js"></script><script data-domain="isomorphic-git.org" src="https://plausible.io/js/plausible.js"></script></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: 'ac63b0df4513e31143eef156f520056c',
+                indexName: 'isomorphic_git',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {"typoTolerance":"min","facetFilters":["language:en","version:next"]}
+              });
+            </script></body></html>
