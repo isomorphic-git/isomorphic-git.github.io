@@ -1332,6 +1332,23 @@ class InvalidOidError extends BaseError {
 /** @type {'InvalidOidError'} */
 InvalidOidError.code = 'InvalidOidError';
 
+class InvalidRefNameError extends BaseError {
+  /**
+   * @param {string} ref
+   * @param {string} suggestion
+   * @param {boolean} canForce
+   */
+  constructor(ref, suggestion) {
+    super(
+      `"${ref}" would be an invalid git reference. (Hint: a valid alternative would be "${suggestion}".)`
+    );
+    this.code = this.name = InvalidRefNameError.code;
+    this.data = { ref, suggestion };
+  }
+}
+/** @type {'InvalidRefNameError'} */
+InvalidRefNameError.code = 'InvalidRefNameError';
+
 class NoRefspecError extends BaseError {
   /**
    * @param {string} remote
@@ -2003,6 +2020,16 @@ const refpaths = ref => [
 // @see https://git-scm.com/docs/gitrepository-layout
 const GIT_FILES = ['config', 'description', 'index', 'shallow', 'commondir'];
 
+// These names are legal one-level ref names, so nothing upstream of here
+// rejects them, and writing to one lands on the repository file itself.
+// Canonical git refuses too: `git update-ref index <oid>` fails with
+// "cannot lock ref 'index': reference broken" and leaves the file alone.
+function assertWritableRef(ref) {
+  if (GIT_FILES.includes(ref)) {
+    throw new InvalidRefNameError(ref, `refs/heads/${ref}`)
+  }
+}
+
 let lock$1;
 
 async function acquireLock(ref, callback) {
@@ -2057,6 +2084,31 @@ class GitRefManager {
     }
     const refspec = GitRefSpecSet.from(refspecs);
     const actualRefsToWrite = new Map();
+    // Work out every destination this call will write, before touching the
+    // repository. Translating is pure, so it can happen up here; the writes
+    // themselves stay at the end of the function.
+    const refTranslations = refspec.translate([...refs.keys()]);
+    const symrefTranslations = [];
+    for (const [serverRef, translatedRef] of refspec.translate([
+      ...symrefs.keys(),
+    ])) {
+      const symtarget = refspec.translateOne(symrefs.get(serverRef));
+      if (symtarget) {
+        symrefTranslations.push([translatedRef, `ref: ${symtarget}`]);
+      }
+    }
+    // The local side of a refspec is whatever `remote.<name>.fetch` says, so a
+    // config like `+refs/heads/main:index` lands a write on `.git/index`.
+    // Refuse it here rather than at the write loop: `pruneTags` and `prune`
+    // delete refs in between, so a later throw leaves the repository pruned
+    // and not updated. The tags added below are always `refs/tags/...`, which
+    // is never a system file, so nothing is missed by checking this early.
+    for (const [, translatedRef] of refTranslations) {
+      assertWritableRef(translatedRef);
+    }
+    for (const [translatedRef] of symrefTranslations) {
+      assertWritableRef(translatedRef);
+    }
     // Delete all current tags if the pruneTags argument is true.
     if (pruneTags) {
       const tags = await GitRefManager.listRefs({
@@ -2084,18 +2136,12 @@ class GitRefManager {
       }
     }
     // Combine refs and symrefs giving symrefs priority
-    const refTranslations = refspec.translate([...refs.keys()]);
     for (const [serverRef, translatedRef] of refTranslations) {
       const value = refs.get(serverRef);
       actualRefsToWrite.set(translatedRef, value);
     }
-    const symrefTranslations = refspec.translate([...symrefs.keys()]);
-    for (const [serverRef, translatedRef] of symrefTranslations) {
-      const value = symrefs.get(serverRef);
-      const symtarget = refspec.translateOne(value);
-      if (symtarget) {
-        actualRefsToWrite.set(translatedRef, `ref: ${symtarget}`);
-      }
+    for (const [translatedRef, value] of symrefTranslations) {
+      actualRefsToWrite.set(translatedRef, value);
     }
     // If `prune` argument is true, clear out the existing local refspec roots
     const pruned = [];
@@ -2154,6 +2200,7 @@ class GitRefManager {
   // TODO: make this less crude?
   static async writeRef({ fs, gitdir, ref, value }) {
     // Validate input
+    assertWritableRef(ref);
     if (!value.match(/[0-9a-f]{40}/)) {
       throw new InvalidOidError(value)
     }
@@ -2173,6 +2220,7 @@ class GitRefManager {
    * @returns {Promise<void>}
    */
   static async writeSymbolicRef({ fs, gitdir, ref, value }) {
+    assertWritableRef(ref);
     await acquireLock(ref, async () =>
       fs.write(join(gitdir, ref), 'ref: ' + `${value.trim()}\n`, 'utf8')
     );
@@ -2201,6 +2249,8 @@ class GitRefManager {
    * @returns {Promise<void>}
    */
   static async deleteRefs({ fs, gitdir, refs }) {
+    // Validate input
+    refs.forEach(assertWritableRef);
     // Delete regular ref
     await Promise.all(refs.map(ref => fs.rm(join(gitdir, ref))));
     // Delete any packed ref
@@ -2324,7 +2374,7 @@ class GitRefManager {
     // We need to alternate between the file system and the packed-refs
     const packedMap = await GitRefManager.packedRefs({ fs, gitdir });
     // Look in all the proper paths, in this order
-    const allpaths = refpaths(ref);
+    const allpaths = refpaths(ref).filter(p => !GIT_FILES.includes(p)); // exclude git system files (#709)
     for (const ref of allpaths) {
       const refExists = await acquireLock(ref, async () =>
         fs.exists(`${gitdir}/${ref}`)
@@ -3823,23 +3873,6 @@ class InvalidFilepathError extends BaseError {
 }
 /** @type {'InvalidFilepathError'} */
 InvalidFilepathError.code = 'InvalidFilepathError';
-
-class InvalidRefNameError extends BaseError {
-  /**
-   * @param {string} ref
-   * @param {string} suggestion
-   * @param {boolean} canForce
-   */
-  constructor(ref, suggestion) {
-    super(
-      `"${ref}" would be an invalid git reference. (Hint: a valid alternative would be "${suggestion}".)`
-    );
-    this.code = this.name = InvalidRefNameError.code;
-    this.data = { ref, suggestion };
-  }
-}
-/** @type {'InvalidRefNameError'} */
-InvalidRefNameError.code = 'InvalidRefNameError';
 
 class MaxDepthError extends BaseError {
   /**
