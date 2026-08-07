@@ -16384,7 +16384,12 @@ async function status({
       if (I && !compareStats(indexEntry, stats)) {
         return indexEntry.oid
       } else {
-        const object = await fs.read(join(dir, filepath));
+        // Read through the same core.autocrlf normalisation GitWalkerFs uses,
+        // so the working copy hashes to the blob that was stored. Without it a
+        // CRLF checkout of an LF blob reads as modified.
+        const config = await GitConfigManager.get({ fs, gitdir: updatedGitdir });
+        const autocrlf = await config.get('core.autocrlf');
+        const object = await fs.read(join(dir, filepath), { autocrlf });
         const workdirOid = await hashObject$1({
           gitdir: updatedGitdir,
           type: 'blob',
