@@ -54,6 +54,10 @@ export type GitHttpRequest = {
      * - Reserved for future use (canceling a request)
      */
     signal?: object;
+    /**
+     * - Additional options to pass to fetch (Web) or simple-get (Node)
+     */
+    fetchOptions?: any;
 };
 export type GitHttpResponse = {
     /**

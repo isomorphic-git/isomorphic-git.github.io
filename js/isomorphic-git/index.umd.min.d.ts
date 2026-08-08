@@ -304,6 +304,10 @@ export type GitHttpRequest = {
      * - Reserved for future use (canceling a request)
      */
     signal?: object;
+    /**
+     * - Additional options to pass to fetch (Web) or simple-get (Node)
+     */
+    fetchOptions?: any;
 };
 export type GitHttpResponse = {
     /**
@@ -4500,6 +4504,7 @@ declare namespace NoCommitError {
  * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
  * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
  * @property {object} [signal] - Reserved for future use (canceling a request)
+ * @property {Object} [fetchOptions={}] - Additional options to pass to fetch (Web) or simple-get (Node)
  */
 /**
  * @typedef {Object} GitHttpResponse
