@@ -8320,7 +8320,7 @@ async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
     : undefined;
   let retOid = objContent ? oid : undefined;
   if (!objContent) {
-    await acquireLock$1({ fs, gitdir, currentFilepath }, async () => {
+    await acquireLock$1(currentFilepath, async () => {
       const object = stats.isSymbolicLink()
         ? await fs.readlink(currentFilepath).then(posixifyPathBuffer)
         : await fs.read(currentFilepath);
@@ -8535,7 +8535,7 @@ async function applyTreeChanges({
   });
 
   // apply the changes to work dir
-  await acquireLock$1({ fs, gitdir, dirRemoved, ops }, async () => {
+  await acquireLock$1(gitdir, async () => {
     for (const op of ops) {
       const currentFilepath = join(dir, op.filepath);
       switch (op.method) {
@@ -15930,7 +15930,7 @@ class GitStashManager {
     );
     const filepath = this.refLogsStashPath;
 
-    await acquireLock$1({ filepath, entry }, async () => {
+    await acquireLock$1(filepath, async () => {
       const appendTo = (await this.fs.exists(filepath))
         ? await this.fs.read(filepath, 'utf8')
         : '';
@@ -16140,7 +16140,7 @@ async function _stashDrop({ fs, dir, gitdir, refIdx = 0 }) {
   reflogEntries.splice(refIdx, 1);
 
   const stashReflogPath = stashMgr.refLogsStashPath;
-  await acquireLock$1({ reflogEntries, stashReflogPath, stashMgr }, async () => {
+  await acquireLock$1(stashReflogPath, async () => {
     if (reflogEntries.length) {
       await fs.write(
         stashReflogPath,
