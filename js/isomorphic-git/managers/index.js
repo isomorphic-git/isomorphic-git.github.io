@@ -1,6 +1,6 @@
 import ignore from 'ignore';
-import AsyncLock from 'async-lock';
 import Hash from 'sha.js/sha1.js';
+import AsyncLock from 'async-lock';
 import crc32 from 'crc-32';
 import pako from 'pako';
 
@@ -1517,10 +1517,43 @@ function compareStats(entry, stats, filemode = true, trustino = true) {
   return staleness
 }
 
-// import Lock from '../utils.js'
+// A single process-wide lock shared by everything that serializes file
+// operations (the index, refs, the shallow file, blob writes). It is keyed by
+// path, so unrelated resources never contend. Centralizing it here also means
+// there is exactly one place to reset it (see `_resetLock`).
+//
+// Created lazily (not at module load) so this module has no top-level side
+// effect and stays tree-shakeable.
+let lock;
 
-// const lm = new LockManager()
-let lock = null;
+function getLock() {
+  if (lock === undefined) lock = new AsyncLock({ maxPending: Infinity });
+  return lock
+}
+
+/**
+ * Run `callback` while holding the shared lock for `key`, then release it.
+ *
+ * @template T
+ * @param {string | string[]} key - Resource key(s) to lock (usually a filepath).
+ * @param {() => (Promise<T> | T)} callback
+ * @returns {Promise<T>}
+ */
+function acquireLock(key, callback) {
+  return getLock().acquire(key, callback)
+}
+
+/**
+ * Discard the shared lock so the next `acquireLock` starts a fresh one. Intended
+ * for test harnesses that run many independent scenarios inside one long-lived
+ * module instance: if a scenario leaves an operation stalled (e.g. a filesystem
+ * that hangs), its still-held lock would otherwise block every later scenario
+ * that touches the same path. Resetting abandons that stalled queue so the next
+ * scenario starts clean. It is a no-op for normal library use.
+ */
+function _resetLock() {
+  lock = undefined;
+}
 
 const IndexCache = Symbol('IndexCache');
 
@@ -1591,10 +1624,9 @@ class GitIndexManager {
     }
 
     const filepath = `${gitdir}/index`;
-    if (lock === null) lock = new AsyncLock({ maxPending: Infinity });
     let result;
     let unmergedPaths = [];
-    await lock.acquire(filepath, async () => {
+    await acquireLock(filepath, async () => {
       // Acquire a file lock while we're reading the index
       // to make sure other processes aren't writing to it
       // simultaneously, which could result in a corrupted index.
@@ -1865,13 +1897,6 @@ function assertWritableRef(ref) {
   if (GIT_FILES.includes(ref)) {
     throw new InvalidRefNameError(ref, `refs/heads/${ref}`)
   }
-}
-
-let lock$1;
-
-async function acquireLock(ref, callback) {
-  if (lock$1 === undefined) lock$1 = new AsyncLock();
-  return lock$1.acquire(ref, callback)
 }
 
 /**
@@ -3239,8 +3264,6 @@ function parseRemoteUrl({ url }) {
   }
 }
 
-let lock$2 = null;
-
 class GitShallowManager {
   /**
    * Reads the `shallow` file in the Git repository and returns a set of object IDs (OIDs).
@@ -3251,10 +3274,9 @@ class GitShallowManager {
    * @returns {Promise<Set<string>>} - A set of shallow object IDs.
    */
   static async read({ fs, gitdir }) {
-    if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     const oids = new Set();
-    await lock$2.acquire(filepath, async function () {
+    await acquireLock(filepath, async function () {
       const text = await fs.read(filepath, { encoding: 'utf8' });
       if (text === null) return oids // no file
       if (text.trim() === '') return oids // empty file
@@ -3277,18 +3299,17 @@ class GitShallowManager {
    * @returns {Promise<void>}
    */
   static async write({ fs, gitdir, oids }) {
-    if (lock$2 === null) lock$2 = new AsyncLock();
     const filepath = join(gitdir, 'shallow');
     if (oids.size > 0) {
       const text = [...oids].join('\n') + '\n';
-      await lock$2.acquire(filepath, async function () {
+      await acquireLock(filepath, async function () {
         await fs.write(filepath, text, {
           encoding: 'utf8',
         });
       });
     } else {
       // No shallows
-      await lock$2.acquire(filepath, async function () {
+      await acquireLock(filepath, async function () {
         await fs.rm(filepath);
       });
     }
@@ -6000,12 +6021,6 @@ const _TreeMap = {
   workdir: WORKDIR,
 };
 
-let lock$3;
-async function acquireLock$1(ref, callback) {
-  if (lock$3 === undefined) lock$3 = new AsyncLock();
-  return lock$3.acquire(ref, callback)
-}
-
 // make sure filepath, blob type and blob object (from loose objects) plus oid are in sync and valid
 async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
   const currentFilepath = join(dir, filepath);
@@ -6022,7 +6037,7 @@ async function checkAndWriteBlob(fs, gitdir, dir, filepath, oid = null) {
     : undefined;
   let retOid = objContent ? oid : undefined;
   if (!objContent) {
-    await acquireLock$1(currentFilepath, async () => {
+    await acquireLock(currentFilepath, async () => {
       const object = stats.isSymbolicLink()
         ? await fs.readlink(currentFilepath).then(posixifyPathBuffer)
         : await fs.read(currentFilepath);
@@ -6237,7 +6252,7 @@ async function applyTreeChanges({
   });
 
   // apply the changes to work dir
-  await acquireLock$1(gitdir, async () => {
+  await acquireLock(gitdir, async () => {
     for (const op of ops) {
       const currentFilepath = join(dir, op.filepath);
       switch (op.method) {
@@ -6468,7 +6483,7 @@ class GitStashManager {
     );
     const filepath = this.refLogsStashPath;
 
-    await acquireLock$1(filepath, async () => {
+    await acquireLock(filepath, async () => {
       const appendTo = (await this.fs.exists(filepath))
         ? await this.fs.read(filepath, 'utf8')
         : '';
