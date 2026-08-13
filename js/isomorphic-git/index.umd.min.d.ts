@@ -1003,7 +1003,7 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref = 'HEAD'] - Source to checkout files from
- * @param {string[]} [args.filepaths] - Limit the checkout to the given files and directories
+ * @param {string[]} [args.filepaths] - Limit the checkout to the given files and directories. If `ref` is not provided, restore them from the index.
  * @param {string} [args.remote = 'origin'] - Which remote repository to use
  * @param {boolean} [args.noCheckout = false] - If true, will update HEAD but won't update the working directory
  * @param {boolean} [args.noUpdateHead] - If true, will update the working directory but won't update HEAD. Defaults to `false` when `ref` is provided, and `true` if `ref` is not provided.
@@ -1026,7 +1026,7 @@ export function branch({ fs, dir, gitdir, ref, object, checkout, force, }: {
  * console.log('done')
  *
  * @example
- * // restore the 'docs' and 'src/docs' folders to the way they were, overwriting any changes
+ * // restore the 'docs' and 'src/docs' folders from the index, overwriting any unstaged changes
  * await git.checkout({
  *   fs,
  *   dir: '/tutorial',

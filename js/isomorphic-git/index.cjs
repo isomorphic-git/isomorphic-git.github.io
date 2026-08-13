@@ -7093,6 +7093,7 @@ const worthWalking = (filepath, root) => {
  * @param {boolean} [args.dryRun]
  * @param {boolean} [args.force]
  * @param {boolean} [args.track]
+ * @param {boolean} [args.restoreFromIndex]
  * @param {boolean} [args.nonBlocking]
  * @param {number} [args.batchSize]
  *
@@ -7114,6 +7115,7 @@ async function _checkout({
   dryRun,
   force,
   track = true,
+  restoreFromIndex = false,
   nonBlocking = false,
   batchSize = 100,
 }) {
@@ -7173,6 +7175,7 @@ async function _checkout({
         ref,
         force,
         filepaths,
+        restoreFromIndex,
       });
     } catch (err) {
       // Throw a more helpful error message for this common mistake.
@@ -7465,6 +7468,7 @@ async function analyze({
   ref,
   force,
   filepaths,
+  restoreFromIndex,
 }) {
   let count = 0;
   return _walk({
@@ -7472,7 +7476,7 @@ async function analyze({
     cache,
     dir,
     gitdir,
-    trees: [TREE({ ref }), WORKDIR(), STAGE()],
+    trees: [restoreFromIndex ? STAGE() : TREE({ ref }), WORKDIR(), STAGE()],
     map: async function (fullpath, [commit, workdir, stage]) {
       if (fullpath === '.') return
       // match against base paths
@@ -7497,7 +7501,12 @@ async function analyze({
         // Ignore workdir files that are not tracked and not part of the new commit.
         case '001':
           // OK, make an exception for explicitly named files.
-          if (force && filepaths && filepaths.includes(fullpath)) {
+          if (
+            !restoreFromIndex &&
+            force &&
+            filepaths &&
+            filepaths.includes(fullpath)
+          ) {
             return ['delete', fullpath]
           }
           return
@@ -7840,7 +7849,7 @@ async function batchAllSettled(operationName, tasks, onProgress, batchSize) {
  * @param {string} args.dir - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string} [args.ref = 'HEAD'] - Source to checkout files from
- * @param {string[]} [args.filepaths] - Limit the checkout to the given files and directories
+ * @param {string[]} [args.filepaths] - Limit the checkout to the given files and directories. If `ref` is not provided, restore them from the index.
  * @param {string} [args.remote = 'origin'] - Which remote repository to use
  * @param {boolean} [args.noCheckout = false] - If true, will update HEAD but won't update the working directory
  * @param {boolean} [args.noUpdateHead] - If true, will update the working directory but won't update HEAD. Defaults to `false` when `ref` is provided, and `true` if `ref` is not provided.
@@ -7863,7 +7872,7 @@ async function batchAllSettled(operationName, tasks, onProgress, batchSize) {
  * console.log('done')
  *
  * @example
- * // restore the 'docs' and 'src/docs' folders to the way they were, overwriting any changes
+ * // restore the 'docs' and 'src/docs' folders from the index, overwriting any unstaged changes
  * await git.checkout({
  *   fs,
  *   dir: '/tutorial',
@@ -7908,6 +7917,8 @@ async function checkout({
     assertParameter('gitdir', gitdir);
 
     const ref = _ref || 'HEAD';
+    const restoreFromIndex =
+      _ref === undefined && filepaths != null && filepaths.length > 0;
     const fsp = new FileSystem(fs);
     const updatedGitdir = await discoverGitdir({ fsp, dotgit: gitdir });
     return await _checkout({
@@ -7925,6 +7936,7 @@ async function checkout({
       dryRun,
       force,
       track,
+      restoreFromIndex,
       nonBlocking,
       batchSize,
     })
