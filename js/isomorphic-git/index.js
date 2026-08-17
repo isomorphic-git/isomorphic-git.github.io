@@ -6308,6 +6308,23 @@ async function constructTree({ fs, gitdir, inode, dryRun }) {
 // @ts-check
 
 async function resolveFilepath({ fs, cache, gitdir, oid, filepath }) {
+  const entry = await resolveFilepathEntry({
+    fs,
+    cache,
+    gitdir,
+    oid,
+    filepath,
+  });
+  return entry.oid
+}
+
+async function resolveFilepathEntry({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  filepath,
+}) {
   // Ensure there are no leading or trailing directory separators.
   // I was going to do this automatically, but then found that the Git Terminal for Windows
   // auto-expands --filepath=/src/utils to --filepath=C:/Users/Will/AppData/Local/Programs/Git/src/utils
@@ -6321,10 +6338,10 @@ async function resolveFilepath({ fs, cache, gitdir, oid, filepath }) {
   const result = await resolveTree({ fs, cache, gitdir, oid });
   const tree = result.tree;
   if (filepath === '') {
-    oid = result.oid;
+    return { mode: '040000', oid: result.oid, path: '', type: 'tree' }
   } else {
     const pathArray = filepath.split('/');
-    oid = await _resolveFilepath({
+    return _resolveFilepath({
       fs,
       cache,
       gitdir,
@@ -6332,9 +6349,8 @@ async function resolveFilepath({ fs, cache, gitdir, oid, filepath }) {
       pathArray,
       oid: _oid,
       filepath,
-    });
+    })
   }
-  return oid
 }
 
 async function _resolveFilepath({
@@ -6350,7 +6366,7 @@ async function _resolveFilepath({
   for (const entry of tree) {
     if (entry.path === name) {
       if (pathArray.length === 0) {
-        return entry.oid
+        return entry
       } else {
         const { type, object } = await _readObject({
           fs,
@@ -13314,6 +13330,7 @@ async function _log({
   const oid = await GitRefManager.resolve({ fs, gitdir, ref });
   const tips = [await _readCommit({ fs, cache, gitdir, oid })];
   let lastFileOid;
+  let lastFileMode;
   let lastCommit;
   let isOk;
 
@@ -13333,19 +13350,23 @@ async function _log({
     }
 
     if (filepath) {
-      let vFileOid;
+      let vFileEntry;
       try {
-        vFileOid = await resolveFilepath({
+        vFileEntry = await resolveFilepathEntry({
           fs,
           cache,
           gitdir,
           oid: commit.commit.tree,
           filepath,
         });
-        if (lastCommit && lastFileOid !== vFileOid) {
+        if (
+          lastCommit &&
+          (lastFileOid !== vFileEntry.oid || lastFileMode !== vFileEntry.mode)
+        ) {
           commits.push(lastCommit);
         }
-        lastFileOid = vFileOid;
+        lastFileOid = vFileEntry.oid;
+        lastFileMode = vFileEntry.mode;
         lastCommit = commit;
         isOk = true;
       } catch (e) {
