@@ -3638,6 +3638,10 @@ async function _readObject({
   oid,
   format = 'content',
 }) {
+  if (!['deflated', 'wrapped', 'content'].includes(format)) {
+    throw new InternalError(`invalid requested format "${format}"`)
+  }
+
   // Curry the current read method so that the packfile un-deltification
   // process can acquire external ref-deltas.
   const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
@@ -3697,11 +3701,7 @@ async function _readObject({
   result.object = object;
   result.format = 'content';
 
-  if (format === 'content') {
-    return result
-  }
-
-  throw new InternalError(`invalid requested format "${format}"`)
+  return result
 }
 
 class AlreadyExistsError extends BaseError {
