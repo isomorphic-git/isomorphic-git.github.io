@@ -583,6 +583,26 @@ export class GitRefManager {
         depth?: number | undefined;
     }): Promise<string>;
     /**
+     * Checks whether a ref names the branch HEAD points at in a repository where
+     * that branch has no commits yet.
+     *
+     * A repository created by `git init` has a HEAD pointing at a branch that
+     * does not exist on disk. Resolving that branch fails the same way resolving
+     * a misspelled ref does, so callers that want to treat the two differently
+     * need this to tell them apart.
+     *
+     * @param {Object} args
+     * @param {FSClient} args.fs - A file system implementation.
+     * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
+     * @param {string} args.ref - The ref to check.
+     * @returns {Promise<boolean>} - True if the ref names an unborn branch.
+     */
+    static isUnbornBranch({ fs, gitdir, ref }: {
+        fs: FSClient;
+        gitdir?: string | undefined;
+        ref: string;
+    }): Promise<boolean>;
+    /**
      * Checks if a ref exists.
      *
      * @param {Object} args
