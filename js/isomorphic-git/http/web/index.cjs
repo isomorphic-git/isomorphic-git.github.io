@@ -23,7 +23,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
  * @property {Object} [agent] - An HTTP or HTTPS agent that manages connections for the HTTP client (Node.js only)
  * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
  * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
- * @property {object} [signal] - Reserved for future use (canceling a request)
+ * @property {AbortSignal} [signal] - Signal to abort the HTTP request
  * @property {Object} [fetchOptions={}] - Additional options to pass to fetch (Web) or simple-get (Node)
  */
 
@@ -142,13 +142,20 @@ async function request({
   headers = {},
   fetchOptions = {},
   body,
+  signal,
 }) {
   // streaming uploads aren't possible yet in the browser
   if (body) {
     // @ts-expect-error
     body = await collect(body);
   }
-  const res = await fetch(url, { ...fetchOptions, method, headers, body });
+  const res = await fetch(url, {
+    ...fetchOptions,
+    method,
+    headers,
+    body,
+    signal: signal ?? fetchOptions.signal,
+  });
   const iter =
     // @ts-expect-error
     res.body && res.body.getReader

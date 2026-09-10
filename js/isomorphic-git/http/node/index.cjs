@@ -27,7 +27,7 @@ var get = _interopDefault(require('simple-get'));
  * @property {Object} [agent] - An HTTP or HTTPS agent that manages connections for the HTTP client (Node.js only)
  * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
  * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
- * @property {object} [signal] - Reserved for future use (canceling a request)
+ * @property {AbortSignal} [signal] - Signal to abort the HTTP request
  * @property {Object} [fetchOptions={}] - Additional options to pass to fetch (Web) or simple-get (Node)
  */
 
@@ -198,6 +198,7 @@ async function request({
   agent,
   fetchOptions = {},
   body,
+  signal,
 }) {
   // If we can, we should send it as a single buffer so it sets a Content-Length header.
   if (body && Array.isArray(body)) {
@@ -215,6 +216,7 @@ async function request({
         headers,
         agent,
         body,
+        signal: signal ?? fetchOptions.signal,
       },
       (err, res) => {
         if (err) return reject(err)

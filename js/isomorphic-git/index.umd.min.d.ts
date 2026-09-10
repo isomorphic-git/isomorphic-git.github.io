@@ -301,9 +301,9 @@ export type GitHttpRequest = {
      */
     onProgress?: ProgressCallback | undefined;
     /**
-     * - Reserved for future use (canceling a request)
+     * - Signal to abort the HTTP request
      */
-    signal?: object;
+    signal?: AbortSignal | undefined;
     /**
      * - Additional options to pass to fetch (Web) or simple-get (Node)
      */
@@ -2505,6 +2505,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {AbortSignal} [args.signal] - Optional signal to abort the push operation
  *
  * @returns {Promise<PushResult>} Resolves successfully when push completes with a detailed description of the operation from the server.
  * @see PushResult
@@ -2522,7 +2523,7 @@ export function pull({ fs: _fs, http, onProgress, onMessage, onAuth, onAuthSucce
  * console.log(pushResult)
  *
  */
-export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPrePush, dir, gitdir, ref, remoteRef, remote, url, force, delete: _delete, corsProxy, headers, cache, }: {
+export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, onAuthFailure, onPrePush, dir, gitdir, ref, remoteRef, remote, url, force, delete: _delete, corsProxy, headers, cache, signal, }: {
     fs: FsClient;
     http: HttpClient;
     onProgress?: ProgressCallback | undefined;
@@ -2544,6 +2545,7 @@ export function push({ fs, http, onProgress, onMessage, onAuth, onAuthSuccess, o
         [x: string]: string;
     } | undefined;
     cache?: object;
+    signal?: AbortSignal | undefined;
 }): Promise<PushResult>;
 /**
  *
@@ -4492,7 +4494,7 @@ declare namespace NoCommitError {
  * @property {Object} [agent] - An HTTP or HTTPS agent that manages connections for the HTTP client (Node.js only)
  * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
  * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
- * @property {object} [signal] - Reserved for future use (canceling a request)
+ * @property {AbortSignal} [signal] - Signal to abort the HTTP request
  * @property {Object} [fetchOptions={}] - Additional options to pass to fetch (Web) or simple-get (Node)
  */
 /**

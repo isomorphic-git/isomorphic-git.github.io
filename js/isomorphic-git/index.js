@@ -28,7 +28,7 @@ import diff3Merge from 'diff3';
  * @property {Object} [agent] - An HTTP or HTTPS agent that manages connections for the HTTP client (Node.js only)
  * @property {AsyncIterableIterator<Uint8Array>} [body] - An async iterator of Uint8Arrays that make up the body of POST requests
  * @property {ProgressCallback} [onProgress] - Reserved for future use (emitting `GitProgressEvent`s)
- * @property {object} [signal] - Reserved for future use (canceling a request)
+ * @property {AbortSignal} [signal] - Signal to abort the HTTP request
  * @property {Object} [fetchOptions={}] - Additional options to pass to fetch (Web) or simple-get (Node)
  */
 
@@ -9384,6 +9384,7 @@ class GitRemoteHTTP {
    * @param {string} args.service - The Git service (e.g., "git-upload-pack").
    * @param {string} args.url - The URL of the remote repository.
    * @param {Object<string, string>} args.headers - HTTP headers to include in the request.
+   * @param {AbortSignal} [args.signal] - Signal to abort the operation.
    * @param {1 | 2} args.protocolVersion - The Git protocol version to use.
    * @returns {Promise<Object>} - The parsed response from the remote repository.
    * @throws {HttpError} - If the HTTP request fails.
@@ -9400,6 +9401,7 @@ class GitRemoteHTTP {
     service,
     url: _origUrl,
     headers,
+    signal,
     protocolVersion,
   }) {
     let { url, auth } = extractAuthFromUrl(_origUrl);
@@ -9420,6 +9422,7 @@ class GitRemoteHTTP {
         method: 'GET',
         url: `${proxifiedURL}/info/refs?service=${service}`,
         headers,
+        signal,
       });
 
       // the default loop behavior
@@ -9495,6 +9498,7 @@ class GitRemoteHTTP {
    * @param {Object<string, string>} [args.headers] - HTTP headers to include in the request.
    * @param {any} args.body - The request body to send.
    * @param {any} args.auth - Authentication credentials.
+   * @param {AbortSignal} [args.signal] - Signal to abort the operation.
    * @returns {Promise<GitHttpResponse>} - The HTTP response from the remote repository.
    * @throws {HttpError} - If the HTTP request fails.
    */
@@ -9507,6 +9511,7 @@ class GitRemoteHTTP {
     auth,
     body,
     headers,
+    signal,
   }) {
     // We already have the "correct" auth value at this point, but
     // we need to strip out the username/password from the URL yet again.
@@ -9525,6 +9530,7 @@ class GitRemoteHTTP {
       url: `${url}/${service}`,
       body,
       headers,
+      signal,
     });
     if (res.statusCode !== 200) {
       const { response } = stringifyBody(res);
@@ -14336,6 +14342,7 @@ async function writeReceivePackRequest({
  * @param {boolean} [args.delete = false]
  * @param {string} [args.url]
  * @param {string} [args.corsProxy]
+ * @param {AbortSignal} [args.signal]
  * @param {Object<string, string>} [args.headers]
  *
  * @returns {Promise<PushResult>}
@@ -14359,6 +14366,7 @@ async function _push({
   delete: _delete = false,
   corsProxy,
   headers = {},
+  signal,
 }) {
   const ref = _ref || (await _currentBranch({ fs, gitdir }));
   if (typeof ref === 'undefined') {
@@ -14407,6 +14415,7 @@ async function _push({
     url,
     headers,
     protocolVersion: 1,
+    signal,
   });
   const auth = httpRemote.auth; // hack to get new credentials from CredentialManager API
   let fullRemoteRef;
@@ -14562,6 +14571,7 @@ async function _push({
     auth,
     headers,
     body: [...packstream1, ...packstream2],
+    signal,
   });
   const { packfile, progress } = await GitSideBand.demux(res.body);
   if (onMessage) {
@@ -14638,6 +14648,7 @@ async function _push({
  * @param {string} [args.corsProxy] - Optional [CORS proxy](https://www.npmjs.com/%40isomorphic-git/cors-proxy). Overrides value in repo config.
  * @param {Object<string, string>} [args.headers] - Additional headers to include in HTTP requests, similar to git's `extraHeader` config
  * @param {object} [args.cache] - a [cache](cache.md) object
+ * @param {AbortSignal} [args.signal] - Optional signal to abort the push operation
  *
  * @returns {Promise<PushResult>} Resolves successfully when push completes with a detailed description of the operation from the server.
  * @see PushResult
@@ -14675,6 +14686,7 @@ async function push({
   corsProxy,
   headers = {},
   cache = {},
+  signal,
 }) {
   try {
     assertParameter('fs', fs);
@@ -14702,6 +14714,7 @@ async function push({
       delete: _delete,
       corsProxy,
       headers,
+      signal,
     })
   } catch (err) {
     err.caller = 'git.push';

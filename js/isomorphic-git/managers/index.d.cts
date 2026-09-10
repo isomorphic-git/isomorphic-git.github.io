@@ -51,9 +51,9 @@ export type GitHttpRequest = {
      */
     onProgress?: ProgressCallback | undefined;
     /**
-     * - Reserved for future use (canceling a request)
+     * - Signal to abort the HTTP request
      */
-    signal?: object;
+    signal?: AbortSignal | undefined;
     /**
      * - Additional options to pass to fetch (Web) or simple-get (Node)
      */
@@ -731,13 +731,14 @@ export class GitRemoteHTTP {
      * @param {string} args.service - The Git service (e.g., "git-upload-pack").
      * @param {string} args.url - The URL of the remote repository.
      * @param {Object<string, string>} args.headers - HTTP headers to include in the request.
+     * @param {AbortSignal} [args.signal] - Signal to abort the operation.
      * @param {1 | 2} args.protocolVersion - The Git protocol version to use.
      * @returns {Promise<Object>} - The parsed response from the remote repository.
      * @throws {HttpError} - If the HTTP request fails.
      * @throws {SmartHttpError} - If the response cannot be parsed.
      * @throws {UserCanceledError} - If the user cancels the operation.
      */
-    static discover({ http, onProgress, onAuth, onAuthSuccess, onAuthFailure, corsProxy, service, url: _origUrl, headers, protocolVersion, }: {
+    static discover({ http, onProgress, onAuth, onAuthSuccess, onAuthFailure, corsProxy, service, url: _origUrl, headers, signal, protocolVersion, }: {
         http: HttpClient;
         onProgress?: ProgressCallback | undefined;
         onAuth?: AuthCallback | undefined;
@@ -749,6 +750,7 @@ export class GitRemoteHTTP {
         headers: {
             [x: string]: string;
         };
+        signal?: AbortSignal | undefined;
         protocolVersion: 1 | 2;
     }): Promise<any>;
     /**
@@ -763,10 +765,11 @@ export class GitRemoteHTTP {
      * @param {Object<string, string>} [args.headers] - HTTP headers to include in the request.
      * @param {any} args.body - The request body to send.
      * @param {any} args.auth - Authentication credentials.
+     * @param {AbortSignal} [args.signal] - Signal to abort the operation.
      * @returns {Promise<GitHttpResponse>} - The HTTP response from the remote repository.
      * @throws {HttpError} - If the HTTP request fails.
      */
-    static connect({ http, onProgress, corsProxy, service, url, auth, body, headers, }: {
+    static connect({ http, onProgress, corsProxy, service, url, auth, body, headers, signal, }: {
         http: HttpClient;
         onProgress?: ProgressCallback | undefined;
         corsProxy?: string | undefined;
@@ -777,6 +780,7 @@ export class GitRemoteHTTP {
         } | undefined;
         body: any;
         auth: any;
+        signal?: AbortSignal | undefined;
     }): Promise<GitHttpResponse>;
 }
 /**
