@@ -6,12 +6,12 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var Hash = _interopDefault(require('sha.js/sha1.js'));
 var AsyncLock = _interopDefault(require('async-lock'));
+var cleanGitRef = _interopDefault(require('clean-git-ref'));
 var crc32 = _interopDefault(require('crc-32'));
 var pako = _interopDefault(require('pako'));
 var crypto$1 = require('crypto');
 var pify = _interopDefault(require('pify'));
 var ignore = _interopDefault(require('ignore'));
-var cleanGitRef = _interopDefault(require('clean-git-ref'));
 var diff3Merge = _interopDefault(require('diff3'));
 
 /**
@@ -1558,6 +1558,22 @@ function compareRefNames(a, b) {
   return tmp
 }
 
+/*
+Adapted from is-git-ref-name-valid
+SPDX-License-Identifier: MIT
+Copyright © Vincent Weevers
+*/
+
+// eslint-disable-next-line no-control-regex
+const bad = /(^|[/.])([/.]|$)|^@$|@{|[\x00-\x20\x7f~^:?*[\\]|\.lock(\/|$)/;
+
+function isValidRef(name, onelevel) {
+  if (typeof name !== 'string')
+    throw new TypeError('Reference name must be a string')
+
+  return !bad.test(name) && (!!onelevel || name.includes('/'))
+}
+
 /*!
  * This code for `path.join` is directly copied from @zenfs/core/path for bundle size improvements.
  * SPDX-License-Identifier: LGPL-3.0-or-later
@@ -2061,6 +2077,13 @@ function assertWritableRef(ref) {
   if (GIT_FILES.includes(ref)) {
     throw new InvalidRefNameError(ref, `refs/heads/${ref}`)
   }
+  // A ref name is joined onto gitdir with `join()`, which collapses `..`
+  // exactly like `path.join`. A server-supplied ref/tag name or the wildcard
+  // capture of a refspec can therefore climb out of gitdir, or anywhere
+  // beneath it, entirely unvalidated up to this point. See GHSA-h3c3-jh3g-8hcc.
+  if (!isValidRef(ref, true)) {
+    throw new InvalidRefNameError(ref, cleanGitRef.clean(ref))
+  }
 }
 
 /**
@@ -2120,21 +2143,39 @@ class GitRefManager {
     ])) {
       const symtarget = refspec.translateOne(symrefs.get(serverRef));
       if (symtarget) {
+        // The destination (translatedRef) is validated below, but the target
+        // a symref points at is server-supplied too (the wire parser accepts
+        // `symref=HEAD:(.*)` unrestricted) and only ever passed through the
+        // refspec's plain string substitution, never checked. Left alone, a
+        // `..`-laden target is written into the file content as-is and later
+        // drives an out-of-gitdir read the next time something resolves it.
+        // See GHSA-h3c3-jh3g-8hcc.
+        assertWritableRef(symtarget);
         symrefTranslations.push([translatedRef, `ref: ${symtarget}`]);
       }
     }
+    // Tags aren't translated by a refspec, but they are still a server-supplied
+    // name written straight to gitdir below, so they need the same check.
+    // Computed here (pure, no I/O) so it can be validated up front and then
+    // reused unchanged in the write step further down.
+    const tagRefsToWrite = tags
+      ? [...refs.keys()].filter(
+          serverRef =>
+            serverRef.startsWith('refs/tags') && !serverRef.endsWith('^{}')
+        )
+      : [];
     // The local side of a refspec is whatever `remote.<name>.fetch` says, so a
     // config like `+refs/heads/main:index` lands a write on `.git/index`.
     // Refuse it here rather than at the write loop: `pruneTags` and `prune`
     // delete refs in between, so a later throw leaves the repository pruned
-    // and not updated. The tags added below are always `refs/tags/...`, which
-    // is never a system file, so nothing is missed by checking this early.
+    // and not updated.
     for (const [, translatedRef] of refTranslations) {
       assertWritableRef(translatedRef);
     }
     for (const [translatedRef] of symrefTranslations) {
       assertWritableRef(translatedRef);
     }
+    tagRefsToWrite.forEach(assertWritableRef);
     // Delete all current tags if the pruneTags argument is true.
     if (pruneTags) {
       const tags = await GitRefManager.listRefs({
@@ -2149,16 +2190,12 @@ class GitRefManager {
       });
     }
     // Add all tags if the fetch tags argument is true.
-    if (tags) {
-      for (const serverRef of refs.keys()) {
-        if (serverRef.startsWith('refs/tags') && !serverRef.endsWith('^{}')) {
-          // Git's behavior is to only fetch tags that do not conflict with tags already present.
-          if (!(await GitRefManager.exists({ fs, gitdir, ref: serverRef }))) {
-            // Always use the object id of the tag itself, and not the peeled object id.
-            const oid = refs.get(serverRef);
-            actualRefsToWrite.set(serverRef, oid);
-          }
-        }
+    for (const serverRef of tagRefsToWrite) {
+      // Git's behavior is to only fetch tags that do not conflict with tags already present.
+      if (!(await GitRefManager.exists({ fs, gitdir, ref: serverRef }))) {
+        // Always use the object id of the tag itself, and not the peeled object id.
+        const oid = refs.get(serverRef);
+        actualRefsToWrite.set(serverRef, oid);
       }
     }
     // Combine refs and symrefs giving symrefs priority
@@ -6696,22 +6733,6 @@ async function addNote({
     err.caller = 'git.addNote';
     throw err
   }
-}
-
-/*
-Adapted from is-git-ref-name-valid
-SPDX-License-Identifier: MIT
-Copyright © Vincent Weevers
-*/
-
-// eslint-disable-next-line no-control-regex
-const bad = /(^|[/.])([/.]|$)|^@$|@{|[\x00-\x20\x7f~^:?*[\\]|\.lock(\/|$)/;
-
-function isValidRef(name, onelevel) {
-  if (typeof name !== 'string')
-    throw new TypeError('Reference name must be a string')
-
-  return !bad.test(name) && (!!onelevel || name.includes('/'))
 }
 
 // @ts-check
@@ -14615,7 +14636,7 @@ async function _push({
   ) {
     // TODO: I think this should actually be using a refspec transform rather than assuming 'refs/remotes/{remote}'
     const ref = `refs/remotes/${remote}/${fullRemoteRef.replace(
-      'refs/heads',
+      'refs/heads/',
       ''
     )}`;
     if (_delete) {
