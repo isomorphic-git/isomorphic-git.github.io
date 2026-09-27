@@ -6243,10 +6243,13 @@ async function _commit({
       gitdir,
       ref,
     });
-    refCommit = await _readCommit({ fs, gitdir, oid: refOid, cache: {} });
   } catch {
     // We assume that there's no commit and this is the initial commit
     initialCommit = true;
+  }
+
+  if (!initialCommit && (amend || disallowEmpty)) {
+    refCommit = await _readCommit({ fs, gitdir, oid: refOid, cache });
   }
 
   if (amend && initialCommit) {
