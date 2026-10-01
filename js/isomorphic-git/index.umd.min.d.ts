@@ -710,6 +710,7 @@ export var Errors: Readonly<{
     AlreadyExistsError: typeof AlreadyExistsError;
     AmbiguousError: typeof AmbiguousError;
     CheckoutConflictError: typeof CheckoutConflictError;
+    CherryPickLocalChangesError: typeof CherryPickLocalChangesError;
     CherryPickMergeCommitError: typeof CherryPickMergeCommitError;
     CherryPickRootCommitError: typeof CherryPickRootCommitError;
     CommitNotFetchedError: typeof CommitNotFetchedError;
@@ -1067,6 +1068,10 @@ export function checkout({ fs, onProgress, onPostCheckout, dir, gitdir, remote, 
 }): Promise<void>;
 /**
  * Cherry-pick a commit onto the current branch
+ *
+ * Like `git cherry-pick`, this refuses to run when it would overwrite local changes in the working tree.
+ * If a file the picked commit changes has staged or unstaged changes, or an untracked file is in the way,
+ * a `CherryPickLocalChangesError` listing those files is thrown before anything is written.
  *
  * @param {object} args
  * @param {FsClient} args.fs - a file system implementation
@@ -3983,6 +3988,21 @@ declare namespace CheckoutConflictError {
     let code_2: "CheckoutConflictError";
     export { code_2 as code };
 }
+declare class CherryPickLocalChangesError extends BaseError {
+    /**
+     * @param {string[]} filepaths
+     */
+    constructor(filepaths: string[]);
+    code: "CherryPickLocalChangesError";
+    name: "CherryPickLocalChangesError";
+    data: {
+        filepaths: string[];
+    };
+}
+declare namespace CherryPickLocalChangesError {
+    let code_3: "CherryPickLocalChangesError";
+    export { code_3 as code };
+}
 declare class CherryPickMergeCommitError extends BaseError {
     /**
      * @param {string} oid
@@ -3997,8 +4017,8 @@ declare class CherryPickMergeCommitError extends BaseError {
     };
 }
 declare namespace CherryPickMergeCommitError {
-    let code_3: "CherryPickMergeCommitError";
-    export { code_3 as code };
+    let code_4: "CherryPickMergeCommitError";
+    export { code_4 as code };
 }
 declare class CherryPickRootCommitError extends BaseError {
     /**
@@ -4012,8 +4032,8 @@ declare class CherryPickRootCommitError extends BaseError {
     };
 }
 declare namespace CherryPickRootCommitError {
-    let code_4: "CherryPickRootCommitError";
-    export { code_4 as code };
+    let code_5: "CherryPickRootCommitError";
+    export { code_5 as code };
 }
 declare class CommitNotFetchedError extends BaseError {
     /**
@@ -4029,8 +4049,8 @@ declare class CommitNotFetchedError extends BaseError {
     };
 }
 declare namespace CommitNotFetchedError {
-    let code_5: "CommitNotFetchedError";
-    export { code_5 as code };
+    let code_6: "CommitNotFetchedError";
+    export { code_6 as code };
 }
 declare class EmptyCommitError extends BaseError {
     constructor();
@@ -4039,8 +4059,8 @@ declare class EmptyCommitError extends BaseError {
     data: {};
 }
 declare namespace EmptyCommitError {
-    let code_6: "EmptyCommitError";
-    export { code_6 as code };
+    let code_7: "EmptyCommitError";
+    export { code_7 as code };
 }
 declare class EmptyServerResponseError extends BaseError {
     constructor();
@@ -4049,8 +4069,8 @@ declare class EmptyServerResponseError extends BaseError {
     data: {};
 }
 declare namespace EmptyServerResponseError {
-    let code_7: "EmptyServerResponseError";
-    export { code_7 as code };
+    let code_8: "EmptyServerResponseError";
+    export { code_8 as code };
 }
 declare class FastForwardError extends BaseError {
     constructor();
@@ -4059,8 +4079,8 @@ declare class FastForwardError extends BaseError {
     data: {};
 }
 declare namespace FastForwardError {
-    let code_8: "FastForwardError";
-    export { code_8 as code };
+    let code_9: "FastForwardError";
+    export { code_9 as code };
 }
 declare class GitPushError extends BaseError {
     /**
@@ -4076,8 +4096,8 @@ declare class GitPushError extends BaseError {
     };
 }
 declare namespace GitPushError {
-    let code_9: "GitPushError";
-    export { code_9 as code };
+    let code_10: "GitPushError";
+    export { code_10 as code };
 }
 declare class HttpError extends BaseError {
     /**
@@ -4095,8 +4115,8 @@ declare class HttpError extends BaseError {
     };
 }
 declare namespace HttpError {
-    let code_10: "HttpError";
-    export { code_10 as code };
+    let code_11: "HttpError";
+    export { code_11 as code };
 }
 declare class InternalError extends BaseError {
     /**
@@ -4110,8 +4130,8 @@ declare class InternalError extends BaseError {
     };
 }
 declare namespace InternalError {
-    let code_11: "InternalError";
-    export { code_11 as code };
+    let code_12: "InternalError";
+    export { code_12 as code };
 }
 declare class InvalidFilepathError extends BaseError {
     /**
@@ -4125,8 +4145,8 @@ declare class InvalidFilepathError extends BaseError {
     };
 }
 declare namespace InvalidFilepathError {
-    let code_12: "InvalidFilepathError";
-    export { code_12 as code };
+    let code_13: "InvalidFilepathError";
+    export { code_13 as code };
 }
 declare class InvalidOidError extends BaseError {
     /**
@@ -4140,8 +4160,8 @@ declare class InvalidOidError extends BaseError {
     };
 }
 declare namespace InvalidOidError {
-    let code_13: "InvalidOidError";
-    export { code_13 as code };
+    let code_14: "InvalidOidError";
+    export { code_14 as code };
 }
 declare class InvalidRefNameError extends BaseError {
     /**
@@ -4158,8 +4178,8 @@ declare class InvalidRefNameError extends BaseError {
     };
 }
 declare namespace InvalidRefNameError {
-    let code_14: "InvalidRefNameError";
-    export { code_14 as code };
+    let code_15: "InvalidRefNameError";
+    export { code_15 as code };
 }
 declare class MaxDepthError extends BaseError {
     /**
@@ -4173,8 +4193,8 @@ declare class MaxDepthError extends BaseError {
     };
 }
 declare namespace MaxDepthError {
-    let code_15: "MaxDepthError";
-    export { code_15 as code };
+    let code_16: "MaxDepthError";
+    export { code_16 as code };
 }
 declare class MergeNotSupportedError extends BaseError {
     constructor();
@@ -4183,8 +4203,8 @@ declare class MergeNotSupportedError extends BaseError {
     data: {};
 }
 declare namespace MergeNotSupportedError {
-    let code_16: "MergeNotSupportedError";
-    export { code_16 as code };
+    let code_17: "MergeNotSupportedError";
+    export { code_17 as code };
 }
 declare class MergeConflictError extends BaseError {
     /**
@@ -4204,8 +4224,8 @@ declare class MergeConflictError extends BaseError {
     };
 }
 declare namespace MergeConflictError {
-    let code_17: "MergeConflictError";
-    export { code_17 as code };
+    let code_18: "MergeConflictError";
+    export { code_18 as code };
 }
 declare class MissingNameError extends BaseError {
     /**
@@ -4219,8 +4239,8 @@ declare class MissingNameError extends BaseError {
     };
 }
 declare namespace MissingNameError {
-    let code_18: "MissingNameError";
-    export { code_18 as code };
+    let code_19: "MissingNameError";
+    export { code_19 as code };
 }
 declare class MissingParameterError extends BaseError {
     /**
@@ -4234,8 +4254,8 @@ declare class MissingParameterError extends BaseError {
     };
 }
 declare namespace MissingParameterError {
-    let code_19: "MissingParameterError";
-    export { code_19 as code };
+    let code_20: "MissingParameterError";
+    export { code_20 as code };
 }
 declare class MultipleGitError extends BaseError {
     /**
@@ -4251,8 +4271,8 @@ declare class MultipleGitError extends BaseError {
     errors: Error[];
 }
 declare namespace MultipleGitError {
-    let code_20: "MultipleGitError";
-    export { code_20 as code };
+    let code_21: "MultipleGitError";
+    export { code_21 as code };
 }
 declare class NoRefspecError extends BaseError {
     /**
@@ -4266,8 +4286,8 @@ declare class NoRefspecError extends BaseError {
     };
 }
 declare namespace NoRefspecError {
-    let code_21: "NoRefspecError";
-    export { code_21 as code };
+    let code_22: "NoRefspecError";
+    export { code_22 as code };
 }
 declare class NotFoundError extends BaseError {
     /**
@@ -4281,8 +4301,8 @@ declare class NotFoundError extends BaseError {
     };
 }
 declare namespace NotFoundError {
-    let code_22: "NotFoundError";
-    export { code_22 as code };
+    let code_23: "NotFoundError";
+    export { code_23 as code };
 }
 declare class ObjectTypeError extends BaseError {
     /**
@@ -4302,8 +4322,8 @@ declare class ObjectTypeError extends BaseError {
     };
 }
 declare namespace ObjectTypeError {
-    let code_23: "ObjectTypeError";
-    export { code_23 as code };
+    let code_24: "ObjectTypeError";
+    export { code_24 as code };
 }
 declare class ParseError extends BaseError {
     /**
@@ -4319,8 +4339,8 @@ declare class ParseError extends BaseError {
     };
 }
 declare namespace ParseError {
-    let code_24: "ParseError";
-    export { code_24 as code };
+    let code_25: "ParseError";
+    export { code_25 as code };
 }
 declare class PushRejectedError extends BaseError {
     /**
@@ -4334,8 +4354,8 @@ declare class PushRejectedError extends BaseError {
     };
 }
 declare namespace PushRejectedError {
-    let code_25: "PushRejectedError";
-    export { code_25 as code };
+    let code_26: "PushRejectedError";
+    export { code_26 as code };
 }
 declare class RemoteCapabilityError extends BaseError {
     /**
@@ -4351,8 +4371,8 @@ declare class RemoteCapabilityError extends BaseError {
     };
 }
 declare namespace RemoteCapabilityError {
-    let code_26: "RemoteCapabilityError";
-    export { code_26 as code };
+    let code_27: "RemoteCapabilityError";
+    export { code_27 as code };
 }
 declare class SmartHttpError extends BaseError {
     /**
@@ -4368,8 +4388,8 @@ declare class SmartHttpError extends BaseError {
     };
 }
 declare namespace SmartHttpError {
-    let code_27: "SmartHttpError";
-    export { code_27 as code };
+    let code_28: "SmartHttpError";
+    export { code_28 as code };
 }
 declare class UnknownTransportError extends BaseError {
     /**
@@ -4387,8 +4407,8 @@ declare class UnknownTransportError extends BaseError {
     };
 }
 declare namespace UnknownTransportError {
-    let code_28: "UnknownTransportError";
-    export { code_28 as code };
+    let code_29: "UnknownTransportError";
+    export { code_29 as code };
 }
 declare class UnsafeFilepathError extends BaseError {
     /**
@@ -4402,8 +4422,8 @@ declare class UnsafeFilepathError extends BaseError {
     };
 }
 declare namespace UnsafeFilepathError {
-    let code_29: "UnsafeFilepathError";
-    export { code_29 as code };
+    let code_30: "UnsafeFilepathError";
+    export { code_30 as code };
 }
 declare class UrlParseError extends BaseError {
     /**
@@ -4417,8 +4437,8 @@ declare class UrlParseError extends BaseError {
     };
 }
 declare namespace UrlParseError {
-    let code_30: "UrlParseError";
-    export { code_30 as code };
+    let code_31: "UrlParseError";
+    export { code_31 as code };
 }
 declare class UserCanceledError extends BaseError {
     constructor();
@@ -4427,8 +4447,8 @@ declare class UserCanceledError extends BaseError {
     data: {};
 }
 declare namespace UserCanceledError {
-    let code_31: "UserCanceledError";
-    export { code_31 as code };
+    let code_32: "UserCanceledError";
+    export { code_32 as code };
 }
 declare class UnmergedPathsError extends BaseError {
     /**
@@ -4442,8 +4462,8 @@ declare class UnmergedPathsError extends BaseError {
     };
 }
 declare namespace UnmergedPathsError {
-    let code_32: "UnmergedPathsError";
-    export { code_32 as code };
+    let code_33: "UnmergedPathsError";
+    export { code_33 as code };
 }
 declare class IndexResetError extends BaseError {
     /**
@@ -4457,8 +4477,8 @@ declare class IndexResetError extends BaseError {
     };
 }
 declare namespace IndexResetError {
-    let code_33: "IndexResetError";
-    export { code_33 as code };
+    let code_34: "IndexResetError";
+    export { code_34 as code };
 }
 declare class NoCommitError extends BaseError {
     /**
@@ -4472,8 +4492,8 @@ declare class NoCommitError extends BaseError {
     };
 }
 declare namespace NoCommitError {
-    let code_34: "NoCommitError";
-    export { code_34 as code };
+    let code_35: "NoCommitError";
+    export { code_35 as code };
 }
 /**
  * @typedef {Object} GitProgressEvent

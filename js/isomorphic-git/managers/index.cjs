@@ -5328,6 +5328,23 @@ class CheckoutConflictError extends BaseError {
 /** @type {'CheckoutConflictError'} */
 CheckoutConflictError.code = 'CheckoutConflictError';
 
+class CherryPickLocalChangesError extends BaseError {
+  /**
+   * @param {string[]} filepaths
+   */
+  constructor(filepaths) {
+    super(
+      `Your local changes to the following files would be overwritten by cherry-pick: ${filepaths.join(
+        ', '
+      )}`
+    );
+    this.code = this.name = CherryPickLocalChangesError.code;
+    this.data = { filepaths };
+  }
+}
+/** @type {'CherryPickLocalChangesError'} */
+CherryPickLocalChangesError.code = 'CherryPickLocalChangesError';
+
 class CherryPickMergeCommitError extends BaseError {
   /**
    * @param {string} oid
