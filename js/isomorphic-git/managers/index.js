@@ -1651,7 +1651,16 @@ async function isIndexStale(fs, filepath, cache) {
 
   const currStats = await fs.lstat(filepath);
   if (currStats === null) return false
-  return compareStats(savedStats, currStats)
+  if (compareStats(savedStats, currStats)) return true
+  // compareStats only looks at whole seconds, but the index is often rewritten
+  // in the same second with the same size (an entry got a new oid). Both stats
+  // come from the same fs, so compare the full timestamps too.
+  const saved = normalizeStats(savedStats);
+  const curr = normalizeStats(currStats);
+  return (
+    saved.mtimeNanoseconds !== curr.mtimeNanoseconds ||
+    saved.ctimeNanoseconds !== curr.ctimeNanoseconds
+  )
 }
 
 class GitIndexManager {
@@ -5750,6 +5759,10 @@ class GitWalkerFs {
     this.dir = dir;
     this.gitdir = gitdir;
     this.refresh = refresh;
+    // Index entries whose stat info needs a refresh. `flush` writes them to
+    // the index together when the walk is finished.
+    this.refreshQueue = [];
+    this.flushed = false;
 
     this.config = null;
     const walker = this;
@@ -5894,11 +5907,20 @@ class GitWalkerFs {
                 (!filemode || stats.mode === stage.mode) &&
                 compareStats(stats, stage, filemode, trustino)
               ) {
-                index.insert({
-                  filepath: entry._fullpath,
-                  stats,
-                  oid,
-                });
+                if (self.flushed) {
+                  // The walk is finished and `flush` already ran, so write
+                  // it right away.
+                  index.insert({ filepath: entry._fullpath, stats, oid });
+                } else {
+                  // Queue the refresh so `flush` can write all of them to the
+                  // index in one go when the walk is finished.
+                  self.refreshQueue.push({
+                    filepath: entry._fullpath,
+                    stage,
+                    stats,
+                    oid,
+                  });
+                }
               }
             }
           } else {
@@ -5910,6 +5932,26 @@ class GitWalkerFs {
       entry._oid = oid;
     }
     return entry._oid
+  }
+
+  /**
+   * Write the queued stat refreshes to the index in a single pass.
+   * `_walk` calls this once the walk is finished. The entries it returned
+   * can still be asked for their oid afterwards, so from then on `oid`
+   * writes a refresh right away instead of queueing it.
+   */
+  async flush() {
+    const { fs, gitdir, cache, refreshQueue } = this;
+    this.refreshQueue = [];
+    this.flushed = true;
+    if (refreshQueue.length === 0) return
+    await GitIndexManager.acquire({ fs, gitdir, cache }, async index => {
+      for (const { filepath, stage, stats, oid } of refreshQueue) {
+        // Only refresh entries that are still the ones we looked at.
+        if (index.entriesMap.get(filepath) !== stage) continue
+        index.insert({ filepath, stats, oid });
+      }
+    });
   }
 
   async _getGitConfig(fs, gitdir) {
@@ -6107,7 +6149,13 @@ async function _walk({
       return reduce(parent, walkedChildren)
     }
   };
-  return walk(root)
+  const result = await walk(root);
+  // Let walkers write out what they queued during the walk. WORKDIR queues
+  // its index stat refreshes so the index is written once at the end.
+  for (const walker of walkers) {
+    if (walker.flush) await walker.flush();
+  }
+  return result
 }
 
 // @ts-check
