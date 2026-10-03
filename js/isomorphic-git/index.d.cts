@@ -2903,7 +2903,7 @@ export function readTree({ fs, dir, gitdir, oid, filepath, cache, }: {
  * @param {FsClient} args.fs - a file system client
  * @param {string} [args.dir] - The [working tree](dir-vs-gitdir.md) directory path
  * @param {string} [args.gitdir=join(dir, '.git')] - [required] The [git directory](dir-vs-gitdir.md) path
- * @param {string} args.filepath - The path to the file to remove from the index
+ * @param {string|string[]} args.filepath - The path to the file to remove from the index, or an array of paths
  * @param {object} [args.cache] - a [cache](cache.md) object
  *
  * @returns {Promise<void>} Resolves successfully once the git index has been updated
@@ -2912,12 +2912,17 @@ export function readTree({ fs, dir, gitdir, oid, filepath, cache, }: {
  * await git.remove({ fs, dir: '/tutorial', filepath: 'README.md' })
  * console.log('done')
  *
+ * @example
+ * // remove several files from the index with a single write of the index
+ * await git.remove({ fs, dir: '/tutorial', filepath: ['README.md', 'docs/old.md'] })
+ * console.log('done')
+ *
  */
 export function remove({ fs: _fs, dir, gitdir, filepath, cache, }: {
     fs: FsClient;
     dir?: string | undefined;
     gitdir?: string | undefined;
-    filepath: string;
+    filepath: string | string[];
     cache?: object;
 }): Promise<void>;
 /**

@@ -63,7 +63,7 @@
 <tr><td><a href="./fs"><strong>fs</strong></a></td><td>FsClient</td><td>a file system client</td></tr>
 <tr><td>dir</td><td>string</td><td>The <a href="/docs/en/dir-vs-gitdir">working tree</a> directory path</td></tr>
 <tr><td><strong>gitdir</strong></td><td>string = join(dir, '.git')</td><td>The <a href="/docs/en/dir-vs-gitdir">git directory</a> path</td></tr>
-<tr><td><strong>filepath</strong></td><td>string</td><td>The path to the file to remove from the index</td></tr>
+<tr><td><strong>filepath</strong></td><td>string  |  Array&lt;string&gt;</td><td>The path to the file to remove from the index, or an array of paths</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>return</td><td>Promise&lt;void&gt;</td><td>Resolves successfully once the git index has been updated</td></tr>
 </tbody>
@@ -71,6 +71,10 @@
 <p>Note that this does NOT delete the file in the working directory.</p>
 <p>Example Code:</p>
 <pre><code class="hljs css language-js live"><span class="hljs-keyword">await</span> git.remove({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">filepath</span>: <span class="hljs-string">'README.md'</span> })
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'done'</span>)
+</code></pre>
+<pre><code class="hljs css language-js live"><span class="hljs-comment">// remove several files from the index with a single write of the index</span>
+<span class="hljs-keyword">await</span> git.remove({ fs, <span class="hljs-attr">dir</span>: <span class="hljs-string">'/tutorial'</span>, <span class="hljs-attr">filepath</span>: [<span class="hljs-string">'README.md'</span>, <span class="hljs-string">'docs/old.md'</span>] })
 <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'done'</span>)
 </code></pre>
 <hr>
