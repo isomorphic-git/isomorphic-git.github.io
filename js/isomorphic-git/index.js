@@ -6115,6 +6115,67 @@ async function addToIndex({
   return fulfilledPromises
 }
 
+async function hasObjectLoose({ fs, gitdir, oid }) {
+  const source = `objects/${oid.slice(0, 2)}/${oid.slice(2)}`;
+  return fs.exists(`${gitdir}/${source}`)
+}
+
+async function hasObjectPacked({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  getExternalRefDelta,
+}) {
+  // Check to see if it's in a packfile.
+  // Iterate through all the .idx files
+  let list = await fs.readdir(join(gitdir, 'objects/pack'));
+  list = list.filter(x => x.endsWith('.idx'));
+  for (const filename of list) {
+    const indexFile = `${gitdir}/objects/pack/${filename}`;
+    const p = await readPackIndex({
+      fs,
+      cache,
+      filename: indexFile,
+      getExternalRefDelta,
+    });
+    if (p.error) throw new InternalError(p.error)
+    // If the packfile DOES have the oid we're looking for...
+    if (p.offsets.has(oid)) {
+      return true
+    }
+  }
+  // Failed to find it
+  return false
+}
+
+async function hasObject({
+  fs,
+  cache,
+  gitdir,
+  oid,
+  format = 'content',
+}) {
+  // Curry the current read method so that the packfile un-deltification
+  // process can acquire external ref-deltas.
+  const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
+
+  // Look for it in the loose object directory.
+  let result = await hasObjectLoose({ fs, gitdir, oid });
+  // Check to see if it's in a packfile.
+  if (!result) {
+    result = await hasObjectPacked({
+      fs,
+      cache,
+      gitdir,
+      oid,
+      getExternalRefDelta,
+    });
+  }
+  // Finally
+  return result
+}
+
 // @ts-check
 
 /**
@@ -6416,8 +6477,24 @@ async function _commit({
       } else {
         // ensure that the parents are oids, not refs
         parent = await Promise.all(
-          parent.map(p => {
-            return GitRefManager.resolve({ fs, gitdir, ref: p })
+          parent.map(async p => {
+            let oid = await GitRefManager.resolve({ fs, gitdir, ref: p });
+            // If `p` is an annotated tag, use the commit it points to.
+            // Parents are not required to exist locally.
+            while (await hasObject({ fs, cache, gitdir, oid })) {
+              const { type, object } = await _readObject({
+                fs,
+                cache,
+                gitdir,
+                oid,
+              });
+              if (type === 'commit') break
+              if (type !== 'tag') {
+                throw new ObjectTypeError(oid, type, 'commit')
+              }
+              oid = GitAnnotatedTag.from(object).parse().object;
+            }
+            return oid
           })
         );
       }
@@ -7153,8 +7230,10 @@ async function _branch({
     // Probably an empty repo
   }
 
-  // Create a new ref that points at the current commit
+  // Create a new ref that points at the current commit,
+  // peeling annotated tags to the commit they point to
   if (oid) {
+    oid = (await resolveCommit({ fs, cache: {}, gitdir, oid })).oid;
     await GitRefManager.writeRef({ fs, gitdir, ref: fullref, value: oid });
   }
 
@@ -7347,6 +7426,18 @@ async function _checkout({
     });
   }
 
+  // If `ref` is an annotated tag, use the commit it points to
+  if (!noUpdateHead) {
+    try {
+      oid = (await resolveCommit({ fs, cache, gitdir, oid })).oid;
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        throw new CommitNotFetchedError(ref, err.data.what)
+      }
+      throw err
+    }
+  }
+
   // Update working dir
   if (!noCheckout) {
     let ops;
@@ -7365,6 +7456,7 @@ async function _checkout({
       });
     } catch (err) {
       // Throw a more helpful error message for this common mistake.
+      // Only reachable with `noUpdateHead`, otherwise the commit was already read above.
       if (err instanceof NotFoundError && err.data.what === oid) {
         throw new CommitNotFetchedError(ref, oid)
       } else {
@@ -9920,67 +10012,6 @@ class GitShallowManager {
   }
 }
 
-async function hasObjectLoose({ fs, gitdir, oid }) {
-  const source = `objects/${oid.slice(0, 2)}/${oid.slice(2)}`;
-  return fs.exists(`${gitdir}/${source}`)
-}
-
-async function hasObjectPacked({
-  fs,
-  cache,
-  gitdir,
-  oid,
-  getExternalRefDelta,
-}) {
-  // Check to see if it's in a packfile.
-  // Iterate through all the .idx files
-  let list = await fs.readdir(join(gitdir, 'objects/pack'));
-  list = list.filter(x => x.endsWith('.idx'));
-  for (const filename of list) {
-    const indexFile = `${gitdir}/objects/pack/${filename}`;
-    const p = await readPackIndex({
-      fs,
-      cache,
-      filename: indexFile,
-      getExternalRefDelta,
-    });
-    if (p.error) throw new InternalError(p.error)
-    // If the packfile DOES have the oid we're looking for...
-    if (p.offsets.has(oid)) {
-      return true
-    }
-  }
-  // Failed to find it
-  return false
-}
-
-async function hasObject({
-  fs,
-  cache,
-  gitdir,
-  oid,
-  format = 'content',
-}) {
-  // Curry the current read method so that the packfile un-deltification
-  // process can acquire external ref-deltas.
-  const getExternalRefDelta = oid => _readObject({ fs, cache, gitdir, oid });
-
-  // Look for it in the loose object directory.
-  let result = await hasObjectLoose({ fs, gitdir, oid });
-  // Check to see if it's in a packfile.
-  if (!result) {
-    result = await hasObjectPacked({
-      fs,
-      cache,
-      gitdir,
-      oid,
-      getExternalRefDelta,
-    });
-  }
-  // Finally
-  return result
-}
-
 function addCredentialUsername({ config, onAuth }) {
   if (!onAuth) return onAuth
 
@@ -11656,10 +11687,12 @@ async function _merge({
     gitdir,
     ref: ours,
   });
-  const theirOid = await GitRefManager.resolve({
+  // If `theirs` is an annotated tag, use the commit it points to
+  const { oid: theirOid } = await resolveCommit({
     fs,
+    cache,
     gitdir,
-    ref: theirs,
+    oid: await GitRefManager.resolve({ fs, gitdir, ref: theirs }),
   });
   // find most recent common ancestor of ref a and ref b
   const baseOids = await _findMergeBase({
