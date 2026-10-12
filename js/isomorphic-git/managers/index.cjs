@@ -925,9 +925,10 @@ class BaseError extends Error {
 
   toJSON() {
     // Error objects aren't normally serializable. So we do something about that.
+    const metadata = /** @type {any} */ (this);
     return {
-      code: this.code,
-      data: this.data,
+      code: metadata.code,
+      data: metadata.data,
       caller: this.caller,
       message: this.message,
       stack: this.stack,
@@ -936,8 +937,9 @@ class BaseError extends Error {
 
   fromJSON(json) {
     const e = new BaseError(json.message);
-    e.code = json.code;
-    e.data = json.data;
+    const metadata = /** @type {any} */ (e);
+    metadata.code = json.code;
+    metadata.data = json.data;
     e.caller = json.caller;
     e.stack = json.stack;
     return e
@@ -4073,6 +4075,35 @@ async function parseHeader(reader) {
   return { type, length, ofs, reference }
 }
 
+class DecompressionError extends BaseError {
+  /**
+   * @param {string} message
+   */
+  constructor(message) {
+    super(`Invalid compressed buffer: ${message}`);
+    this.code = this.name = DecompressionError.code;
+    this.data = { message };
+  }
+}
+/** @type {'DecompressionError'} */
+DecompressionError.code = 'DecompressionError';
+
+/* eslint-env node, browser */
+
+async function nativeInflate(buffer) {
+  const ds = new DecompressionStream('deflate');
+  const d = new Blob([buffer]).stream().pipeThrough(ds);
+  try {
+    return new Uint8Array(await new Response(d).arrayBuffer())
+  } catch (err) {
+    // Some native implementations reject corrupt data with an empty TypeError.
+    if (err && err.name === 'TypeError' && err.message === '') {
+      throw new DecompressionError('decompression failed')
+    }
+    throw err
+  }
+}
+
 /* eslint-env node, browser */
 
 let supportsDecompressionStream = false;
@@ -4081,15 +4112,17 @@ async function inflate(buffer) {
   if (supportsDecompressionStream === null) {
     supportsDecompressionStream = testDecompressionStream();
   }
-  return supportsDecompressionStream
-    ? browserInflate(buffer)
-    : pako.inflate(buffer)
-}
-
-async function browserInflate(buffer) {
-  const ds = new DecompressionStream('deflate');
-  const d = new Blob([buffer]).stream().pipeThrough(ds);
-  return new Uint8Array(await new Response(d).arrayBuffer())
+  try {
+    return supportsDecompressionStream
+      ? await nativeInflate(buffer)
+      : pako.inflate(buffer)
+  } catch (err) {
+    if (typeof err === 'string') {
+      // Pako throws strings for corrupt data; preserve existing Error objects.
+      throw new DecompressionError(err)
+    }
+    throw err
+  }
 }
 
 function testDecompressionStream() {
