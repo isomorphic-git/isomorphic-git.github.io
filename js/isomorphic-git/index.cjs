@@ -13673,6 +13673,7 @@ async function _resolveFileId({
  * @param {string=} args.filepath optional get the commit for the filepath only
  * @param {string} args.ref
  * @param {number|void} args.depth
+ * @param {string} [args.author] - Return only commits whose author matches this case-insensitive JavaScript regular expression, tested against the author's `Name <email>` string
  * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
  * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
  * @param {boolean=} [args.includeChanges=false] Include changed file object ids for each commit.
@@ -13694,6 +13695,7 @@ async function _log({
   ref,
   depth,
   since,
+  author,
   force,
   follow,
   includeChanges,
@@ -13702,9 +13704,26 @@ async function _log({
     typeof since === 'undefined'
       ? undefined
       : Math.floor(since.valueOf() / 1000);
+  // The pattern is a case-insensitive JavaScript regular expression that is
+  // matched against the author's "Name <email>" string.
+  const authorRegex =
+    author === undefined || author === null
+      ? undefined
+      : new RegExp(author, 'i');
+  const matchesAuthor = ({ commit }) => {
+    if (authorRegex === undefined) return true
+    if (!commit.author) return false
+    return authorRegex.test(`${commit.author.name} <${commit.author.email}>`)
+  };
+  const commits = [];
   // TODO: In the future, we may want to have an API where we return a
   // async iterator that emits commits.
-  const commits = [];
+  // Commits that do not match the author pattern are omitted from the
+  // result, but their history is still traversed so that file tracking and
+  // `depth` behave as they do without a filter.
+  const pushCommit = commit => {
+    if (matchesAuthor(commit)) commits.push(commit);
+  };
   const shallowCommits = await GitShallowManager.read({ fs, gitdir });
   const oid = await GitRefManager.resolve({ fs, gitdir, ref });
   const tips = [await _readCommit({ fs, cache, gitdir, oid })];
@@ -13714,7 +13733,7 @@ async function _log({
   let isOk;
 
   function endCommit(commit) {
-    if (isOk && filepath) commits.push(commit);
+    if (isOk && filepath) pushCommit(commit);
   }
 
   while (tips.length > 0) {
@@ -13742,7 +13761,7 @@ async function _log({
           lastCommit &&
           (lastFileOid !== vFileEntry.oid || lastFileMode !== vFileEntry.mode)
         ) {
-          commits.push(lastCommit);
+          pushCommit(lastCommit);
         }
         lastFileOid = vFileEntry.oid;
         lastFileMode = vFileEntry.mode;
@@ -13774,23 +13793,23 @@ async function _log({
                     if (found.length === 1) {
                       found = found[0];
                       filepath = found;
-                      if (lastCommit) commits.push(lastCommit);
+                      if (lastCommit) pushCommit(lastCommit);
                     } else {
                       found = false;
-                      if (lastCommit) commits.push(lastCommit);
+                      if (lastCommit) pushCommit(lastCommit);
                       break
                     }
                   }
                 }
               } else {
                 filepath = found;
-                if (lastCommit) commits.push(lastCommit);
+                if (lastCommit) pushCommit(lastCommit);
               }
             }
           }
           if (!found) {
             if (isOk && lastFileOid) {
-              commits.push(lastCommit);
+              pushCommit(lastCommit);
               if (!force) break
             }
             if (!force && !follow) throw e
@@ -13800,7 +13819,7 @@ async function _log({
         } else throw e
       }
     } else {
-      commits.push(commit);
+      pushCommit(commit);
     }
 
     // Stop the loop if we have enough commits now.
@@ -13891,8 +13910,9 @@ async function getChanges({ fs, cache, gitdir, commit, shallow }) {
  * @param {string} [args.gitdir=join(dir,'.git')] - [required] The [git directory](dir-vs-gitdir.md) path
  * @param {string=} args.filepath optional get the commit for the filepath only
  * @param {string} [args.ref = 'HEAD'] - The commit to begin walking backwards through the history from
- * @param {number=} [args.depth] - Limit the number of commits returned. No limit by default.
+ * @param {number=} [args.depth] - Limit the number of commits returned (after `author` and `since` filters are applied). No limit by default.
  * @param {Date} [args.since] - Return history newer than the given date. Can be combined with `depth` to get whichever is shorter.
+ * @param {string} [args.author] - Return only commits whose author matches this case-insensitive JavaScript regular expression, tested against the author's `Name <email>` string. (Unlike `git log --author`, which is case-sensitive and uses basic regular expressions.)
  * @param {boolean=} [args.force=false] do not throw error if filepath is not exist (works only for a single file). defaults to false
  * @param {boolean=} [args.follow=false] Continue listing the history of a file beyond renames (works only for a single file). defaults to false
  * @param {boolean=} [args.includeChanges=false] Include changed file object ids for each commit. Each tuple is `[newOid, oldOid, filepath]`; an added or removed file has a null old or new oid, respectively.
@@ -13920,6 +13940,7 @@ async function log({
   ref = 'HEAD',
   depth,
   since, // Date
+  author,
   force,
   follow,
   includeChanges = false,
@@ -13940,6 +13961,7 @@ async function log({
       ref,
       depth,
       since,
+      author,
       force,
       follow,
       includeChanges,
