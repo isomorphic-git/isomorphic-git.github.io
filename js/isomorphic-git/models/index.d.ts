@@ -21,6 +21,7 @@ export class FileSystem {
     exists(filepath: string, options?: any): Promise<boolean>;
     /**
      * Return the contents of a file if it exists, otherwise returns null.
+     * Rethrows errors that aren't related to file existence.
      *
      * @param {string} filepath - The path to the file.
      * @param {Object} [options] - Options for reading the file.
@@ -59,7 +60,8 @@ export class FileSystem {
      */
     rmdir(filepath: string, opts?: any): Promise<void>;
     /**
-     * Read a directory without throwing an error is the directory doesn't exist
+     * Read a directory without throwing an error if the directory doesn't exist.
+     * Rethrows errors that aren't related to directory existence.
      *
      * @param {string} filepath - The path to the directory.
      * @returns {Promise<string[]|null>} - An array of file names, or `null` if the path is not a directory.

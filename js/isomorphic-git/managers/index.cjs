@@ -888,12 +888,7 @@ class GitIgnoreManager {
     }
     let ignoredStatus = false;
     for (const [index, p] of pairs.entries()) {
-      let file;
-      try {
-        file = await fs.read(p.gitignore, 'utf8');
-      } catch (err) {
-        if (err.code === 'NOENT') continue
-      }
+      const file = await fs.read(p.gitignore, 'utf8');
       const ign = ignore();
       // The patterns in .git/info/exclude are relative to the working directory,
       // so only the first pair, which holds the full filepath, can use them.
@@ -2331,8 +2326,9 @@ class GitRefManager {
         ref: 'HEAD',
         depth: 2,
       });
-    } catch (_) {
-      return false
+    } catch (err) {
+      if (err instanceof NotFoundError) return false
+      throw err
     }
     if (!target.startsWith('refs/heads/')) return false
     return ref === 'HEAD' || refpaths(ref).includes(target)
@@ -2352,7 +2348,8 @@ class GitRefManager {
       await GitRefManager.expand({ fs, gitdir, ref });
       return true
     } catch (err) {
-      return false
+      if (err instanceof NotFoundError) return false
+      throw err
     }
   }
 
@@ -2472,7 +2469,7 @@ class GitRefManager {
    * @returns {Promise<string[]>} - A sorted list of refs.
    */
   static async listRefs({ fs, gitdir, filepath }) {
-    const packedMap = GitRefManager.packedRefs({ fs, gitdir });
+    const packedMap = await GitRefManager.packedRefs({ fs, gitdir });
     let files = null;
     try {
       files = await fs.readdirDeep(`${gitdir}/${filepath}`);
@@ -2481,7 +2478,7 @@ class GitRefManager {
       files = [];
     }
 
-    for (let key of (await packedMap).keys()) {
+    for (let key of packedMap.keys()) {
       // filter by prefix
       if (key.startsWith(filepath)) {
         // remove prefix
@@ -4507,6 +4504,12 @@ function readPackIndex({
       emitterPrefix,
     });
     cache[PackfileCache].set(filename, p);
+    // Let the next call retry a failed load instead of reusing it.
+    p.catch(() => {
+      if (cache[PackfileCache].get(filename) === p) {
+        cache[PackfileCache].delete(filename);
+      }
+    });
   }
   return p
 }
@@ -4550,7 +4553,12 @@ async function readObjectPacked({
       // Derive the .pack path from the .idx path
       const packFile = indexFile.replace(/idx$/, 'pack');
       if (!p.pack) {
-        p.pack = fs.read(packFile);
+        const read = fs.read(packFile);
+        p.pack = read;
+        // Let the next call retry a failed read instead of reusing it.
+        read.catch(() => {
+          if (p.pack === read) p.pack = null;
+        });
       }
       const pack = await p.pack;
       if (!pack) {

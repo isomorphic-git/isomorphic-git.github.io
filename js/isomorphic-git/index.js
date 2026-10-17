@@ -2477,8 +2477,9 @@ class GitRefManager {
         ref: 'HEAD',
         depth: 2,
       });
-    } catch (_) {
-      return false
+    } catch (err) {
+      if (err instanceof NotFoundError) return false
+      throw err
     }
     if (!target.startsWith('refs/heads/')) return false
     return ref === 'HEAD' || refpaths(ref).includes(target)
@@ -2498,7 +2499,8 @@ class GitRefManager {
       await GitRefManager.expand({ fs, gitdir, ref });
       return true
     } catch (err) {
-      return false
+      if (err instanceof NotFoundError) return false
+      throw err
     }
   }
 
@@ -2618,7 +2620,7 @@ class GitRefManager {
    * @returns {Promise<string[]>} - A sorted list of refs.
    */
   static async listRefs({ fs, gitdir, filepath }) {
-    const packedMap = GitRefManager.packedRefs({ fs, gitdir });
+    const packedMap = await GitRefManager.packedRefs({ fs, gitdir });
     let files = null;
     try {
       files = await fs.readdirDeep(`${gitdir}/${filepath}`);
@@ -2627,7 +2629,7 @@ class GitRefManager {
       files = [];
     }
 
-    for (let key of (await packedMap).keys()) {
+    for (let key of packedMap.keys()) {
       // filter by prefix
       if (key.startsWith(filepath)) {
         // remove prefix
@@ -3690,6 +3692,12 @@ function readPackIndex({
       emitterPrefix,
     });
     cache[PackfileCache].set(filename, p);
+    // Let the next call retry a failed load instead of reusing it.
+    p.catch(() => {
+      if (cache[PackfileCache].get(filename) === p) {
+        cache[PackfileCache].delete(filename);
+      }
+    });
   }
   return p
 }
@@ -3727,7 +3735,12 @@ async function readObjectPacked({
       // Derive the .pack path from the .idx path
       const packFile = indexFile.replace(/idx$/, 'pack');
       if (!p.pack) {
-        p.pack = fs.read(packFile);
+        const read = fs.read(packFile);
+        p.pack = read;
+        // Let the next call retry a failed read instead of reusing it.
+        read.catch(() => {
+          if (p.pack === read) p.pack = null;
+        });
       }
       const pack = await p.pack;
       if (!pack) {
@@ -5357,6 +5370,14 @@ function isFunction(obj) {
   return typeof obj === 'function'
 }
 
+// React Native file systems on iOS report a missing file with codes like
+// ENSCOCOAERRORDOMAIN260 instead of ENOENT.
+function isNotFoundError(err) {
+  const code = err.code;
+  if (typeof code !== 'string') return false
+  return code === 'ENOENT' || code === 'ENOTDIR' || code.includes('ENS')
+}
+
 function isPromiseFs(fs) {
   const test = targetFs => {
     try {
@@ -5446,11 +5467,7 @@ class FileSystem {
       await this._stat(filepath);
       return true
     } catch (err) {
-      if (
-        err.code === 'ENOENT' ||
-        err.code === 'ENOTDIR' ||
-        (err.code || '').includes('ENS')
-      ) {
+      if (isNotFoundError(err)) {
         return false
       } else {
         console.log('Unhandled error in "FileSystem.exists()" function', err);
@@ -5461,31 +5478,38 @@ class FileSystem {
 
   /**
    * Return the contents of a file if it exists, otherwise returns null.
+   * Rethrows errors that aren't related to file existence.
    *
    * @param {string} filepath - The path to the file.
    * @param {Object} [options] - Options for reading the file.
    * @returns {Promise<Buffer|string|null>} - The file contents, or `null` if the file doesn't exist.
    */
   async read(filepath, options = {}) {
+    let buffer;
     try {
-      let buffer = await this._readFile(filepath, options);
-      if (options.autocrlf === 'true') {
-        try {
-          buffer = new TextDecoder('utf8', { fatal: true }).decode(buffer);
-          buffer = buffer.replace(/\r\n/g, '\n');
-          buffer = new TextEncoder().encode(buffer);
-        } catch (error) {
-          // non utf8 file
-        }
-      }
-      // Convert plain ArrayBuffers to Buffers
-      if (typeof buffer !== 'string') {
-        buffer = Buffer.from(buffer);
-      }
-      return buffer
+      buffer = await this._readFile(filepath, options);
     } catch (err) {
-      return null
+      // Ref lookup probes candidate paths that may be missing, may be a
+      // directory (`refs/remotes/origin`), or may run through a file.
+      if (isNotFoundError(err) || err.code === 'EISDIR') return null
+      throw err
     }
+    // LightningFS resolves a directory read to undefined instead of EISDIR.
+    if (buffer == null) return null
+    if (options.autocrlf === 'true') {
+      try {
+        buffer = new TextDecoder('utf8', { fatal: true }).decode(buffer);
+        buffer = buffer.replace(/\r\n/g, '\n');
+        buffer = new TextEncoder().encode(buffer);
+      } catch (error) {
+        // non utf8 file
+      }
+    }
+    // Convert plain ArrayBuffers to Buffers
+    if (typeof buffer !== 'string') {
+      buffer = Buffer.from(buffer);
+    }
+    return buffer
   }
 
   /**
@@ -5557,22 +5581,25 @@ class FileSystem {
   }
 
   /**
-   * Read a directory without throwing an error is the directory doesn't exist
+   * Read a directory without throwing an error if the directory doesn't exist.
+   * Rethrows errors that aren't related to directory existence.
    *
    * @param {string} filepath - The path to the directory.
    * @returns {Promise<string[]|null>} - An array of file names, or `null` if the path is not a directory.
    */
   async readdir(filepath) {
+    let names;
     try {
-      const names = await this._readdir(filepath);
-      // Ordering is not guaranteed, and system specific (Windows vs Unix)
-      // so we must sort them ourselves.
-      names.sort(compareStrings);
-      return names
+      names = await this._readdir(filepath);
     } catch (err) {
       if (err.code === 'ENOTDIR') return null
-      return []
+      if (isNotFoundError(err)) return []
+      throw err
     }
+    // Ordering is not guaranteed, and system specific (Windows vs Unix)
+    // so we must sort them ourselves.
+    names.sort(compareStrings);
+    return names
   }
 
   /**
@@ -5609,7 +5636,7 @@ class FileSystem {
       const stats = await this._lstat(filename);
       return stats
     } catch (err) {
-      if (err.code === 'ENOENT' || (err.code || '').includes('ENS')) {
+      if (isNotFoundError(err)) {
         return null
       }
       throw err
@@ -5631,7 +5658,7 @@ class FileSystem {
       const link = await this._readlink(filename, opts);
       return Buffer.isBuffer(link) ? link : Buffer.from(link)
     } catch (err) {
-      if (err.code === 'ENOENT' || (err.code || '').includes('ENS')) {
+      if (isNotFoundError(err)) {
         return null
       }
       throw err
@@ -5890,12 +5917,7 @@ class GitIgnoreManager {
     }
     let ignoredStatus = false;
     for (const [index, p] of pairs.entries()) {
-      let file;
-      try {
-        file = await fs.read(p.gitignore, 'utf8');
-      } catch (err) {
-        if (err.code === 'NOENT') continue
-      }
+      const file = await fs.read(p.gitignore, 'utf8');
       const ign = ignore();
       // The patterns in .git/info/exclude are relative to the working directory,
       // so only the first pair, which holds the full filepath, can use them.
@@ -6454,7 +6476,8 @@ async function _commit({
       gitdir,
       ref,
     });
-  } catch {
+  } catch (err) {
+    if (!(err instanceof NotFoundError)) throw err
     // We assume that there's no commit and this is the initial commit
     initialCommit = true;
   }
@@ -7264,6 +7287,7 @@ async function _branch({
     oid = await GitRefManager.resolve({ fs, gitdir, ref: object || 'HEAD' });
   } catch (e) {
     // Probably an empty repo
+    if (!(e instanceof NotFoundError)) throw e
   }
 
   // Create a new ref that points at the current commit,
@@ -7437,7 +7461,7 @@ async function _checkout({
     // TODO: Figure out what to do if both 'ref' and 'remote' are specified, ref already exists,
     // and is configured to track a different remote.
   } catch (err) {
-    if (ref === 'HEAD') throw err
+    if (ref === 'HEAD' || !(err instanceof NotFoundError)) throw err
     // If `ref` doesn't exist, create a new remote tracking branch
     // Figure out the commit to checkout
     const remoteRef = `${remote}/${ref}`;
@@ -9374,8 +9398,9 @@ async function _currentBranch({
   if (test) {
     try {
       await GitRefManager.resolve({ fs, gitdir, ref });
-    } catch (_) {
-      return
+    } catch (err) {
+      if (err instanceof NotFoundError) return
+      throw err
     }
   }
   // Return `undefined` for detached HEAD
@@ -13215,6 +13240,7 @@ async function _listNotes({ fs, cache, gitdir, ref }) {
     if (err instanceof NotFoundError) {
       return []
     }
+    throw err
   }
 
   // Create the current note tree
@@ -16105,10 +16131,8 @@ async function resetIndex({
         ref: ref || 'HEAD',
       });
     } catch (e) {
-      if (ref) {
-        // Only throw the error if a ref is explicitly provided
-        throw e
-      }
+      // Without an explicit ref, a branch with no commits yet is fine
+      if (ref || !(e instanceof NotFoundError)) throw e
     }
 
     // Not having an oid at this point means `resetIndex()` was called without explicit `ref` on a new git
@@ -16124,7 +16148,14 @@ async function resetIndex({
           filepath,
         });
       } catch (e) {
-        // This means we're resetting the file to a "deleted" state
+        // The path is not in the commit, so reset it to a "deleted" state
+        if (
+          !(e instanceof NotFoundError) &&
+          !(e instanceof InvalidFilepathError) &&
+          !(e instanceof ObjectTypeError && e.data.filepath)
+        ) {
+          throw e
+        }
         oid = null;
       }
     }
@@ -17022,8 +17053,7 @@ async function status({
           // size of -1 happens over a BrowserFS HTTP Backend that doesn't serve Content-Length headers
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
           if (stats.size !== -1) {
-            // We don't await this so we can return faster for one-off cases.
-            GitIndexManager.acquire(
+            await GitIndexManager.acquire(
               { fs, gitdir: updatedGitdir, cache },
               async function (index) {
                 index.insert({ filepath, stats, oid: workdirOid });
@@ -17151,6 +17181,7 @@ async function getHeadTree({ fs, cache, gitdir: updatedGitdir }) {
     if (e instanceof NotFoundError) {
       return []
     }
+    throw e
   }
   const { tree } = await _readTree({ fs, cache, gitdir: updatedGitdir, oid });
   return tree
