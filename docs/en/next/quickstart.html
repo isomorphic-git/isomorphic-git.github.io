@@ -60,6 +60,11 @@
 <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/isomorphic-git"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"module"</span>&gt;</span><span class="javascript">
 <span class="hljs-keyword">import</span> http <span class="hljs-keyword">from</span> <span class="hljs-string">'https://unpkg.com/isomorphic-git/http/web/index.js'</span>
+<span class="hljs-keyword">import</span> { Buffer } <span class="hljs-keyword">from</span> <span class="hljs-string">'https://esm.sh/buffer@6'</span>
+
+<span class="hljs-comment">// isomorphic-git expects Node's built-in Buffer, which browsers don't provide</span>
+<span class="hljs-built_in">window</span>.Buffer = Buffer
+
 <span class="hljs-comment">// Initialize isomorphic-git with a file system</span>
 <span class="hljs-built_in">window</span>.fs = <span class="hljs-keyword">new</span> LightningFS(<span class="hljs-string">'fs'</span>)
 <span class="hljs-comment">// I prefer using the Promisified version honestly</span>
