@@ -72,17 +72,17 @@
 <tr><td>noUpdateBranch</td><td>boolean = false</td><td>If true, does not update the branch pointer after creating the commit.</td></tr>
 <tr><td>abortOnConflict</td><td>boolean = true</td><td>If true, merges with conflicts will not update the worktree or index.</td></tr>
 <tr><td>message</td><td>string</td><td>Overrides the default auto-generated merge commit message</td></tr>
-<tr><td>author</td><td>Object</td><td>passed to <a href="commit.md">commit</a> when creating a merge commit</td></tr>
+<tr><td>author</td><td>Object</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
 <tr><td>author.name</td><td>string</td><td>Default is <code>user.name</code> config.</td></tr>
 <tr><td>author.email</td><td>string</td><td>Default is <code>user.email</code> config.</td></tr>
 <tr><td>author.timestamp</td><td>number = Math.floor(Date.now()/1000)</td><td>Set the author timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).</td></tr>
 <tr><td>author.timezoneOffset</td><td>number</td><td>Set the author timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
-<tr><td>committer</td><td>Object</td><td>passed to <a href="commit.md">commit</a> when creating a merge commit</td></tr>
+<tr><td>committer</td><td>Object</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
 <tr><td>committer.name</td><td>string</td><td>Default is <code>user.name</code> config.</td></tr>
 <tr><td>committer.email</td><td>string</td><td>Default is <code>user.email</code> config.</td></tr>
 <tr><td>committer.timestamp</td><td>number = Math.floor(Date.now()/1000)</td><td>Set the committer timestamp field. This is the integer number of seconds since the Unix epoch (1970-01-01 00:00:00).</td></tr>
 <tr><td>committer.timezoneOffset</td><td>number</td><td>Set the committer timezone offset field. This is the difference, in minutes, from the current timezone to UTC. Default is <code>(new Date()).getTimezoneOffset()</code>.</td></tr>
-<tr><td>signingKey</td><td>string</td><td>passed to <a href="commit.md">commit</a> when creating a merge commit</td></tr>
+<tr><td>signingKey</td><td>string</td><td>passed to <a href="/docs/en/commit">commit</a> when creating a merge commit</td></tr>
 <tr><td>cache</td><td>object</td><td>a <a href="/docs/en/cache">cache</a> object</td></tr>
 <tr><td>mergeDriver</td><td>MergeDriverCallback</td><td>a <a href="/docs/en/mergeDriver">merge driver</a> implementation</td></tr>
 <tr><td>allowUnrelatedHistories</td><td>boolean = false</td><td>If true, allows merging histories of two branches that started their lives independently.</td></tr>
@@ -169,7 +169,7 @@ The flow would look like this:</p>
     el.href = 'https://github.com/isomorphic-git/isomorphic-git/edit/main/src/api/merge.js';
   }
 })();
-</script></span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/en/fastForward"><span class="arrow-prev">← </span><span>Previous</span></a><a class="docs-next button" href="/docs/en/abortMerge"><span>Next</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
+</script></span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/en/fastForward"><span class="arrow-prev">← </span><span class="function-name-prevnext">fastForward</span></a><a class="docs-next button" href="/docs/en/abortMerge"><span class="function-name-prevnext">abortMerge</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/isomorphic-git-logo.svg" alt="isomorphic-git" width="66" height="58"/></a><div class="footerSection"><h5>Docs</h5><a href="/docs/en/quickstart">Getting Started</a><a href="/docs/en/alphabetic">API Reference</a></div><div><h5>Community</h5><a href="/en/users">User Showcase</a><a href="https://gitter.im/isomorphic-git/Lobby">Project Chat</a><div><a href="https://github.com/isomorphic-git/isomorphic-git">GitHub <span id="gitHubStars"></span></a><script>
 void async function() {
   const response = await fetch('https://api.github.com/repos/isomorphic-git/isomorphic-git', {
     headers: { accept: 'application/vnd.github.v3+json' }

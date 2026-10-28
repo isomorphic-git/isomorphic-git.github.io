@@ -707,13 +707,25 @@ function parseCacheEntryFlags(bits) {
     extended: Boolean(bits & 0b0100000000000000),
     stage: (bits & 0b0011000000000000) >> 12,
     nameLength: bits & 0b0000111111111111,
+    skipWorktree: false,
+    intentToAdd: false,
   }
+}
+
+// Bits of the version 3 extended flags field that git understands:
+// 1-bit reserved, 1-bit skip-worktree, 1-bit intent-to-add, 13 unused bits
+const SKIP_WORKTREE = 0b0100000000000000;
+const INTENT_TO_ADD = 0b0010000000000000;
+
+function hasExtendedFlags(entry) {
+  return Boolean(entry.flags.skipWorktree || entry.flags.intentToAdd)
 }
 
 function renderCacheEntryFlags(entry) {
   const flags = entry.flags;
-  // 1-bit extended flag (must be zero in version 2)
-  flags.extended = false;
+  // 1-bit extended flag, set only when the entry needs the extended
+  // flags field that version 3 adds
+  flags.extended = hasExtendedFlags(entry);
   // 12-bit name length if the length is less than 0xFFF; otherwise 0xFFF
   // is stored in this field.
   flags.nameLength = Math.min(Buffer.from(entry.path).length, 0xfff);
@@ -722,6 +734,13 @@ function renderCacheEntryFlags(entry) {
     (flags.extended ? 0b0100000000000000 : 0) +
     ((flags.stage & 0b11) << 12) +
     (flags.nameLength & 0b111111111111)
+  )
+}
+
+function renderCacheEntryExtendedFlags(entry) {
+  return (
+    (entry.flags.skipWorktree ? SKIP_WORKTREE : 0) +
+    (entry.flags.intentToAdd ? INTENT_TO_ADD : 0)
   )
 }
 
@@ -784,7 +803,7 @@ class GitIndex {
     }
 
     const version = reader.readUInt32BE();
-    if (version !== 2) {
+    if (version !== 2 && version !== 3) {
       throw new InternalError(`Unsupported dircache version: ${version}`)
     }
     const numEntries = reader.readUInt32BE();
@@ -804,7 +823,16 @@ class GitIndex {
       entry.oid = reader.slice(20).toString('hex');
       const flags = reader.readUInt16BE();
       entry.flags = parseCacheEntryFlags(flags);
-      // TODO: handle if (version === 3 && entry.flags.extended)
+      if (entry.flags.extended) {
+        const extendedFlags = reader.readUInt16BE();
+        if (extendedFlags & ~(SKIP_WORKTREE | INTENT_TO_ADD)) {
+          throw new InternalError(
+            `Unknown index entry format: 0x${extendedFlags.toString(16)}`
+          )
+        }
+        entry.flags.skipWorktree = Boolean(extendedFlags & SKIP_WORKTREE);
+        entry.flags.intentToAdd = Boolean(extendedFlags & INTENT_TO_ADD);
+      }
       const pathlength = buffer.indexOf(0, reader.tell() + 1) - reader.tell();
       if (pathlength < 1) {
         throw new InternalError(`Got a path length of: ${pathlength}`)
@@ -883,6 +911,9 @@ class GitIndex {
     }
     stats = normalizeStats(stats);
     const bfilepath = Buffer.from(filepath);
+    // Keep the skip-worktree bit of a path outside the sparse checkout.
+    // Intent-to-add is cleared, since the path is now staged.
+    const existing = stage === 0 ? this._entries.get(filepath) : undefined;
     const entry = {
       ctimeSeconds: stats.ctimeSeconds,
       ctimeNanoseconds: stats.ctimeNanoseconds,
@@ -904,6 +935,8 @@ class GitIndex {
         extended: false,
         stage,
         nameLength: bfilepath.length < 0xfff ? bfilepath.length : 0xfff,
+        skipWorktree: Boolean(existing?.flags.skipWorktree),
+        intentToAdd: false,
       },
       stages: [],
     };
@@ -947,8 +980,11 @@ class GitIndex {
 
   static async _entryToBuffer(entry) {
     const bpath = Buffer.from(entry.path);
-    // the fixed length + the filename + at least one null char => align by 8
-    const length = Math.ceil((62 + bpath.length + 1) / 8) * 8;
+    const extended = hasExtendedFlags(entry);
+    // the fixed length + the extended flags (if any) + the filename + at
+    // least one null char => align by 8
+    const length =
+      Math.ceil((62 + (extended ? 2 : 0) + bpath.length + 1) / 8) * 8;
     const written = Buffer.alloc(length);
     const writer = new BufferCursor(written);
     const stat = normalizeStats(entry);
@@ -964,6 +1000,9 @@ class GitIndex {
     writer.writeUInt32BE(stat.size);
     writer.write(entry.oid, 20, 'hex');
     writer.writeUInt16BE(renderCacheEntryFlags(entry));
+    if (extended) {
+      writer.writeUInt16BE(renderCacheEntryExtendedFlags(entry));
+    }
     writer.write(entry.path, bpath.length, 'utf8');
     return written
   }
@@ -972,7 +1011,8 @@ class GitIndex {
     const header = Buffer.alloc(12);
     const writer = new BufferCursor(header);
     writer.write('DIRC', 4, 'utf8');
-    writer.writeUInt32BE(2);
+    // Like canonical git, only use version 3 when an entry needs it
+    writer.writeUInt32BE(this.entriesFlat.some(hasExtendedFlags) ? 3 : 2);
     writer.writeUInt32BE(this.entriesFlat.length);
 
     let entryBuffers = [];
@@ -5118,9 +5158,11 @@ class GitWalkerFs {
               // 1) if we can (because the oid and mode are the same)
               // 2) and only if we need to (because other stats differ)
               // 3) and only if the caller opted in to refreshing the index
+              // 4) and not for an intent-to-add entry, which inserting would stage
               if (
                 self.refresh &&
                 stage &&
+                !stage.flags.intentToAdd &&
                 oid === stage.oid &&
                 (!filemode || stats.mode === stage.mode) &&
                 compareStats(stats, stage, filemode, trustino)
@@ -6628,7 +6670,10 @@ async function _commit({
   return GitIndexManager.acquire(
     { fs, gitdir, cache, allowUnmerged: false },
     async function (index) {
-      const inodes = flatFileListToDirectoryStructure(index.entries);
+      // Entries added with `git add --intent-to-add` are not part of the tree
+      const inodes = flatFileListToDirectoryStructure(
+        index.entries.filter(entry => !entry.flags.intentToAdd)
+      );
       const inode = inodes.get('.');
       if (!tree) {
         tree = await constructTree({ fs, gitdir, inode, dryRun });
@@ -17155,8 +17200,14 @@ async function status({
           type: 'blob',
           object,
         });
-        // If the oid in the index === working dir oid but stats differed update cache
-        if (refresh && I && indexEntry.oid === workdirOid) {
+        // If the oid in the index === working dir oid but stats differed update cache.
+        // An intent-to-add entry is left alone: inserting it again would stage it.
+        if (
+          refresh &&
+          I &&
+          !indexEntry.flags.intentToAdd &&
+          indexEntry.oid === workdirOid
+        ) {
           // and as long as our fs.stats aren't bad.
           // size of -1 happens over a BrowserFS HTTP Backend that doesn't serve Content-Length headers
           // (like the Karma webserver) because BrowserFS HTTP Backend uses HTTP HEAD requests to do fs.stat
