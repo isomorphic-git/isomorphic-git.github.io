@@ -3661,12 +3661,16 @@ ${obj.gpgsig ? obj.gpgsig : ''}`
       }
     }
     const obj = {};
+    const seen = new Set();
     for (const h of hs) {
       const key = h.slice(0, h.indexOf(' '));
       const value = h.slice(h.indexOf(' ') + 1);
-      if (Array.isArray(obj[key])) {
-        obj[key].push(value);
-      } else {
+      // A tag header may appear only once, so the first occurrence wins, the
+      // way canonical git reads them. Keeping the last one instead would make a
+      // tag with a duplicate `object` header point at a different target here
+      // than in git, under the same oid.
+      if (!seen.has(key)) {
+        seen.add(key);
         obj[key] = value;
       }
     }
@@ -3797,12 +3801,18 @@ class GitCommit {
     const obj = {
       parent: [],
     };
+    const seen = new Set();
     for (const h of hs) {
       const key = h.slice(0, h.indexOf(' '));
       const value = h.slice(h.indexOf(' ') + 1);
       if (Array.isArray(obj[key])) {
         obj[key].push(value);
-      } else {
+      } else if (!seen.has(key)) {
+        // Only `parent` may appear more than once. For every other header the
+        // first occurrence wins, the way canonical git reads them. Keeping the
+        // last one instead would make a commit with a duplicate `tree` header
+        // resolve to a different tree here than in git, under the same oid.
+        seen.add(key);
         obj[key] = value;
       }
     }
