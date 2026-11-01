@@ -622,7 +622,8 @@ function SecondsNanoseconds(
     milliseconds = date.valueOf();
   }
   const seconds = Math.floor(milliseconds / 1000);
-  const nanoseconds = (milliseconds - seconds * 1000) * 1000000;
+  // Match the integer precision used when these timestamps are written to the index.
+  const nanoseconds = Math.floor((milliseconds - seconds * 1000) * 1000000);
   return [seconds, nanoseconds]
 }
 
@@ -1043,7 +1044,9 @@ function compareStats(entry, stats, filemode = true, trustino = true) {
   const staleness =
     (filemode && e.mode !== s.mode) ||
     e.mtimeSeconds !== s.mtimeSeconds ||
+    e.mtimeNanoseconds !== s.mtimeNanoseconds ||
     e.ctimeSeconds !== s.ctimeSeconds ||
+    e.ctimeNanoseconds !== s.ctimeNanoseconds ||
     e.uid !== s.uid ||
     e.gid !== s.gid ||
     (trustino && e.ino !== s.ino) ||
