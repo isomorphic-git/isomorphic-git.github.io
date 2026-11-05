@@ -1,4 +1,5 @@
 import get from 'simple-get';
+import { PassThrough } from 'stream';
 
 /**
  * @typedef {Object} GitProgressEvent
@@ -89,8 +90,6 @@ async function forAwait(iterable, cb) {
 }
 
 function asyncIteratorToStream(iter) {
-  // @ts-expect-error: readable-stream has PassThrough at runtime, types mismatch
-  const { PassThrough } = require('readable-stream');
   const stream = new PassThrough();
   setTimeout(async () => {
     await forAwait(iter, chunk => stream.write(chunk));
@@ -199,6 +198,7 @@ async function request({
     // @ts-expect-error
     body = Buffer.from(await collect(body));
   } else if (body) {
+    // @ts-expect-error
     body = asyncIteratorToStream(body);
   }
   return new Promise((resolve, reject) => {

@@ -5,6 +5,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var get = _interopDefault(require('simple-get'));
+var stream = require('stream');
 
 /**
  * @typedef {Object} GitProgressEvent
@@ -95,14 +96,12 @@ async function forAwait(iterable, cb) {
 }
 
 function asyncIteratorToStream(iter) {
-  // @ts-expect-error: readable-stream has PassThrough at runtime, types mismatch
-  const { PassThrough } = require('readable-stream');
-  const stream = new PassThrough();
+  const stream$1 = new stream.PassThrough();
   setTimeout(async () => {
-    await forAwait(iter, chunk => stream.write(chunk));
-    stream.end();
+    await forAwait(iter, chunk => stream$1.write(chunk));
+    stream$1.end();
   }, 1);
-  return stream
+  return stream$1
 }
 
 async function collect(iterable) {
@@ -205,6 +204,7 @@ async function request({
     // @ts-expect-error
     body = Buffer.from(await collect(body));
   } else if (body) {
+    // @ts-expect-error
     body = asyncIteratorToStream(body);
   }
   return new Promise((resolve, reject) => {
