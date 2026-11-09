@@ -5,12 +5,11 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var ignore = _interopDefault(require('ignore'));
-var Hash = _interopDefault(require('sha.js/sha1.js'));
+var crypto$1 = require('crypto');
 var AsyncLock = _interopDefault(require('async-lock'));
 var cleanGitRef = _interopDefault(require('clean-git-ref'));
 var crc32 = _interopDefault(require('crc-32'));
 var pako = _interopDefault(require('pako'));
-var crypto$1 = require('crypto');
 
 /**
  * @typedef {Object} GitProgressEvent
@@ -1231,6 +1230,10 @@ function normalizeStats(e) {
   }
 }
 
+function createSha1() {
+  return crypto$1.createHash('sha1')
+}
+
 function toHex(buffer) {
   let hex = '';
   for (const byte of new Uint8Array(buffer)) {
@@ -1255,7 +1258,7 @@ async function shasum(buffer) {
 // but without the 'json-stable-stringify' dependency and
 // extra type-casting features.
 function shasumSync(buffer) {
-  return new Hash().update(buffer).digest('hex')
+  return createSha1().update(buffer).digest('hex')
 }
 
 async function subtleSHA1(buffer) {

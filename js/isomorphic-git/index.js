@@ -650,6 +650,10 @@ function normalizeStats(e) {
   }
 }
 
+function createSha1() {
+  return new Hash()
+}
+
 function toHex(buffer) {
   let hex = '';
   for (const byte of new Uint8Array(buffer)) {
@@ -674,7 +678,7 @@ async function shasum(buffer) {
 // but without the 'json-stable-stringify' dependency and
 // extra type-casting features.
 function shasumSync(buffer) {
-  return new Hash().update(buffer).digest('hex')
+  return createSha1().update(buffer).digest('hex')
 }
 
 async function subtleSHA1(buffer) {
@@ -14417,7 +14421,7 @@ async function _pack({
   gitdir = join(dir, '.git'),
   oids,
 }) {
-  const hash = new Hash();
+  const hash = createSha1();
   const outputStream = [];
   function write(chunk, enc) {
     const buff = Buffer.from(chunk, enc);
