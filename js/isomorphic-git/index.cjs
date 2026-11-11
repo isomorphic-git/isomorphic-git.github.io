@@ -10931,9 +10931,12 @@ async function _fetch({
     }
   }
   const noun = fullref.startsWith('refs/tags') ? 'tag' : 'branch';
+  // Like canonical git, leave any credentials embedded in the URL out of the
+  // description, because `pull` writes it into the merge commit message.
+  const { url: urlWithoutAuth } = extractAuthFromUrl(url);
   response.FETCH_HEAD = {
     oid,
-    description: `${noun} '${abbreviateRef(fullref)}' of ${url}`,
+    description: `${noun} '${abbreviateRef(fullref)}' of ${urlWithoutAuth}`,
   };
 
   if (onProgress || onMessage) {
