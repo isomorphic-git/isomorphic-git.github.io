@@ -1190,7 +1190,16 @@ class GitIndexManager {
       if (unmergedPaths.length && !allowUnmerged)
         throw new UnmergedPathsError(unmergedPaths)
 
-      result = await closure(index);
+      try {
+        result = await closure(index);
+      } catch (err) {
+        // A failed closure may already have mutated the in-memory index. Drop
+        // it so the next acquire reloads the unchanged index from disk, rather
+        // than flushing a half-applied change that was never written.
+        theIndexCache.map.delete(filepath);
+        theIndexCache.stats.delete(filepath);
+        throw err
+      }
       if (index._dirty) {
         // Acquire a file lock while we're writing the index file
         // let fileLock = await Lock(filepath)
@@ -5857,6 +5866,31 @@ class FileSystem {
   }
 }
 
+/**
+ * Refuse to materialize a working-tree entry whose parent path traverses a
+ * symbolic link. A leading component that is a symlink could otherwise redirect
+ * a write or mkdir outside the working tree. git applies the same check: it does
+ * not follow symlinks in the leading path when writing working-tree files.
+ *
+ * @param {import('../models/FileSystem.js').FileSystem} fs
+ * @param {string} dir
+ * @param {string} fullpath
+ */
+async function assertNoSymlinkInLeadingPath(fs, dir, fullpath) {
+  const parts = fullpath.split('/');
+  parts.pop(); // the final segment is the entry being written, not a leading dir
+  let current = dir;
+  for (const part of parts) {
+    if (part === '' || part === '.') continue
+    current = `${current}/${part}`;
+    const stats = await fs.lstat(current);
+    // lstat returns null when the path doesn't exist yet (nothing to traverse).
+    if (stats && stats.isSymbolicLink()) {
+      throw new UnsafeFilepathError(fullpath)
+    }
+  }
+}
+
 function assertParameter(name, value) {
   if (value === undefined) {
     throw new MissingParameterError(name)
@@ -5941,6 +5975,50 @@ async function modified(entry, base) {
   return true
 }
 
+/**
+ * Materialize one tracked blob in the working tree.
+ *
+ * A symlink must never be followed when writing, neither in the leading path
+ * nor at the destination itself: a tracked symlink can point anywhere, so
+ * following one redirects the write outside the working tree. git behaves the
+ * same way — it replaces the symlink instead of writing through it.
+ *
+ * @param {object} args
+ * @param {import('../models/FileSystem.js').FileSystem} args.fs
+ * @param {string} args.dir - The working tree directory path
+ * @param {string} args.filepath - Path of the entry, relative to `dir`
+ * @param {number} args.mode - The entry's file mode, e.g. 0o100644
+ * @param {Uint8Array|string} args.content - The blob contents
+ * @returns {Promise<void>}
+ */
+async function writeWorkingTreeEntry({
+  fs,
+  dir,
+  filepath,
+  mode,
+  content,
+}) {
+  await assertNoSymlinkInLeadingPath(fs, dir, filepath);
+  const path = `${dir}/${filepath}`;
+  const symlink = mode === 0o120000;
+  // lstat does not follow the final component, so an existing symlink is
+  // removed rather than written through. Removing it first also lets `mode`
+  // take effect, which only happens when the file is created.
+  const stats = await fs.lstat(path);
+  if (stats && (symlink || stats.isSymbolicLink())) {
+    await fs.rm(path);
+  }
+  if (symlink) {
+    // `fs.write` creates the missing parent directories itself, `fs.writelink`
+    // does not. The leading path is already checked above, so creating them
+    // here cannot traverse a symlink either.
+    await fs.mkdir(dirname(path));
+    await fs.writelink(path, Buffer.from(content));
+  } else {
+    await fs.write(path, content, { mode });
+  }
+}
+
 // @ts-check
 
 /**
@@ -6019,6 +6097,14 @@ async function abortMerge({
       },
     });
 
+    // Refuse the whole reset before touching the index or the working tree, so
+    // an unsafe path cannot leave either of them half reset.
+    for (const entry of results) {
+      if (entry && entry.type === 'blob') {
+        await assertNoSymlinkInLeadingPath(fs, dir, entry.path);
+      }
+    }
+
     await GitIndexManager.acquire(
       { fs, gitdir: updatedGitdir, cache },
       async function (index) {
@@ -6036,14 +6122,25 @@ async function abortMerge({
           }
 
           if (entry.type === 'blob') {
-            const content = new TextDecoder().decode(entry.content);
-            await fs.write(`${dir}/${entry.path}`, content, {
+            await writeWorkingTreeEntry({
+              fs,
+              dir,
+              filepath: entry.path,
               mode: entry.mode,
+              content: entry.content,
             });
+            // Stage the file as it now sits on disk, so the entry does not
+            // look modified afterwards. The mode is the one being restored,
+            // never the one lstat reports: an existing file keeps its old
+            // permissions, because `mode` only applies when a file is
+            // created, and Windows does not report the executable bit.
+            const stats = await fs.lstat(`${dir}/${entry.path}`);
+            stats.mode = entry.mode;
             index.insert({
               filepath: entry.path,
               oid: entry.oid,
               stage: 0,
+              stats,
             });
           }
         }
@@ -7541,31 +7638,6 @@ async function branch({
   }
 }
 
-/**
- * Refuse to materialize a working-tree entry whose parent path traverses a
- * symbolic link. A leading component that is a symlink could otherwise redirect
- * a write or mkdir outside the working tree. git applies the same check: it does
- * not follow symlinks in the leading path when writing working-tree files.
- *
- * @param {import('../models/FileSystem.js').FileSystem} fs
- * @param {string} dir
- * @param {string} fullpath
- */
-async function assertNoSymlinkInLeadingPath(fs, dir, fullpath) {
-  const parts = fullpath.split('/');
-  parts.pop(); // the final segment is the entry being written, not a leading dir
-  let current = dir;
-  for (const part of parts) {
-    if (part === '' || part === '.') continue
-    current = `${current}/${part}`;
-    const stats = await fs.lstat(current);
-    // lstat returns null when the path doesn't exist yet (nothing to traverse).
-    if (stats && stats.isSymbolicLink()) {
-      throw new UnsafeFilepathError(fullpath)
-    }
-  }
-}
-
 const worthWalking = (filepath, root) => {
   if (filepath === '.' || root == null || root.length === 0 || root === '.') {
     return true
@@ -8804,11 +8876,14 @@ async function mergeTree({
         gitdir,
         trees: [TREE({ ref: results.oid })],
         map: async function (filepath, [entry]) {
-          const path = `${dir}/${filepath}`;
           if ((await entry.type()) === 'blob') {
-            const mode = await entry.mode();
-            const content = await entry.content();
-            await fs.write(path, content, { mode });
+            await writeWorkingTreeEntry({
+              fs,
+              dir,
+              filepath,
+              mode: await entry.mode(),
+              content: await entry.content(),
+            });
           }
           return true
         },
