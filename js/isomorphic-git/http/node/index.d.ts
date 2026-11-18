@@ -73,6 +73,14 @@ export type HttpFetch = (request: GitHttpRequest) => Promise<GitHttpResponse>;
 export type HttpClient = {
     request: HttpFetch;
 };
+export type RedirectableRequest = {
+    url: string;
+    method: string;
+    headers: {
+        [x: string]: string;
+    };
+    body: any;
+};
 declare namespace index {
     export { request };
 }
